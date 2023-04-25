@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
@@ -54,6 +53,7 @@ fun MainScreen() {
 @Composable
 fun MainContent(){
     Column {
+        ListHeader(stringResource(R.string.accounts))
         ListItem(
             headlineText = { Text(stringResource(R.string.manage_accounts)) },
             supportingText = { Text(stringResource(R.string.manage_accounts_desc)) },
@@ -64,7 +64,5 @@ fun MainContent(){
                 )
             }
         )
-        Divider()
-
     }
 }
