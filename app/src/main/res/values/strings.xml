@@ -6,4 +6,6 @@
     <string name="account_list">Manage Accounts</string>
     <string name="add_new_account">Add new account</string>
     <string name="go_back">Go back</string>
+    <string name="new_account">Add New Account</string>
+    <string name="homeserver_url_label">Homeserver URL (Defaults to Matrix.org)</string>
 </resources>

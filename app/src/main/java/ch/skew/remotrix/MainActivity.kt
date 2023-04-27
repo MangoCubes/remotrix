@@ -21,6 +21,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import ch.skew.remotrix.ui.theme.NewAccount
 import ch.skew.remotrix.ui.theme.RemotrixTheme
 
 
@@ -49,6 +50,12 @@ fun RemotrixApp() {
             }
             composable(route = Destination.AccountList.route) {
                 AccountList(
+                    onClickGoBack = { navController.popBackStack() },
+                    onClickNewAccount = { navController.navigate(Destination.NewAccount.route) }
+                )
+            }
+            composable(route = Destination.NewAccount.route) {
+                NewAccount(
                     onClickGoBack = { navController.popBackStack() }
                 )
             }
