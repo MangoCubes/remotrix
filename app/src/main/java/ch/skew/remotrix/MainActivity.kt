@@ -33,7 +33,6 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Preview(showSystemUi = true)
 @Composable
 fun RemotrixApp() {
@@ -49,7 +48,9 @@ fun RemotrixApp() {
                 )
             }
             composable(route = Destination.AccountList.route) {
-
+                AccountList(
+                    onClickGoBack = { navController.popBackStack() }
+                )
             }
         }
     }
@@ -57,7 +58,9 @@ fun RemotrixApp() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(onClickAccountList: () -> Unit = {}) {
+fun HomeScreen(
+    onClickAccountList: () -> Unit = {}
+) {
     Scaffold(
         topBar = {
             TopAppBar({
