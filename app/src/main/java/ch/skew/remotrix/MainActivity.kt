@@ -3,7 +3,7 @@ package ch.skew.remotrix
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -18,6 +18,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import ch.skew.remotrix.ui.theme.RemotrixTheme
 
 
@@ -25,7 +28,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            MainScreen()
+            RemotrixApp()
         }
     }
 }
@@ -33,17 +36,20 @@ class MainActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Preview(showSystemUi = true)
 @Composable
-fun MainScreen() {
+fun RemotrixApp() {
+    val navController = rememberNavController()
     RemotrixTheme {
-        Scaffold(
-            topBar = {
-                TopAppBar({
-                    Text(stringResource(R.string.app_name))
-                })
+        NavHost(
+            navController = navController,
+            startDestination = Destination.Home.route
+        ) {
+            composable(route = Destination.Home.route) {
+                HomeScreen(
+                    onClickAccountList = { navController.navigate(Destination.AccountList.route) }
+                )
             }
-        ) { padding ->
-            Box(Modifier.padding(padding)){
-                MainContent()
+            composable(route = Destination.AccountList.route) {
+
             }
         }
     }
@@ -51,18 +57,27 @@ fun MainScreen() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainContent(){
-    Column {
-        ListHeader(stringResource(R.string.accounts))
-        ListItem(
-            headlineText = { Text(stringResource(R.string.manage_accounts)) },
-            supportingText = { Text(stringResource(R.string.manage_accounts_desc)) },
-            leadingContent = {
-                Icon(
-                    Icons.Filled.AccountCircle,
-                    contentDescription = stringResource(R.string.manage_accounts),
-                )
-            }
-        )
+fun HomeScreen(onClickAccountList: () -> Unit = {}) {
+    Scaffold(
+        topBar = {
+            TopAppBar({
+                Text(stringResource(R.string.app_name))
+            })
+        }
+    ) { padding ->
+        Column(modifier = Modifier.padding(padding)) {
+            ListHeader(stringResource(R.string.accounts))
+            ListItem(
+                headlineText = { Text(stringResource(R.string.manage_accounts)) },
+                supportingText = { Text(stringResource(R.string.manage_accounts_desc)) },
+                leadingContent = {
+                    Icon(
+                        Icons.Filled.AccountCircle,
+                        contentDescription = stringResource(R.string.manage_accounts),
+                    )
+                },
+                modifier = Modifier.clickable { onClickAccountList() }
+            )
+        }
     }
 }
