@@ -21,6 +21,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import ch.skew.remotrix.R
+import ch.skew.remotrix.components.PasswordField
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Preview
@@ -55,6 +56,7 @@ fun NewAccount(
             val username = remember{ mutableStateOf("") }
             val password = remember{ mutableStateOf("") }
             val baseUrl = remember{ mutableStateOf("") }
+            val revealPassword = remember{ mutableStateOf(false) }
             TextField(
                 modifier = formPadding,
                 value = username.value,
@@ -62,12 +64,12 @@ fun NewAccount(
                 label = { Text(stringResource(R.string.username)) },
                 singleLine = true
             )
-            TextField(
+            PasswordField(
                 modifier = formPadding,
                 value = password.value,
                 onValueChange = { password.value = it },
-                label = { Text(stringResource(R.string.password)) },
-                singleLine = true
+                visibility = revealPassword.value,
+                toggleVisibility = { revealPassword.value = !revealPassword.value }
             )
             TextField(
                 modifier = formPadding,
