@@ -47,9 +47,10 @@ android {
 }
 
 dependencies {
-    def nav_version = "2.5.3"
+    def nav_ver = "2.5.3"
+    def trixnity_ver = "3.6.1"
 
-    implementation "androidx.navigation:navigation-compose:$nav_version"
+    implementation "androidx.navigation:navigation-compose:$nav_ver"
     implementation 'androidx.core:core-ktx:1.10.0'
     implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.6.1'
     implementation 'androidx.activity:activity-compose:1.7.1'
@@ -65,4 +66,6 @@ dependencies {
     androidTestImplementation 'androidx.compose.ui:ui-test-junit4'
     debugImplementation 'androidx.compose.ui:ui-tooling'
     debugImplementation 'androidx.compose.ui:ui-test-manifest'
+
+    implementation "net.folivo:trixnity-client:$trixnity_ver"
 }
