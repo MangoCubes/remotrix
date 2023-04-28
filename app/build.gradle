@@ -48,7 +48,6 @@ android {
 
 dependencies {
     def nav_ver = "2.5.3"
-    def trixnity_ver = "3.6.1"
 
     implementation "androidx.navigation:navigation-compose:$nav_ver"
     implementation 'androidx.core:core-ktx:1.10.0'
@@ -67,6 +66,5 @@ dependencies {
     debugImplementation 'androidx.compose.ui:ui-tooling'
     debugImplementation 'androidx.compose.ui:ui-test-manifest'
 
-    implementation "net.folivo:trixnity-client:$trixnity_ver"
     implementation "androidx.compose.material:material-icons-extended"
 }

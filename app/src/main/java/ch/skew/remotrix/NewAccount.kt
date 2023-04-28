@@ -1,5 +1,6 @@
-package ch.skew.remotrix.ui.theme
+package ch.skew.remotrix
 
+import android.content.Context
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -17,12 +18,14 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import ch.skew.remotrix.R
 import ch.skew.remotrix.components.PasswordField
+import kotlinx.coroutines.CoroutineScope
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Preview
@@ -30,6 +33,8 @@ import ch.skew.remotrix.components.PasswordField
 fun NewAccount(
     onClickGoBack: () -> Unit = {}
 ){
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val formPadding = Modifier
         .fillMaxWidth()
         .padding(
@@ -88,7 +93,7 @@ fun NewAccount(
                 content = { Text(stringResource(R.string.log_in)) },
                 onClick = {
                     revealPassword.value = false
-                    onLoginClick(username.value, password.value, baseUrl.value, {}, { enabled.value = it })
+                    onLoginClick(context, scope, username.value, password.value, baseUrl.value, {}, { enabled.value = it })
                 },
                 enabled = enabled.value
             )
@@ -97,6 +102,8 @@ fun NewAccount(
 }
 
 fun onLoginClick(
+    context: Context,
+    scope: CoroutineScope,
     username: String,
     password: String,
     baseUrl: String,
@@ -104,5 +111,14 @@ fun onLoginClick(
     enable: (Boolean) -> Unit
 ) {
     enable(false)
-//    enable(true)
+//    val serverConfig = try {
+//        HomeServerConnectionConfig
+//            .Builder()
+//            .withHomeServerUri(Uri.parse(baseUrl))
+//            .build()
+//    } catch (e: Throwable) {
+//        Toast.makeText(context, context.getString(R.string.invalid_homeserver_url), Toast.LENGTH_SHORT).show()
+//        enable(false)
+//        return
+//    }
 }
