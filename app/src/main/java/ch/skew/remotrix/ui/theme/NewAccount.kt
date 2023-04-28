@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -57,27 +58,51 @@ fun NewAccount(
             val password = remember{ mutableStateOf("") }
             val baseUrl = remember{ mutableStateOf("") }
             val revealPassword = remember{ mutableStateOf(false) }
+            val enabled = remember{ mutableStateOf(true) }
             TextField(
                 modifier = formPadding,
                 value = username.value,
                 onValueChange = { username.value = it },
                 label = { Text(stringResource(R.string.username)) },
-                singleLine = true
+                singleLine = true,
+                enabled = enabled.value
             )
             PasswordField(
                 modifier = formPadding,
                 value = password.value,
                 onValueChange = { password.value = it },
                 visibility = revealPassword.value,
-                toggleVisibility = { revealPassword.value = !revealPassword.value }
+                toggleVisibility = { revealPassword.value = !revealPassword.value },
+                enabled = enabled.value
             )
             TextField(
                 modifier = formPadding,
                 value = baseUrl.value,
                 onValueChange = { baseUrl.value = it },
                 label = { Text(stringResource(R.string.homeserver_url_label)) },
-                singleLine = true
+                singleLine = true,
+                enabled = enabled.value
+            )
+            Button(
+                modifier = formPadding,
+                content = { Text(stringResource(R.string.log_in)) },
+                onClick = {
+                    revealPassword.value = false
+                    onLoginClick(username.value, password.value, baseUrl.value, {}, { enabled.value = it })
+                },
+                enabled = enabled.value
             )
         }
     }
+}
+
+fun onLoginClick(
+    username: String,
+    password: String,
+    baseUrl: String,
+    goBack: () -> Unit,
+    enable: (Boolean) -> Unit
+) {
+    enable(false)
+//    enable(true)
 }

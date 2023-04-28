@@ -22,7 +22,8 @@ fun PasswordField (
     value: String,
     onValueChange: (String) -> Unit,
     visibility: Boolean,
-    toggleVisibility: () -> Unit
+    toggleVisibility: () -> Unit,
+    enabled: Boolean
 ) {
     TextField(
         modifier = modifier,
@@ -36,6 +37,7 @@ fun PasswordField (
                 if (visibility) Icon(Icons.Filled.VisibilityOff, stringResource(R.string.hide_password))
                 else Icon(Icons.Filled.Visibility, stringResource(R.string.show_password))
             }
-        }
+        },
+        enabled = enabled
     )
 }
