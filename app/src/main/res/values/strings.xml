@@ -14,4 +14,5 @@
     <string name="show_password">Show password</string>
     <string name="log_in">Log In</string>
     <string name="invalid_homeserver_url">Invalid homeserver URL.</string>
+    <string name="generic_error">Generic error.</string>
 </resources>

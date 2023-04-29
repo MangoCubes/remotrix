@@ -28,6 +28,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import ch.skew.remotrix.components.PasswordField
 import kotlinx.coroutines.CoroutineScope
+import org.matrix.android.sdk.api.Matrix
+import org.matrix.android.sdk.api.MatrixConfiguration
 import org.matrix.android.sdk.api.auth.data.HomeServerConnectionConfig
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -113,7 +115,6 @@ fun onLoginClick(
     goBack: () -> Unit,
     enable: (Boolean) -> Unit
 ) {
-    enable(false)
     val serverConfig = try {
         HomeServerConnectionConfig
             .Builder()
@@ -121,7 +122,18 @@ fun onLoginClick(
             .build()
     } catch (e: Throwable) {
         Toast.makeText(context, context.getString(R.string.invalid_homeserver_url), Toast.LENGTH_SHORT).show()
-        enable(false)
+        return
+    }
+    enable(false)
+    try {
+        val matrix = Matrix(
+            context = context,
+            matrixConfiguration = MatrixConfiguration(
+                roomDisplayNameFallbackProvider = RoomDisplayName()
+            )
+        )
+    } catch (e: Throwable) {
+        Toast.makeText(context, context.getString(R.string.generic_error), Toast.LENGTH_SHORT).show()
         return
     }
 }

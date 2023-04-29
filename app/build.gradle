@@ -68,4 +68,5 @@ dependencies {
 
     implementation 'org.matrix.android:matrix-android-sdk2:1.5.30'
     implementation "androidx.compose.material:material-icons-extended"
+    implementation 'com.squareup.okhttp3:okhttp:4.10.0'
 }
