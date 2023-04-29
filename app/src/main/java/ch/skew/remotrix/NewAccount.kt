@@ -1,6 +1,8 @@
 package ch.skew.remotrix
 
 import android.content.Context
+import android.net.Uri
+import android.widget.Toast
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -26,6 +28,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import ch.skew.remotrix.components.PasswordField
 import kotlinx.coroutines.CoroutineScope
+import org.matrix.android.sdk.api.auth.data.HomeServerConnectionConfig
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Preview
@@ -111,14 +114,14 @@ fun onLoginClick(
     enable: (Boolean) -> Unit
 ) {
     enable(false)
-//    val serverConfig = try {
-//        HomeServerConnectionConfig
-//            .Builder()
-//            .withHomeServerUri(Uri.parse(baseUrl))
-//            .build()
-//    } catch (e: Throwable) {
-//        Toast.makeText(context, context.getString(R.string.invalid_homeserver_url), Toast.LENGTH_SHORT).show()
-//        enable(false)
-//        return
-//    }
+    val serverConfig = try {
+        HomeServerConnectionConfig
+            .Builder()
+            .withHomeServerUri(Uri.parse(baseUrl))
+            .build()
+    } catch (e: Throwable) {
+        Toast.makeText(context, context.getString(R.string.invalid_homeserver_url), Toast.LENGTH_SHORT).show()
+        enable(false)
+        return
+    }
 }

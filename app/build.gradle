@@ -66,5 +66,6 @@ dependencies {
     debugImplementation 'androidx.compose.ui:ui-tooling'
     debugImplementation 'androidx.compose.ui:ui-test-manifest'
 
+    implementation 'org.matrix.android:matrix-android-sdk2:1.5.30'
     implementation "androidx.compose.material:material-icons-extended"
 }
