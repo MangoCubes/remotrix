@@ -24,19 +24,18 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import ch.skew.remotrix.components.PasswordField
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import org.matrix.android.sdk.api.Matrix
-import org.matrix.android.sdk.api.MatrixConfiguration
 import org.matrix.android.sdk.api.auth.data.HomeServerConnectionConfig
 
 @OptIn(ExperimentalMaterial3Api::class)
-@Preview
 @Composable
 fun NewAccount(
-    onClickGoBack: () -> Unit = {}
+    onClickGoBack: () -> Unit = {},
+    matrix: Matrix
 ){
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -98,7 +97,7 @@ fun NewAccount(
                 content = { Text(stringResource(R.string.log_in)) },
                 onClick = {
                     revealPassword.value = false
-                    onLoginClick(context, scope, username.value, password.value, baseUrl.value, {}, { enabled.value = it })
+                    onLoginClick(matrix, context, scope, username.value, password.value, baseUrl.value, {}, { enabled.value = it })
                 },
                 enabled = enabled.value
             )
@@ -107,6 +106,7 @@ fun NewAccount(
 }
 
 fun onLoginClick(
+    matrix: Matrix,
     context: Context,
     scope: CoroutineScope,
     username: String,
@@ -125,15 +125,12 @@ fun onLoginClick(
         return
     }
     enable(false)
-    try {
-        val matrix = Matrix(
-            context = context,
-            matrixConfiguration = MatrixConfiguration(
-                roomDisplayNameFallbackProvider = RoomDisplayName()
-            )
-        )
-    } catch (e: Throwable) {
-        Toast.makeText(context, context.getString(R.string.generic_error), Toast.LENGTH_SHORT).show()
-        return
+    scope.launch {
+        try {
+
+        } catch (e: Throwable) {
+            Toast.makeText(context, context.getString(R.string.generic_error), Toast.LENGTH_SHORT)
+                .show()
+        }
     }
 }
