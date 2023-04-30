@@ -53,12 +53,11 @@ fun AccountList(
 fun SessionItem(session: Session?) {
     if(session === null) Text(stringResource(R.string.add_account_help))
     else ListItem(
-        headlineText = { Text(stringResource(R.string.manage_accounts)) },
-        supportingText = { Text(stringResource(R.string.manage_accounts_desc)) },
+        headlineText = { Text(session.myUserId) },
         leadingContent = {
             Icon(
                 Icons.Filled.AccountCircle,
-                contentDescription = stringResource(R.string.manage_accounts),
+                contentDescription = session.myUserId,
             )
         },
     )

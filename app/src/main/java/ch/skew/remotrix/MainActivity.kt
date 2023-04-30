@@ -15,6 +15,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.compose.NavHost
@@ -23,7 +25,6 @@ import androidx.navigation.compose.rememberNavController
 import ch.skew.remotrix.ui.theme.RemotrixTheme
 import org.matrix.android.sdk.api.Matrix
 import org.matrix.android.sdk.api.MatrixConfiguration
-import org.matrix.android.sdk.api.session.Session
 
 
 class MainActivity : ComponentActivity() {
@@ -35,19 +36,17 @@ class MainActivity : ComponentActivity() {
                 roomDisplayNameFallbackProvider = RoomDisplayName()
             )
         )
-        val session = matrix.authenticationService().getLastAuthenticatedSession()
-        if (session != null) {
-            session.open()
-            session.syncService().startSync(true)
-        }
         setContent {
-            RemotrixApp(matrix, session)
+            RemotrixApp(matrix)
         }
     }
 }
 @Composable
-fun RemotrixApp(matrix: Matrix, session: Session?) {
+fun RemotrixApp(matrix: Matrix) {
     val navController = rememberNavController()
+    val session = remember { mutableStateOf(matrix.authenticationService().getLastAuthenticatedSession()) }
+    session.value?.open()
+    session.value?.syncService()?.startSync(true)
     RemotrixTheme {
         NavHost(
             navController = navController,
@@ -60,7 +59,7 @@ fun RemotrixApp(matrix: Matrix, session: Session?) {
             }
             composable(route = Destination.AccountList.route) {
                 AccountList(
-                    session = session,
+                    session = session.value,
                     onClickGoBack = { navController.popBackStack() },
                     onClickNewAccount = { navController.navigate(Destination.NewAccount.route) }
                 )
@@ -68,7 +67,8 @@ fun RemotrixApp(matrix: Matrix, session: Session?) {
             composable(route = Destination.NewAccount.route) {
                 NewAccount(
                     onClickGoBack = { navController.popBackStack() },
-                    matrix = matrix
+                    matrix = matrix,
+                    setSession = { session.value = it }
                 )
             }
         }

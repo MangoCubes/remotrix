@@ -30,12 +30,14 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import org.matrix.android.sdk.api.Matrix
 import org.matrix.android.sdk.api.auth.data.HomeServerConnectionConfig
+import org.matrix.android.sdk.api.session.Session
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NewAccount(
-    onClickGoBack: () -> Unit = {},
-    matrix: Matrix
+    onClickGoBack: () -> Unit,
+    matrix: Matrix,
+    setSession: (Session) -> Unit
 ){
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -100,9 +102,11 @@ fun NewAccount(
                     revealPassword.value = false
                     enabled.value = false
                     errorMsg.value = ""
-                    onLoginClick(matrix, context, scope, username.value, password.value, baseUrl.value, onClickGoBack) {
+                    onLoginClick(matrix, context, scope, username.value, password.value, baseUrl.value, onClickGoBack, {
                         errorMsg.value = it
                         enabled.value = true
+                    }) {
+                        setSession(it)
                     }
                 },
                 enabled = enabled.value
@@ -120,7 +124,8 @@ fun onLoginClick(
     password: String,
     inputUrl: String,
     goBack: () -> Unit,
-    abort: (String) -> Unit
+    abort: (String) -> Unit,
+    success: (Session) -> Unit
 ) {
     val baseUrl: String
     if (inputUrl === "") baseUrl = "https://matrix-client.matrix.org"
@@ -148,8 +153,7 @@ fun onLoginClick(
             null
         }?.let { session ->
             Toast.makeText(context, "Logged in as ${session.myUserId}", Toast.LENGTH_SHORT).show()
-            session.open()
-            session.syncService().startSync(true)
+            success(session)
             goBack()
         }
     }
