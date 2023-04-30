@@ -23,6 +23,7 @@ import androidx.navigation.compose.rememberNavController
 import ch.skew.remotrix.ui.theme.RemotrixTheme
 import org.matrix.android.sdk.api.Matrix
 import org.matrix.android.sdk.api.MatrixConfiguration
+import org.matrix.android.sdk.api.session.Session
 
 
 class MainActivity : ComponentActivity() {
@@ -34,13 +35,18 @@ class MainActivity : ComponentActivity() {
                 roomDisplayNameFallbackProvider = RoomDisplayName()
             )
         )
+        val session = matrix.authenticationService().getLastAuthenticatedSession()
+        if (session != null) {
+            session.open()
+            session.syncService().startSync(true)
+        }
         setContent {
-            RemotrixApp(matrix)
+            RemotrixApp(matrix, session)
         }
     }
 }
 @Composable
-fun RemotrixApp(matrix: Matrix) {
+fun RemotrixApp(matrix: Matrix, session: Session?) {
     val navController = rememberNavController()
     RemotrixTheme {
         NavHost(
@@ -54,6 +60,7 @@ fun RemotrixApp(matrix: Matrix) {
             }
             composable(route = Destination.AccountList.route) {
                 AccountList(
+                    session = session,
                     onClickGoBack = { navController.popBackStack() },
                     onClickNewAccount = { navController.navigate(Destination.NewAccount.route) }
                 )

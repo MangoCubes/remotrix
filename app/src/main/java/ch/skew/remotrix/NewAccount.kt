@@ -148,6 +148,8 @@ fun onLoginClick(
             null
         }?.let { session ->
             Toast.makeText(context, "Logged in as ${session.myUserId}", Toast.LENGTH_SHORT).show()
+            session.open()
+            session.syncService().startSync(true)
             goBack()
         }
     }

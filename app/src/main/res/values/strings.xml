@@ -16,4 +16,5 @@
     <string name="invalid_homeserver_url">Invalid homeserver URL.</string>
     <string name="generic_error">Generic error.</string>
     <string name="login_failed">Login failed: %1$s</string>
+    <string name="add_account_help">Press + to add new account. Currently, only 1 account is supported.</string>
 </resources>
