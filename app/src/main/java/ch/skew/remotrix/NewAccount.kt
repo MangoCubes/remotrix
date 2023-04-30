@@ -2,6 +2,7 @@ package ch.skew.remotrix
 
 import android.content.Context
 import android.net.Uri
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -127,10 +128,19 @@ fun onLoginClick(
     enable(false)
     scope.launch {
         try {
-
+            matrix.authenticationService().directAuthentication(
+                serverConfig,
+                username,
+                password,
+                "MessageBot"
+            )
         } catch (e: Throwable) {
-            Toast.makeText(context, context.getString(R.string.generic_error), Toast.LENGTH_SHORT)
-                .show()
+            Toast.makeText(context, context.getString(R.string.generic_error), Toast.LENGTH_SHORT).show()
+            Log.e("Remotrix", "Exception", e)
+            null
+        }?.let { session ->
+            Toast.makeText(context, "Logged in as ${session.myUserId}", Toast.LENGTH_SHORT).show()
+
         }
     }
 }
