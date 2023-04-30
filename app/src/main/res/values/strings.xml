@@ -15,4 +15,5 @@
     <string name="log_in">Log In</string>
     <string name="invalid_homeserver_url">Invalid homeserver URL.</string>
     <string name="generic_error">Generic error.</string>
+    <string name="login_failed">Login failed: %1$s</string>
 </resources>

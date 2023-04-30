@@ -2,7 +2,6 @@ package ch.skew.remotrix
 
 import android.content.Context
 import android.net.Uri
-import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -69,6 +68,7 @@ fun NewAccount(
             val baseUrl = remember{ mutableStateOf("") }
             val revealPassword = remember{ mutableStateOf(false) }
             val enabled = remember{ mutableStateOf(true) }
+            val errorMsg = remember{ mutableStateOf("") }
             TextField(
                 modifier = formPadding,
                 value = username.value,
@@ -98,10 +98,16 @@ fun NewAccount(
                 content = { Text(stringResource(R.string.log_in)) },
                 onClick = {
                     revealPassword.value = false
-                    onLoginClick(matrix, context, scope, username.value, password.value, baseUrl.value, {}, { enabled.value = it })
+                    enabled.value = false
+                    errorMsg.value = ""
+                    onLoginClick(matrix, context, scope, username.value, password.value, baseUrl.value, onClickGoBack) {
+                        errorMsg.value = it
+                        enabled.value = true
+                    }
                 },
                 enabled = enabled.value
             )
+            Text(errorMsg.value, modifier = formPadding)
         }
     }
 }
@@ -112,20 +118,23 @@ fun onLoginClick(
     scope: CoroutineScope,
     username: String,
     password: String,
-    baseUrl: String,
+    inputUrl: String,
     goBack: () -> Unit,
-    enable: (Boolean) -> Unit
+    abort: (String) -> Unit
 ) {
+    val baseUrl: String
+    if (inputUrl === "") baseUrl = "https://matrix-client.matrix.org"
+    else if (!inputUrl.startsWith("http")) baseUrl = "https://$inputUrl"
+    else baseUrl = inputUrl
     val serverConfig = try {
         HomeServerConnectionConfig
             .Builder()
             .withHomeServerUri(Uri.parse(baseUrl))
             .build()
     } catch (e: Throwable) {
-        Toast.makeText(context, context.getString(R.string.invalid_homeserver_url), Toast.LENGTH_SHORT).show()
+        abort(context.getString(R.string.invalid_homeserver_url))
         return
     }
-    enable(false)
     scope.launch {
         try {
             matrix.authenticationService().directAuthentication(
@@ -135,12 +144,11 @@ fun onLoginClick(
                 "MessageBot"
             )
         } catch (e: Throwable) {
-            Toast.makeText(context, context.getString(R.string.generic_error), Toast.LENGTH_SHORT).show()
-            Log.e("Remotrix", "Exception", e)
+            abort(context.getString(R.string.login_failed).format(e.message ?: ""))
             null
         }?.let { session ->
             Toast.makeText(context, "Logged in as ${session.myUserId}", Toast.LENGTH_SHORT).show()
-
+            goBack()
         }
     }
 }
