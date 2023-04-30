@@ -1,6 +1,7 @@
 package ch.skew.remotrix
 
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.clickable
@@ -18,6 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -45,6 +47,7 @@ class MainActivity : ComponentActivity() {
 fun RemotrixApp(matrix: Matrix) {
     val navController = rememberNavController()
     val session = remember { mutableStateOf(matrix.authenticationService().getLastAuthenticatedSession()) }
+    val context = LocalContext.current
     session.value?.open()
     session.value?.syncService()?.startSync(true)
     RemotrixTheme {
@@ -58,10 +61,14 @@ fun RemotrixApp(matrix: Matrix) {
                 )
             }
             composable(route = Destination.AccountList.route) {
+                val msg = stringResource(R.string.one_account_limit_help)
                 AccountList(
                     session = session.value,
                     onClickGoBack = { navController.popBackStack() },
-                    onClickNewAccount = { navController.navigate(Destination.NewAccount.route) }
+                    onClickNewAccount = {
+                        if(session.value === null) navController.navigate(Destination.NewAccount.route)
+                        else Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                    }
                 )
             }
             composable(route = Destination.NewAccount.route) {

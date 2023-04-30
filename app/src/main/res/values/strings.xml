@@ -17,4 +17,5 @@
     <string name="generic_error">Generic error.</string>
     <string name="login_failed">Login failed: %1$s</string>
     <string name="add_account_help">Press + to add new account. Currently, only 1 account is supported.</string>
+    <string name="one_account_limit_help">Only one account can be added for now.</string>
 </resources>
