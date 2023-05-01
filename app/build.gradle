@@ -48,6 +48,7 @@ android {
 
 dependencies {
     def nav_ver = "2.5.3"
+    def trix_ver = "3.6.1"
 
     implementation "androidx.navigation:navigation-compose:$nav_ver"
     implementation 'androidx.core:core-ktx:1.10.0'
@@ -66,9 +67,6 @@ dependencies {
     debugImplementation 'androidx.compose.ui:ui-tooling'
     debugImplementation 'androidx.compose.ui:ui-test-manifest'
 
-    implementation 'org.matrix.android:matrix-android-sdk2:1.5.30'
     implementation "androidx.compose.material:material-icons-extended"
-    implementation 'com.squareup.okhttp3:okhttp:4.10.0'
-    implementation "androidx.startup:startup-runtime:1.1.1"
-
+    implementation "net.folivo:trixnity-client:$trix_ver"
 }

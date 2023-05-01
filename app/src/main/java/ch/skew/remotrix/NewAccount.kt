@@ -1,8 +1,6 @@
 package ch.skew.remotrix
 
 import android.content.Context
-import android.net.Uri
-import android.widget.Toast
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -28,16 +26,11 @@ import androidx.compose.ui.unit.dp
 import ch.skew.remotrix.components.PasswordField
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import org.matrix.android.sdk.api.Matrix
-import org.matrix.android.sdk.api.auth.data.HomeServerConnectionConfig
-import org.matrix.android.sdk.api.session.Session
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NewAccount(
-    onClickGoBack: () -> Unit,
-    matrix: Matrix,
-    setSession: (Session) -> Unit
+    onClickGoBack: () -> Unit
 ){
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -102,12 +95,10 @@ fun NewAccount(
                     revealPassword.value = false
                     enabled.value = false
                     errorMsg.value = ""
-                    onLoginClick(matrix, context, scope, username.value, password.value, baseUrl.value, onClickGoBack, {
+                    onLoginClick(context, scope, username.value, password.value, baseUrl.value, onClickGoBack, {
                         errorMsg.value = it
                         enabled.value = true
-                    }) {
-                        setSession(it)
-                    }
+                    }) { }
                 },
                 enabled = enabled.value
             )
@@ -117,7 +108,6 @@ fun NewAccount(
 }
 
 fun onLoginClick(
-    matrix: Matrix,
     context: Context,
     scope: CoroutineScope,
     username: String,
@@ -125,36 +115,14 @@ fun onLoginClick(
     inputUrl: String,
     goBack: () -> Unit,
     abort: (String) -> Unit,
-    success: (Session) -> Unit
+    success: () -> Unit
 ) {
     val baseUrl: String
     if (inputUrl === "") baseUrl = "https://matrix-client.matrix.org"
     else if (!inputUrl.startsWith("http")) baseUrl = "https://$inputUrl"
     else baseUrl = inputUrl
-    val serverConfig = try {
-        HomeServerConnectionConfig
-            .Builder()
-            .withHomeServerUri(Uri.parse(baseUrl))
-            .build()
-    } catch (e: Throwable) {
-        abort(context.getString(R.string.invalid_homeserver_url))
-        return
-    }
+
     scope.launch {
-        try {
-            matrix.authenticationService().directAuthentication(
-                serverConfig,
-                username,
-                password,
-                "MessageBot"
-            )
-        } catch (e: Throwable) {
-            abort(context.getString(R.string.login_failed).format(e.message ?: ""))
-            null
-        }?.let { session ->
-            Toast.makeText(context, "Logged in as ${session.myUserId}", Toast.LENGTH_SHORT).show()
-            success(session)
-            goBack()
-        }
+
     }
 }
