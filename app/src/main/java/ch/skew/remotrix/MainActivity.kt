@@ -68,7 +68,8 @@ fun RemotrixApp(matrix: Matrix) {
                     onClickNewAccount = {
                         if(session.value === null) navController.navigate(Destination.NewAccount.route)
                         else Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
-                    }
+                    },
+                    unsetSession = { session.value = null }
                 )
             }
             composable(route = Destination.NewAccount.route) {
@@ -95,7 +96,7 @@ fun HomeScreen(
         }
     ) { padding ->
         Column(modifier = Modifier.padding(padding)) {
-            ListHeader(stringResource(R.string.accounts))
+            ListHeader(stringResource(R.string.setup))
             ListItem(
                 headlineText = { Text(stringResource(R.string.manage_accounts)) },
                 supportingText = { Text(stringResource(R.string.manage_accounts_desc)) },
