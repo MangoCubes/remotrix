@@ -1,6 +1,7 @@
 package ch.skew.remotrix
 
 import android.content.Context
+import android.widget.Toast
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -24,8 +25,15 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import ch.skew.remotrix.components.PasswordField
+import io.ktor.http.Url
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import net.folivo.trixnity.client.MatrixClient
+import net.folivo.trixnity.client.login
+import net.folivo.trixnity.client.media.okio.OkioMediaStore
+import net.folivo.trixnity.client.store.repository.realm.createRealmRepositoriesModule
+import net.folivo.trixnity.clientserverapi.model.authentication.IdentifierType
+import okio.Path.Companion.toPath
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -121,6 +129,27 @@ fun onLoginClick(
     if (inputUrl === "") baseUrl = "https://matrix-client.matrix.org"
     else if (!inputUrl.startsWith("http")) baseUrl = "https://$inputUrl"
     else baseUrl = inputUrl
+    scope.launch {
+//        val matrixClient = MatrixClient.fromStore(
+//            repositoriesModule = createRealmRepositoriesModule(),
+//            mediaStore = OkioMediaStore("./".toPath()),
+//            scope = CoroutineScope(Dispatchers.Default)
+//        ).getOrNull()
+        val client = MatrixClient.login(
+            baseUrl = Url(baseUrl),
+            identifier = IdentifierType.User(username),
+            password = password,
+            repositoriesModule = createRealmRepositoriesModule(),
+            mediaStore = OkioMediaStore("./$username".toPath()),
+            scope = scope,
+        ).getOrThrow()
+        if(client === null) {
+            abort("Failed to log in.")
+        }
+        else {
+            Toast.makeText(context, "Logged in as ${client.userId}", Toast.LENGTH_LONG).show()
+        }
+    }
 
     scope.launch {
 

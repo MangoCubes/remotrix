@@ -69,4 +69,6 @@ dependencies {
 
     implementation "androidx.compose.material:material-icons-extended"
     implementation "net.folivo:trixnity-client:$trix_ver"
+    implementation "net.folivo:trixnity-client-repository-realm:$trix_ver"
+    implementation "net.folivo:trixnity-client-media-okio:$trix_ver"
 }
