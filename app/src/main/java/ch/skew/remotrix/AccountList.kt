@@ -13,6 +13,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -21,6 +22,7 @@ fun AccountList(
     onClickGoBack: () -> Unit,
     onClickNewAccount: () -> Unit
 ){
+    LocalContext.current.filesDir.resolve("clients").mkdirs()
     Scaffold(
         topBar = {
             TopAppBar(
@@ -44,7 +46,19 @@ fun AccountList(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+//fun loadClient(scope: CoroutineScope, context: Context) {
+//
+//    Log.i("T", context.filesDir.resolve("clients").list().joinToString(separator = ", "))
+//
+//    scope.launch {
+//        val client = MatrixClient.fromStore(
+//            repositoriesModule = createRealmRepositoriesModule(),
+//            mediaStore = OkioMediaStore(context.filesDir.absolutePath.toPath()),
+//            scope = scope,
+//        ).getOrThrow()
+//        Toast.makeText(context, "${client?.userId}", Toast.LENGTH_LONG).show()
+//    }
+//}
 @Composable
 fun SessionItem() {
 //    if(session === null) Text(stringResource(R.string.add_account_help))
