@@ -49,6 +49,7 @@ android {
 dependencies {
     def nav_ver = "2.5.3"
     def trix_ver = "3.6.1"
+    def ktor_ver = "2.3.0"
 
     implementation "androidx.navigation:navigation-compose:$nav_ver"
     implementation 'androidx.core:core-ktx:1.10.0'
@@ -71,4 +72,7 @@ dependencies {
     implementation "net.folivo:trixnity-client:$trix_ver"
     implementation "net.folivo:trixnity-client-repository-realm:$trix_ver"
     implementation "net.folivo:trixnity-client-media-okio:$trix_ver"
+    implementation "io.ktor:ktor-client-core:$ktor_ver"
+    implementation "io.ktor:ktor-client-okhttp:$ktor_ver"
+
 }

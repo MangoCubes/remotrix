@@ -103,10 +103,10 @@ fun NewAccount(
                     revealPassword.value = false
                     enabled.value = false
                     errorMsg.value = ""
-                    onLoginClick(context, scope, username.value, password.value, baseUrl.value, onClickGoBack, {
+                    onLoginClick(context, scope, username.value, password.value, baseUrl.value, {
                         errorMsg.value = it
                         enabled.value = true
-                    }) { }
+                    }, onClickGoBack)
                 },
                 enabled = enabled.value
             )
@@ -121,7 +121,6 @@ fun onLoginClick(
     username: String,
     password: String,
     inputUrl: String,
-    goBack: () -> Unit,
     abort: (String) -> Unit,
     success: () -> Unit
 ) {
@@ -130,28 +129,18 @@ fun onLoginClick(
     else if (!inputUrl.startsWith("http")) baseUrl = "https://$inputUrl"
     else baseUrl = inputUrl
     scope.launch {
-//        val matrixClient = MatrixClient.fromStore(
-//            repositoriesModule = createRealmRepositoriesModule(),
-//            mediaStore = OkioMediaStore("./".toPath()),
-//            scope = CoroutineScope(Dispatchers.Default)
-//        ).getOrNull()
-        val client = MatrixClient.login(
-            baseUrl = Url(baseUrl),
-            identifier = IdentifierType.User(username),
-            password = password,
-            repositoriesModule = createRealmRepositoriesModule(),
-            mediaStore = OkioMediaStore("./$username".toPath()),
-            scope = scope,
-        ).getOrThrow()
-        if(client === null) {
-            abort("Failed to log in.")
+        try{
+            val client = MatrixClient.login(baseUrl = Url(baseUrl),
+                identifier = IdentifierType.User(username),
+                password = password,
+                repositoriesModule = createRealmRepositoriesModule(),
+                mediaStore = OkioMediaStore(context.filesDir.absolutePath.toPath()),
+                scope = scope,
+            ).getOrThrow()
+            Toast.makeText(context, context.getString(R.string.logged_in).format(client.userId), Toast.LENGTH_LONG).show()
+            success()
+        } catch (e: Throwable) {
+            abort(e.message ?: context.getString(R.string.generic_error))
         }
-        else {
-            Toast.makeText(context, "Logged in as ${client.userId}", Toast.LENGTH_LONG).show()
-        }
-    }
-
-    scope.launch {
-
     }
 }
