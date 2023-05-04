@@ -50,6 +50,7 @@ dependencies {
     def nav_ver = "2.5.3"
     def trix_ver = "3.6.1"
     def ktor_ver = "2.3.0"
+    def room_ver = "2.5.1"
 
     implementation "androidx.navigation:navigation-compose:$nav_ver"
     implementation 'androidx.core:core-ktx:1.10.0'
@@ -74,5 +75,9 @@ dependencies {
     implementation "net.folivo:trixnity-client-media-okio:$trix_ver"
     implementation "io.ktor:ktor-client-core:$ktor_ver"
     implementation "io.ktor:ktor-client-okhttp:$ktor_ver"
+
+    implementation "androidx.room:room-runtime:$room_ver"
+    annotationProcessor "androidx.room:room-compiler:$room_ver"
+    implementation "androidx.room:room-ktx:$room_ver"
 
 }
