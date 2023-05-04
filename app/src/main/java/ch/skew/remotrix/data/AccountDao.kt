@@ -12,6 +12,6 @@ interface AccountDao{
     suspend fun insert(account: Account)
     @Delete
     suspend fun delete(account: Account)
-    @Query("SELECT userId FROM accounts")
+    @Query("SELECT * FROM accounts")
     fun getAllAccounts(): Flow<List<Account>>
 }

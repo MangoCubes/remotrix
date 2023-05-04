@@ -15,18 +15,18 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import ch.skew.remotrix.data.Account
+import ch.skew.remotrix.data.AccountEvent
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AccountList(
+    accounts: List<Account>,
+    onAccountEvent: (AccountEvent) -> Unit,
     onClickGoBack: () -> Unit,
     onClickNewAccount: () -> Unit
 ){
-    val clientsDir = LocalContext.current.filesDir.resolve("clients")
-    if(!clientsDir.exists()) clientsDir.mkdirs()
-    val clients = clientsDir.list()
     Scaffold(
         topBar = {
             TopAppBar(
@@ -45,27 +45,22 @@ fun AccountList(
         }
     ) { padding ->
         Column(modifier = Modifier.padding(padding)) {
-            if (clients != null) {
-                clients.forEach {
-                    SessionItem(it)
-                }
-            } else {
-
+            accounts.forEach {
+                SessionItem(it)
             }
-
         }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SessionItem(name: String) {
+fun SessionItem(account: Account) {
     ListItem(
-        headlineText = { Text(name) },
+        headlineText = { Text(account.userId) },
         leadingContent = {
             Icon(
                 Icons.Filled.AccountCircle,
-                contentDescription = name,
+                contentDescription = account.homeServer,
             )
         },
 //        trailingContent = {

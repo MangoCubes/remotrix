@@ -25,6 +25,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import ch.skew.remotrix.components.PasswordField
+import ch.skew.remotrix.data.Account
+import ch.skew.remotrix.data.AccountEvent
 import io.ktor.http.Url
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -38,7 +40,8 @@ import okio.Path.Companion.toPath
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NewAccount(
-    onClickGoBack: () -> Unit
+    onClickGoBack: () -> Unit,
+    onAccountEvent: (AccountEvent) -> Unit
 ){
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -106,7 +109,10 @@ fun NewAccount(
                     onLoginClick(context, scope, username.value, password.value, baseUrl.value, {
                         errorMsg.value = it
                         enabled.value = true
-                    }, onClickGoBack)
+                    }, {
+                        onAccountEvent(AccountEvent.AddAccount(it))
+                        onClickGoBack()
+                    })
                 },
                 enabled = enabled.value
             )
@@ -122,7 +128,7 @@ fun onLoginClick(
     password: String,
     inputUrl: String,
     abort: (String) -> Unit,
-    success: () -> Unit
+    success: (Account) -> Unit
 ) {
     val baseUrl: String
     if (inputUrl === "") baseUrl = "https://matrix-client.matrix.org"
@@ -146,7 +152,7 @@ fun onLoginClick(
             newDir.mkdirs()
             tempDir.renameTo(newDir)
             Toast.makeText(context, context.getString(R.string.logged_in).format(client.userId), Toast.LENGTH_LONG).show()
-            success()
+            success(Account(client.userId.full, client.userId.domain))
         } catch (e: Throwable) {
             tempDir.deleteRecursively()
             abort(e.message ?: context.getString(R.string.generic_error))

@@ -3,6 +3,7 @@ package ch.skew.remotrix
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
@@ -15,25 +16,55 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.room.Room
+import ch.skew.remotrix.data.Account
+import ch.skew.remotrix.data.AccountDatabase
+import ch.skew.remotrix.data.AccountEvent
+import ch.skew.remotrix.data.AccountViewModel
 import ch.skew.remotrix.ui.theme.RemotrixTheme
 
 
 class MainActivity : ComponentActivity() {
+
+    private val db by lazy {
+        Room.databaseBuilder(
+            applicationContext,
+            AccountDatabase::class.java,
+            "accounts.db"
+        ).build()
+    }
+
+    private val accountViewModel by viewModels<AccountViewModel>(
+        factoryProducer = {
+            object: ViewModelProvider.Factory {
+                override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                    return AccountViewModel(db.dao) as T
+                }
+            }
+        }
+    )
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            RemotrixApp()
+            val accounts by accountViewModel.accounts.collectAsState()
+            RemotrixApp(accountViewModel::onEvent, accounts)
         }
     }
 }
 @Composable
-fun RemotrixApp() {
+fun RemotrixApp(
+    onAccountEvent: (AccountEvent) -> Unit,
+    accounts: List<Account>
+) {
     val navController = rememberNavController()
     RemotrixTheme {
         NavHost(
@@ -47,12 +78,15 @@ fun RemotrixApp() {
             }
             composable(route = Destination.AccountList.route) {
                 AccountList(
+                    accounts = accounts,
+                    onAccountEvent = onAccountEvent,
                     onClickGoBack = { navController.popBackStack() },
                     onClickNewAccount = { navController.navigate(Destination.NewAccount.route) },
                 )
             }
             composable(route = Destination.NewAccount.route) {
                 NewAccount(
+                    onAccountEvent = onAccountEvent,
                     onClickGoBack = { navController.popBackStack() },
                 )
             }
