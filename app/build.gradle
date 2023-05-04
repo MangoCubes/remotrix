@@ -76,7 +76,6 @@ dependencies {
     implementation "io.ktor:ktor-client-core:$ktor_ver"
     implementation "io.ktor:ktor-client-okhttp:$ktor_ver"
 
-    implementation "androidx.room:room-runtime:$room_ver"
     annotationProcessor "androidx.room:room-compiler:$room_ver"
     implementation "androidx.room:room-ktx:$room_ver"
 
