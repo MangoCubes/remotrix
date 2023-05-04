@@ -152,7 +152,7 @@ fun onLoginClick(
             newDir.mkdirs()
             tempDir.renameTo(newDir)
             Toast.makeText(context, context.getString(R.string.logged_in).format(client.userId), Toast.LENGTH_LONG).show()
-            success(Account(client.userId.full, client.userId.domain))
+            success(Account(client.userId.full, baseUrl))
         } catch (e: Throwable) {
             tempDir.deleteRecursively()
             abort(e.message ?: context.getString(R.string.generic_error))

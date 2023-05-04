@@ -57,6 +57,7 @@ fun AccountList(
 fun SessionItem(account: Account) {
     ListItem(
         headlineText = { Text(account.userId) },
+        supportingText = { Text(account.homeServer) },
         leadingContent = {
             Icon(
                 Icons.Filled.AccountCircle,
