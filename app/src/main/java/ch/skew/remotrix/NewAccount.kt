@@ -148,7 +148,7 @@ fun onLoginClick(
                 scope = scope,
             ).getOrThrow()
             Toast.makeText(context, context.getString(R.string.logged_in).format(client.userId), Toast.LENGTH_SHORT).show()
-            success(Account(client.userId.localpart, client.userId.localpart, baseUrl))
+            success(Account(client.userId.localpart, client.userId.domain, baseUrl))
         } catch (e: Throwable) {
             clientDir.deleteRecursively()
             abort(e.message ?: context.getString(R.string.generic_error))

@@ -112,12 +112,12 @@ fun SessionItem(
     delAccount: (Account) -> Unit
 ) {
     ListItem(
-        headlineText = { Text(account.userId) },
-        supportingText = { Text(account.homeServer) },
+        headlineText = { Text(account.fullName()) },
+        supportingText = { Text(account.baseUrl) },
         leadingContent = {
             Icon(
                 Icons.Filled.AccountCircle,
-                contentDescription = account.homeServer,
+                contentDescription = account.fullName(),
             )
         },
         trailingContent = {

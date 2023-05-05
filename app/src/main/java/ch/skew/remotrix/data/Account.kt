@@ -8,8 +8,12 @@ import androidx.room.PrimaryKey
 data class Account(
     @PrimaryKey
     val userId: String,
-    @ColumnInfo(name = "homeServer")
-    val homeServer: String,
+    @ColumnInfo(name = "domain")
+    val domain: String,
     @ColumnInfo(name = "baseUrl")
-    val baseUrl: String
-)
+    val baseUrl: String,
+) {
+    fun fullName(): String {
+        return "@${this.userId}:${this.domain}"
+    }
+}
