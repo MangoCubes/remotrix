@@ -135,11 +135,10 @@ fun onLoginClick(
     if (inputUrl === "") baseUrl = "https://matrix-client.matrix.org"
     else if (!inputUrl.startsWith("http")) baseUrl = "https://$inputUrl"
     else baseUrl = inputUrl
-    val clientDir = context.filesDir.resolve("clients/temp")
+    val clientDir = context.filesDir.resolve("clients/${username}")
     clientDir.mkdirs()
     scope.launch {
-        val repo = createExposedRepositoriesModule(Database.connect("jdbc:h2:${clientDir}", "org.h2.Driver"))
-        val dbFile = clientDir.resolve("temp.mv.db")
+        val repo = createExposedRepositoriesModule(Database.connect("jdbc:h2:${clientDir.resolve("data")}", "org.h2.Driver"))
         try{
             val client = MatrixClient.login(baseUrl = Url(baseUrl),
                 identifier = IdentifierType.User(username),
@@ -149,12 +148,17 @@ fun onLoginClick(
                 scope = scope,
             ).getOrThrow()
             Toast.makeText(context, context.getString(R.string.logged_in).format(client.userId), Toast.LENGTH_SHORT).show()
-            val newName = context.filesDir.resolve("clients").resolve("${client.userId.full}.mv.db")
-            dbFile.renameTo(newName)
-            success(Account(client.userId.full, baseUrl))
+            success(Account(client.userId.localpart, client.userId.localpart, baseUrl))
         } catch (e: Throwable) {
-            dbFile.delete()
+            clientDir.deleteRecursively()
             abort(e.message ?: context.getString(R.string.generic_error))
         }
     }
 }
+
+/**
+ * Results:
+ * Realm: Cannot create multiple realms with same name, temp, then rename strategy does not work and the temp directory may be left empty, leading to invalid databases.
+ * SQLite: Not supported
+ * H2: Renaming DB causes crash, and the program automatically adds .mv.db extension at the end, so renaming is annoying
+ */

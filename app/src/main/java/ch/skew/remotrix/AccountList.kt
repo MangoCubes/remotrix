@@ -83,7 +83,7 @@ fun deleteAccount(
     if (account === null) return
     scope.launch {
         try {
-            val repo = createExposedRepositoriesModule(Database.connect("jdbc:h2:${context.filesDir.resolve("clients").resolve(account.userId)}", "org.h2.Driver"))
+            val repo = createExposedRepositoriesModule(Database.connect("jdbc:h2:${context.filesDir.resolve("clients/${account.userId}/data")}", "org.h2.Driver"))
             val mediaStore = OkioMediaStore(context.filesDir.resolve("clients/media").absolutePath.toPath())
             val matrixClient = MatrixClient.fromStore(
                 repositoriesModule = repo,

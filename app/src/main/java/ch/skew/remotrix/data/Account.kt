@@ -9,5 +9,7 @@ data class Account(
     @PrimaryKey
     val userId: String,
     @ColumnInfo(name = "homeServer")
-    val homeServer: String
+    val homeServer: String,
+    @ColumnInfo(name = "baseUrl")
+    val baseUrl: String
 )
