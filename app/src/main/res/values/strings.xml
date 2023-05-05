@@ -19,4 +19,10 @@
     <string name="add_account_help">Press + to add new account. Currently, only 1 account is supported.</string>
     <string name="one_account_limit_help">Only one account can be added for now.</string>
     <string name="setup">Setup</string>
+    <string name="logged_in">Logged in as %s</string>
+    <string name="delete_account">Delete account</string>
+    <string name="delete">Delete</string>
+    <string name="cancel">Cancel</string>
+    <string name="del_account_help">Account will be logged out first, and cryptographic data on this device will be removed.</string>
+    <string name="del_account_title">Delete account %s?</string>
 </resources>

@@ -1,7 +1,6 @@
 package ch.skew.remotrix
 
 import android.content.Context
-import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -26,18 +25,23 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import ch.skew.remotrix.components.PasswordField
+import ch.skew.remotrix.data.Account
+import ch.skew.remotrix.data.AccountEvent
+import io.ktor.http.Url
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import org.matrix.android.sdk.api.Matrix
-import org.matrix.android.sdk.api.auth.data.HomeServerConnectionConfig
-import org.matrix.android.sdk.api.session.Session
+import net.folivo.trixnity.client.MatrixClient
+import net.folivo.trixnity.client.login
+import net.folivo.trixnity.client.media.okio.OkioMediaStore
+import net.folivo.trixnity.client.store.repository.realm.createRealmRepositoriesModule
+import net.folivo.trixnity.clientserverapi.model.authentication.IdentifierType
+import okio.Path.Companion.toPath
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NewAccount(
     onClickGoBack: () -> Unit,
-    matrix: Matrix,
-    setSession: (Session) -> Unit
+    onAccountEvent: (AccountEvent) -> Unit
 ){
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -102,12 +106,13 @@ fun NewAccount(
                     revealPassword.value = false
                     enabled.value = false
                     errorMsg.value = ""
-                    onLoginClick(matrix, context, scope, username.value, password.value, baseUrl.value, onClickGoBack, {
+                    onLoginClick(context, scope, username.value, password.value, baseUrl.value, {
                         errorMsg.value = it
                         enabled.value = true
-                    }) {
-                        setSession(it)
-                    }
+                    }, {
+                        onAccountEvent(AccountEvent.AddAccount(it))
+                        onClickGoBack()
+                    })
                 },
                 enabled = enabled.value
             )
@@ -117,44 +122,40 @@ fun NewAccount(
 }
 
 fun onLoginClick(
-    matrix: Matrix,
     context: Context,
     scope: CoroutineScope,
     username: String,
     password: String,
     inputUrl: String,
-    goBack: () -> Unit,
     abort: (String) -> Unit,
-    success: (Session) -> Unit
+    success: (Account) -> Unit
 ) {
     val baseUrl: String
     if (inputUrl === "") baseUrl = "https://matrix-client.matrix.org"
     else if (!inputUrl.startsWith("http")) baseUrl = "https://$inputUrl"
     else baseUrl = inputUrl
-    val serverConfig = try {
-        HomeServerConnectionConfig
-            .Builder()
-            .withHomeServerUri(Uri.parse(baseUrl))
-            .build()
-    } catch (e: Throwable) {
-        abort(context.getString(R.string.invalid_homeserver_url))
-        return
-    }
+    val tempDir = context.filesDir.resolve("temp")
     scope.launch {
-        try {
-            matrix.authenticationService().directAuthentication(
-                serverConfig,
-                username,
-                password,
-                "MessageBot"
-            )
+        tempDir.mkdirs()
+        val repo = createRealmRepositoriesModule {
+            this.directory(tempDir.toString())
+        }
+        try{
+            val client = MatrixClient.login(baseUrl = Url(baseUrl),
+                identifier = IdentifierType.User(username),
+                password = password,
+                repositoriesModule = repo,
+                mediaStore = OkioMediaStore(context.filesDir.absolutePath.toPath().resolve("media")),
+                scope = scope,
+            ).getOrThrow()
+            val newDir = context.filesDir.resolve("clients").resolve("${client.userId}")
+            newDir.mkdirs()
+            tempDir.renameTo(newDir)
+            Toast.makeText(context, context.getString(R.string.logged_in).format(client.userId), Toast.LENGTH_LONG).show()
+            success(Account(client.userId.full, baseUrl))
         } catch (e: Throwable) {
-            abort(context.getString(R.string.login_failed).format(e.message ?: ""))
-            null
-        }?.let { session ->
-            Toast.makeText(context, "Logged in as ${session.myUserId}", Toast.LENGTH_SHORT).show()
-            success(session)
-            goBack()
+            tempDir.deleteRecursively()
+            abort(e.message ?: context.getString(R.string.generic_error))
         }
     }
 }

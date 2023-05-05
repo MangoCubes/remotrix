@@ -1,9 +1,9 @@
 package ch.skew.remotrix
 
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
@@ -16,40 +16,56 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.room.Room
+import ch.skew.remotrix.data.Account
+import ch.skew.remotrix.data.AccountDatabase
+import ch.skew.remotrix.data.AccountEvent
+import ch.skew.remotrix.data.AccountViewModel
 import ch.skew.remotrix.ui.theme.RemotrixTheme
-import org.matrix.android.sdk.api.Matrix
-import org.matrix.android.sdk.api.MatrixConfiguration
 
 
 class MainActivity : ComponentActivity() {
+
+    private val db by lazy {
+        Room.databaseBuilder(
+            applicationContext,
+            AccountDatabase::class.java,
+            "accounts.db"
+        ).build()
+    }
+
+    private val accountViewModel by viewModels<AccountViewModel>(
+        factoryProducer = {
+            object: ViewModelProvider.Factory {
+                override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                    return AccountViewModel(db.dao) as T
+                }
+            }
+        }
+    )
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val matrix = Matrix(
-            context = this,
-            matrixConfiguration = MatrixConfiguration(
-                roomDisplayNameFallbackProvider = RoomDisplayName()
-            )
-        )
         setContent {
-            RemotrixApp(matrix)
+            val accounts by accountViewModel.accounts.collectAsState()
+            RemotrixApp(accountViewModel::onEvent, accounts)
         }
     }
 }
 @Composable
-fun RemotrixApp(matrix: Matrix) {
+fun RemotrixApp(
+    onAccountEvent: (AccountEvent) -> Unit,
+    accounts: List<Account>
+) {
     val navController = rememberNavController()
-    val session = remember { mutableStateOf(matrix.authenticationService().getLastAuthenticatedSession()) }
-    val context = LocalContext.current
-    session.value?.open()
-    session.value?.syncService()?.startSync(true)
     RemotrixTheme {
         NavHost(
             navController = navController,
@@ -61,22 +77,17 @@ fun RemotrixApp(matrix: Matrix) {
                 )
             }
             composable(route = Destination.AccountList.route) {
-                val msg = stringResource(R.string.one_account_limit_help)
                 AccountList(
-                    session = session.value,
+                    accounts = accounts,
+                    onAccountEvent = onAccountEvent,
                     onClickGoBack = { navController.popBackStack() },
-                    onClickNewAccount = {
-                        if(session.value === null) navController.navigate(Destination.NewAccount.route)
-                        else Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
-                    },
-                    unsetSession = { session.value = null }
+                    onClickNewAccount = { navController.navigate(Destination.NewAccount.route) },
                 )
             }
             composable(route = Destination.NewAccount.route) {
                 NewAccount(
+                    onAccountEvent = onAccountEvent,
                     onClickGoBack = { navController.popBackStack() },
-                    matrix = matrix,
-                    setSession = { session.value = it }
                 )
             }
         }
