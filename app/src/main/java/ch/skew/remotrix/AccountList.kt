@@ -6,6 +6,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -14,6 +15,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import ch.skew.remotrix.data.Account
@@ -27,6 +30,8 @@ fun AccountList(
     onClickGoBack: () -> Unit,
     onClickNewAccount: () -> Unit
 ){
+    val askDel = remember{ mutableStateOf<String?>(null) }
+    DelAccountDialog(close = { askDel.value = null }, confirm = { askDel.value = null }, accountId = askDel.value)
     Scaffold(
         topBar = {
             TopAppBar(
@@ -46,7 +51,7 @@ fun AccountList(
     ) { padding ->
         Column(modifier = Modifier.padding(padding)) {
             accounts.forEach {
-                SessionItem(it)
+                SessionItem(it) { userId -> askDel.value = userId }
             }
         }
     }
@@ -54,7 +59,10 @@ fun AccountList(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SessionItem(account: Account) {
+fun SessionItem(
+    account: Account,
+    delAccount: (String) -> Unit
+) {
     ListItem(
         headlineText = { Text(account.userId) },
         supportingText = { Text(account.homeServer) },
@@ -64,13 +72,13 @@ fun SessionItem(account: Account) {
                 contentDescription = account.homeServer,
             )
         },
-//        trailingContent = {
-//            IconButton(onClick = unsetSession) {
-//                Icon(
-//                    Icons.Filled.Delete,
-//                    contentDescription = session.myUserId,
-//                )
-//            }
-//        }
+        trailingContent = {
+            IconButton(onClick = { delAccount(account.userId)} ) {
+                Icon(
+                    Icons.Filled.Delete,
+                    contentDescription = stringResource(R.string.delete_account),
+                )
+            }
+        }
     )
 }

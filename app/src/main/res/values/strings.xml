@@ -20,4 +20,5 @@
     <string name="one_account_limit_help">Only one account can be added for now.</string>
     <string name="setup">Setup</string>
     <string name="logged_in">Logged in as %s</string>
+    <string name="delete_account">Delete account</string>
 </resources>
