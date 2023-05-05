@@ -86,16 +86,17 @@ fun deleteAccount(
             val repo = createRealmRepositoriesModule {
                 this.directory(dir.toString())
             }
+            val mediaStore = OkioMediaStore(context.filesDir.resolve("clients/media").absolutePath.toPath())
             val matrixClient = MatrixClient.fromStore(
                 repositoriesModule = repo,
-                mediaStore = OkioMediaStore(context.filesDir.absolutePath.toPath().resolve("media")),
+                mediaStore = mediaStore,
                 scope = scope,
-            ).getOrNull()
+            ).getOrThrow()
             if(matrixClient === null) {
                 Toast.makeText(context, "Cannot logout. Account will be removed from device only.", Toast.LENGTH_LONG).show()
             } else {
                 matrixClient.logout()
-                Toast.makeText(context, "Logout successful.", Toast.LENGTH_LONG).show()
+                Toast.makeText(context, "Logout successful.", Toast.LENGTH_SHORT).show()
             }
             dir.deleteRecursively()
         } catch (e: Throwable) {

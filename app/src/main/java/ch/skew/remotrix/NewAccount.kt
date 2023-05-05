@@ -134,25 +134,26 @@ fun onLoginClick(
     if (inputUrl === "") baseUrl = "https://matrix-client.matrix.org"
     else if (!inputUrl.startsWith("http")) baseUrl = "https://$inputUrl"
     else baseUrl = inputUrl
-    val tempDir = context.filesDir.resolve("temp")
+    val tempDir = context.filesDir.resolve("clients/temp")
+    tempDir.mkdirs()
+    val repo = createRealmRepositoriesModule {
+        this.directory(tempDir.toString())
+    }
     scope.launch {
-        tempDir.mkdirs()
-        val repo = createRealmRepositoriesModule {
-            this.directory(tempDir.toString())
-        }
         try{
             val client = MatrixClient.login(baseUrl = Url(baseUrl),
                 identifier = IdentifierType.User(username),
                 password = password,
                 repositoriesModule = repo,
-                mediaStore = OkioMediaStore(context.filesDir.absolutePath.toPath().resolve("media")),
+                mediaStore = OkioMediaStore(context.filesDir.resolve("clients/media").absolutePath.toPath()),
                 scope = scope,
             ).getOrThrow()
+            Toast.makeText(context, context.getString(R.string.logged_in).format(client.userId), Toast.LENGTH_SHORT).show()
             val newDir = context.filesDir.resolve("clients").resolve("${client.userId}")
             newDir.mkdirs()
             tempDir.renameTo(newDir)
-            Toast.makeText(context, context.getString(R.string.logged_in).format(client.userId), Toast.LENGTH_LONG).show()
             success(Account(client.userId.full, baseUrl))
+
         } catch (e: Throwable) {
             tempDir.deleteRecursively()
             abort(e.message ?: context.getString(R.string.generic_error))
