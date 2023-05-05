@@ -30,8 +30,9 @@ import kotlinx.coroutines.launch
 import net.folivo.trixnity.client.MatrixClient
 import net.folivo.trixnity.client.fromStore
 import net.folivo.trixnity.client.media.okio.OkioMediaStore
-import net.folivo.trixnity.client.store.repository.realm.createRealmRepositoriesModule
+import net.folivo.trixnity.client.store.repository.exposed.createExposedRepositoriesModule
 import okio.Path.Companion.toPath
+import org.jetbrains.exposed.sql.Database
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -82,10 +83,7 @@ fun deleteAccount(
     if (account === null) return
     scope.launch {
         try {
-            val dir = context.filesDir.resolve("clients").resolve(account.userId)
-            val repo = createRealmRepositoriesModule {
-                this.directory(dir.toString())
-            }
+            val repo = createExposedRepositoriesModule(Database.connect("jdbc:h2:${context.filesDir.resolve("clients").resolve(account.userId)}", "org.h2.Driver"))
             val mediaStore = OkioMediaStore(context.filesDir.resolve("clients/media").absolutePath.toPath())
             val matrixClient = MatrixClient.fromStore(
                 repositoriesModule = repo,
@@ -98,7 +96,7 @@ fun deleteAccount(
                 matrixClient.logout()
                 Toast.makeText(context, "Logout successful.", Toast.LENGTH_SHORT).show()
             }
-            dir.deleteRecursively()
+            context.filesDir.resolve("clients").resolve("${account.userId}.mv.db").delete()
         } catch (e: Throwable) {
             Toast.makeText(context, "Cannot locate account data. Account will be removed from device only.", Toast.LENGTH_LONG).show()
         }

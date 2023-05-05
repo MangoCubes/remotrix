@@ -33,9 +33,10 @@ import kotlinx.coroutines.launch
 import net.folivo.trixnity.client.MatrixClient
 import net.folivo.trixnity.client.login
 import net.folivo.trixnity.client.media.okio.OkioMediaStore
-import net.folivo.trixnity.client.store.repository.realm.createRealmRepositoriesModule
+import net.folivo.trixnity.client.store.repository.exposed.createExposedRepositoriesModule
 import net.folivo.trixnity.clientserverapi.model.authentication.IdentifierType
 import okio.Path.Companion.toPath
+import org.jetbrains.exposed.sql.Database
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -134,12 +135,11 @@ fun onLoginClick(
     if (inputUrl === "") baseUrl = "https://matrix-client.matrix.org"
     else if (!inputUrl.startsWith("http")) baseUrl = "https://$inputUrl"
     else baseUrl = inputUrl
-    val tempDir = context.filesDir.resolve("clients/temp")
-    tempDir.mkdirs()
-    val repo = createRealmRepositoriesModule {
-        this.directory(tempDir.toString())
-    }
+    val clientDir = context.filesDir.resolve("clients/temp")
+    clientDir.mkdirs()
     scope.launch {
+        val repo = createExposedRepositoriesModule(Database.connect("jdbc:h2:${clientDir}", "org.h2.Driver"))
+        val dbFile = clientDir.resolve("temp.mv.db")
         try{
             val client = MatrixClient.login(baseUrl = Url(baseUrl),
                 identifier = IdentifierType.User(username),
@@ -149,13 +149,11 @@ fun onLoginClick(
                 scope = scope,
             ).getOrThrow()
             Toast.makeText(context, context.getString(R.string.logged_in).format(client.userId), Toast.LENGTH_SHORT).show()
-            val newDir = context.filesDir.resolve("clients").resolve("${client.userId}")
-            newDir.mkdirs()
-            tempDir.renameTo(newDir)
+            val newName = context.filesDir.resolve("clients").resolve("${client.userId.full}.mv.db")
+            dbFile.renameTo(newName)
             success(Account(client.userId.full, baseUrl))
-
         } catch (e: Throwable) {
-            tempDir.deleteRecursively()
+            dbFile.delete()
             abort(e.message ?: context.getString(R.string.generic_error))
         }
     }
