@@ -20,7 +20,7 @@ class AccountViewModel(
         when(event){
             is AccountEventAsync.AddAccount -> {
                 return viewModelScope.async {
-                    dao.insert(event.account)
+                    dao.insert(event.userId, event.baseUrl)
                 }
             }
         }
@@ -36,7 +36,7 @@ class AccountViewModel(
 
             is AccountEvent.ActivateAccount -> {
                 viewModelScope.launch {
-                    dao.activateAccount(event.accountId)
+                    dao.activateAccount(event.id, event.domain)
                 }
             }
         }

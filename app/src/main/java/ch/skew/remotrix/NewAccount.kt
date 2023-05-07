@@ -25,10 +25,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import ch.skew.remotrix.components.PasswordField
-import ch.skew.remotrix.data.Account
+import ch.skew.remotrix.data.AccountEvent
 import ch.skew.remotrix.data.AccountEventAsync
 import io.ktor.http.Url
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.launch
 import net.folivo.trixnity.client.MatrixClient
 import net.folivo.trixnity.client.login
@@ -42,7 +43,8 @@ import org.jetbrains.exposed.sql.Database
 @Composable
 fun NewAccount(
     onClickGoBack: () -> Unit,
-    onAccountEventAsync: (AccountEventAsync) -> Unit
+    onAccountEvent: (AccountEvent) -> Unit,
+    onAccountEventAsync: (AccountEventAsync) -> Deferred<Long>
 ){
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -107,13 +109,13 @@ fun NewAccount(
                     revealPassword.value = false
                     enabled.value = false
                     errorMsg.value = ""
-                    onLoginClick(context, scope, username.value, password.value, baseUrl.value, {
+                    onLoginClick(context, scope, username.value, password.value, baseUrl.value, { id, baseUrl ->
+                        onAccountEventAsync(AccountEventAsync.AddAccount(id, baseUrl))
+                    },
+                    {
                         errorMsg.value = it
                         enabled.value = true
-                    }, {
-                        onAccountEventAsync(AccountEventAsync.AddAccount(it))
-                        onClickGoBack()
-                    })
+                    }, onAccountEvent, onClickGoBack)
                 },
                 enabled = enabled.value
             )
@@ -128,16 +130,19 @@ fun onLoginClick(
     username: String,
     password: String,
     inputUrl: String,
+    addAccount: (String, String) -> Deferred<Long>,
     abort: (String) -> Unit,
-    success: (Account) -> Unit
+    onAccountEvent: (AccountEvent) -> Unit,
+    onClickGoBack: () -> Unit
 ) {
     val baseUrl: String
     if (inputUrl === "") baseUrl = "https://matrix-client.matrix.org"
     else if (!inputUrl.startsWith("http")) baseUrl = "https://$inputUrl"
     else baseUrl = inputUrl
-    val clientDir = context.filesDir.resolve("clients/${username}")
-    clientDir.mkdirs()
     scope.launch {
+        val id = addAccount(username, baseUrl).await()
+        val clientDir = context.filesDir.resolve("clients/${id}")
+        clientDir.mkdirs()
         val repo = createExposedRepositoriesModule(Database.connect("jdbc:h2:${clientDir.resolve("data")}", "org.h2.Driver"))
         try{
             val client = MatrixClient.login(baseUrl = Url(baseUrl),
@@ -148,7 +153,8 @@ fun onLoginClick(
                 scope = scope,
             ).getOrThrow()
             Toast.makeText(context, context.getString(R.string.logged_in).format(client.userId), Toast.LENGTH_SHORT).show()
-            success(Account(client.userId.localpart, client.userId.domain, baseUrl))
+            onAccountEvent(AccountEvent.ActivateAccount(id, client.userId.domain))
+            onClickGoBack()
         } catch (e: Throwable) {
             clientDir.deleteRecursively()
             abort(e.message ?: context.getString(R.string.generic_error))

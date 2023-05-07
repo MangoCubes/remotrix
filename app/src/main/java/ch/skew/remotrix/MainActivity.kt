@@ -32,6 +32,7 @@ import ch.skew.remotrix.data.AccountEvent
 import ch.skew.remotrix.data.AccountEventAsync
 import ch.skew.remotrix.data.AccountViewModel
 import ch.skew.remotrix.ui.theme.RemotrixTheme
+import kotlinx.coroutines.Deferred
 
 
 class MainActivity : ComponentActivity() {
@@ -64,7 +65,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun RemotrixApp(
     onAccountEvent: (AccountEvent) -> Unit,
-    onAccountEventAsync: (AccountEventAsync) -> Unit,
+    onAccountEventAsync: (AccountEventAsync) -> Deferred<Long>,
     accounts: List<Account>
 ) {
     val navController = rememberNavController()
@@ -89,6 +90,7 @@ fun RemotrixApp(
             composable(route = Destination.NewAccount.route) {
                 NewAccount(
                     onClickGoBack = { navController.popBackStack() },
+                    onAccountEvent = onAccountEvent,
                     onAccountEventAsync = onAccountEventAsync
                 )
             }
