@@ -161,4 +161,6 @@ fun onLoginClick(
  * Realm: Cannot create multiple realms with same name, temp, then rename strategy does not work and the temp directory may be left empty, leading to invalid databases.
  * SQLite: Not supported
  * H2: Renaming DB causes crash, and the program automatically adds .mv.db extension at the end, so renaming is annoying
+ *
+ * Potential solution: Add ID to DB, use ID as folder names to ensure uniqueness
  */
