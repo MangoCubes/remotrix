@@ -26,7 +26,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import ch.skew.remotrix.components.PasswordField
 import ch.skew.remotrix.data.Account
-import ch.skew.remotrix.data.AccountEvent
+import ch.skew.remotrix.data.AccountEventAsync
 import io.ktor.http.Url
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -42,7 +42,7 @@ import org.jetbrains.exposed.sql.Database
 @Composable
 fun NewAccount(
     onClickGoBack: () -> Unit,
-    onAccountEvent: (AccountEvent) -> Unit
+    onAccountEventAsync: (AccountEventAsync) -> Unit
 ){
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -111,7 +111,7 @@ fun NewAccount(
                         errorMsg.value = it
                         enabled.value = true
                     }, {
-                        onAccountEvent(AccountEvent.AddAccount(it))
+                        onAccountEventAsync(AccountEventAsync.AddAccount(it))
                         onClickGoBack()
                     })
                 },
