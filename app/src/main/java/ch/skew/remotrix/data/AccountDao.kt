@@ -14,8 +14,10 @@ interface AccountDao{
     suspend fun delete(account: Account)
     @Query("SELECT * FROM accounts")
     fun getAllAccounts(): Flow<List<Account>>
-    @Query("SELECT * FROM accounts WHERE id = :id")
+    @Query("SELECT * FROM accounts WHERE id = :id AND activated = 1")
     fun getAccountById(id: Int): Flow<List<Account>>
-    @Query("SELECT * FROM accounts WHERE user_id = :userId LIMIT 1")
-    fun getAccountByUserId(userId: Int): Flow<List<Account>>
+    @Query("SELECT * FROM accounts WHERE user_id = :user_id LIMIT 1")
+    fun getAccountByUserId(user_id: String): Flow<List<Account>>
+    @Query("UPDATE accounts SET activated = 1 WHERE id = :accountId")
+    fun activateAccount(accountId: Int)
 }

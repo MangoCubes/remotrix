@@ -14,8 +14,10 @@ data class Account(
     val domain: String,
     @ColumnInfo(name = "base_url")
     val baseUrl: String,
+    @ColumnInfo(name = "activated")
+    val activated: Boolean
 ) {
-    constructor(userId: String, domain: String, baseUrl: String): this(0, userId, domain, baseUrl)
+    constructor(userId: String, domain: String, baseUrl: String): this(0, userId, domain, baseUrl, false)
     fun fullName(): String {
         return "@${this.userId}:${this.domain}"
     }

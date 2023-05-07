@@ -33,7 +33,12 @@ class AccountViewModel(
                     dao.delete(event.account)
                 }
             }
-        }
 
+            is AccountEvent.ActivateAccount -> {
+                viewModelScope.launch {
+                    dao.activateAccount(event.accountId)
+                }
+            }
+        }
     }
 }

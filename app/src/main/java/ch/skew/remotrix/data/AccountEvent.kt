@@ -1,6 +1,7 @@
 package ch.skew.remotrix.data
 
 sealed interface AccountEvent {
+    data class ActivateAccount(val accountId: Int): AccountEvent
     data class DeleteAccount(val account: Account): AccountEvent
 }
 
