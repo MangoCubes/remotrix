@@ -122,7 +122,6 @@ fun NewAccount(
         }
     }
 }
-
 fun onLoginClick(
     context: Context,
     scope: CoroutineScope,

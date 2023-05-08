@@ -3,6 +3,7 @@ package ch.skew.remotrix
 import android.content.Context
 import android.widget.Toast
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
@@ -23,6 +24,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
+import ch.skew.remotrix.components.ScreenHelper
 import ch.skew.remotrix.data.Account
 import ch.skew.remotrix.data.AccountEvent
 import kotlinx.coroutines.CoroutineScope
@@ -32,6 +35,12 @@ import net.folivo.trixnity.client.fromStore
 import net.folivo.trixnity.client.media.okio.OkioMediaStore
 import net.folivo.trixnity.client.store.repository.realm.createRealmRepositoriesModule
 import okio.Path.Companion.toPath
+
+@Composable
+@Preview
+fun AccountListPreview() {
+    AccountList(listOf(), {}, {}, {})
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -64,9 +73,16 @@ fun AccountList(
             )
         }
     ) { padding ->
-        Column(modifier = Modifier.padding(padding)) {
-            accounts.forEach {
-                SessionItem(it) { account -> askDel.value = account }
+        Column(
+            modifier = Modifier.padding(padding)
+                .fillMaxSize()
+        ) {
+            if (accounts.isNotEmpty()) {
+                accounts.forEach {
+                    SessionItem(it) { account -> askDel.value = account }
+                }
+            } else {
+                ScreenHelper(stringResource(R.string.add_account_help))
             }
         }
     }
