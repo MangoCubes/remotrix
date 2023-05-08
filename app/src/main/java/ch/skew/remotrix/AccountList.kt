@@ -30,9 +30,8 @@ import kotlinx.coroutines.launch
 import net.folivo.trixnity.client.MatrixClient
 import net.folivo.trixnity.client.fromStore
 import net.folivo.trixnity.client.media.okio.OkioMediaStore
-import net.folivo.trixnity.client.store.repository.exposed.createExposedRepositoriesModule
+import net.folivo.trixnity.client.store.repository.realm.createRealmRepositoriesModule
 import okio.Path.Companion.toPath
-import org.jetbrains.exposed.sql.Database
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -83,7 +82,10 @@ fun deleteAccount(
     if (account === null) return
     scope.launch {
         try {
-            val repo = createExposedRepositoriesModule(Database.connect("jdbc:h2:${context.filesDir.resolve("clients/${account.userId}/data")}", "org.h2.Driver"))
+            val clientDir = context.filesDir.resolve("clients/${account.id}")
+            val repo = createRealmRepositoriesModule {
+                this.directory(clientDir.toString())
+            }
             val mediaStore = OkioMediaStore(context.filesDir.resolve("clients/media").absolutePath.toPath())
             val matrixClient = MatrixClient.fromStore(
                 repositoriesModule = repo,

@@ -72,13 +72,12 @@ dependencies {
 
     implementation "androidx.compose.material:material-icons-extended"
     implementation "net.folivo:trixnity-client:$trix_ver"
-    implementation "net.folivo:trixnity-client-repository-exposed:$trix_ver"
+    implementation "net.folivo:trixnity-client-repository-realm:$trix_ver"
     implementation "net.folivo:trixnity-client-media-okio:$trix_ver"
     implementation "io.ktor:ktor-client-core:$ktor_ver"
     implementation "io.ktor:ktor-client-okhttp:$ktor_ver"
 
     kapt "androidx.room:room-compiler:$room_ver"
     implementation "androidx.room:room-ktx:$room_ver"
-    implementation "com.h2database:h2:2.1.214"
 
 }

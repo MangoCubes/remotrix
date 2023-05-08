@@ -34,10 +34,9 @@ import kotlinx.coroutines.launch
 import net.folivo.trixnity.client.MatrixClient
 import net.folivo.trixnity.client.login
 import net.folivo.trixnity.client.media.okio.OkioMediaStore
-import net.folivo.trixnity.client.store.repository.exposed.createExposedRepositoriesModule
+import net.folivo.trixnity.client.store.repository.realm.createRealmRepositoriesModule
 import net.folivo.trixnity.clientserverapi.model.authentication.IdentifierType
 import okio.Path.Companion.toPath
-import org.jetbrains.exposed.sql.Database
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -143,7 +142,9 @@ fun onLoginClick(
         val id = addAccount(username, baseUrl).await()
         val clientDir = context.filesDir.resolve("clients/${id}")
         clientDir.mkdirs()
-        val repo = createExposedRepositoriesModule(Database.connect("jdbc:h2:${clientDir.resolve("data")}", "org.h2.Driver"))
+        val repo = createRealmRepositoriesModule {
+            this.directory(clientDir.toString())
+        }
         try{
             val client = MatrixClient.login(baseUrl = Url(baseUrl),
                 identifier = IdentifierType.User(username),
@@ -161,12 +162,3 @@ fun onLoginClick(
         }
     }
 }
-
-/**
- * Results:
- * Realm: Cannot create multiple realms with same name, temp, then rename strategy does not work and the temp directory may be left empty, leading to invalid databases.
- * SQLite: Not supported
- * H2: Renaming DB causes crash, and the program automatically adds .mv.db extension at the end, so renaming is annoying
- *
- * Potential solution: Add ID to DB, use ID as folder names to ensure uniqueness
- */
