@@ -1,4 +1,4 @@
-package ch.skew.remotrix.data
+package ch.skew.remotrix.data.accountDB
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity

@@ -26,8 +26,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import ch.skew.remotrix.components.ScreenHelper
-import ch.skew.remotrix.data.Account
-import ch.skew.remotrix.data.AccountEvent
+import ch.skew.remotrix.data.accountDB.Account
+import ch.skew.remotrix.data.accountDB.AccountEvent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import net.folivo.trixnity.client.MatrixClient

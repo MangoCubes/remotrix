@@ -2,6 +2,8 @@ package ch.skew.remotrix.data
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
+import ch.skew.remotrix.data.accountDB.Account
+import ch.skew.remotrix.data.accountDB.AccountDao
 
 @Database(
     entities = [Account::class],
@@ -9,6 +11,6 @@ import androidx.room.RoomDatabase
     exportSchema = false
 )
 
-abstract class AccountDatabase: RoomDatabase(){
+abstract class RemotrixDB: RoomDatabase(){
     abstract val dao: AccountDao
 }

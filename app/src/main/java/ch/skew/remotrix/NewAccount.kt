@@ -25,8 +25,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import ch.skew.remotrix.components.PasswordField
-import ch.skew.remotrix.data.AccountEvent
-import ch.skew.remotrix.data.AccountEventAsync
+import ch.skew.remotrix.data.accountDB.AccountEvent
+import ch.skew.remotrix.data.accountDB.AccountEventAsync
 import io.ktor.http.Url
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred

@@ -1,4 +1,4 @@
-package ch.skew.remotrix.data
+package ch.skew.remotrix.data.accountDB
 
 sealed interface AccountEvent {
     data class ActivateAccount(val id: Long, val domain: String): AccountEvent

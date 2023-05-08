@@ -1,4 +1,4 @@
-package ch.skew.remotrix.data
+package ch.skew.remotrix.data.accountDB
 
 import androidx.room.Dao
 import androidx.room.Delete

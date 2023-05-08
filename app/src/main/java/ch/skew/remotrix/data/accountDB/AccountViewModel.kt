@@ -1,4 +1,4 @@
-package ch.skew.remotrix.data
+package ch.skew.remotrix.data.accountDB
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

@@ -27,11 +27,11 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.room.Room
 import ch.skew.remotrix.components.ListHeader
-import ch.skew.remotrix.data.Account
-import ch.skew.remotrix.data.AccountDatabase
-import ch.skew.remotrix.data.AccountEvent
-import ch.skew.remotrix.data.AccountEventAsync
-import ch.skew.remotrix.data.AccountViewModel
+import ch.skew.remotrix.data.accountDB.Account
+import ch.skew.remotrix.data.RemotrixDB
+import ch.skew.remotrix.data.accountDB.AccountEvent
+import ch.skew.remotrix.data.accountDB.AccountEventAsync
+import ch.skew.remotrix.data.accountDB.AccountViewModel
 import ch.skew.remotrix.ui.theme.RemotrixTheme
 import kotlinx.coroutines.Deferred
 
@@ -41,7 +41,7 @@ class MainActivity : ComponentActivity() {
     private val db by lazy {
         Room.databaseBuilder(
             applicationContext,
-            AccountDatabase::class.java,
+            RemotrixDB::class.java,
             "accounts.db"
         ).build()
     }
