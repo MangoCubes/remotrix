@@ -25,23 +25,26 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import ch.skew.remotrix.components.PasswordField
-import ch.skew.remotrix.data.Account
 import ch.skew.remotrix.data.AccountEvent
+import ch.skew.remotrix.data.AccountEventAsync
 import io.ktor.http.Url
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.launch
 import net.folivo.trixnity.client.MatrixClient
 import net.folivo.trixnity.client.login
 import net.folivo.trixnity.client.media.okio.OkioMediaStore
-import net.folivo.trixnity.client.store.repository.realm.createRealmRepositoriesModule
+import net.folivo.trixnity.client.store.repository.exposed.createExposedRepositoriesModule
 import net.folivo.trixnity.clientserverapi.model.authentication.IdentifierType
 import okio.Path.Companion.toPath
+import org.jetbrains.exposed.sql.Database
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NewAccount(
     onClickGoBack: () -> Unit,
-    onAccountEvent: (AccountEvent) -> Unit
+    onAccountEvent: (AccountEvent) -> Unit,
+    onAccountEventAsync: (AccountEventAsync) -> Deferred<Long>
 ){
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -106,13 +109,13 @@ fun NewAccount(
                     revealPassword.value = false
                     enabled.value = false
                     errorMsg.value = ""
-                    onLoginClick(context, scope, username.value, password.value, baseUrl.value, {
+                    onLoginClick(context, scope, username.value, password.value, baseUrl.value, { id, baseUrl ->
+                        onAccountEventAsync(AccountEventAsync.AddAccount(id, baseUrl))
+                    },
+                    {
                         errorMsg.value = it
                         enabled.value = true
-                    }, {
-                        onAccountEvent(AccountEvent.AddAccount(it))
-                        onClickGoBack()
-                    })
+                    }, onAccountEvent, onClickGoBack)
                 },
                 enabled = enabled.value
             )
@@ -127,35 +130,43 @@ fun onLoginClick(
     username: String,
     password: String,
     inputUrl: String,
+    addAccount: (String, String) -> Deferred<Long>,
     abort: (String) -> Unit,
-    success: (Account) -> Unit
+    onAccountEvent: (AccountEvent) -> Unit,
+    onClickGoBack: () -> Unit
 ) {
     val baseUrl: String
     if (inputUrl === "") baseUrl = "https://matrix-client.matrix.org"
     else if (!inputUrl.startsWith("http")) baseUrl = "https://$inputUrl"
     else baseUrl = inputUrl
-    val tempDir = context.filesDir.resolve("temp")
     scope.launch {
-        tempDir.mkdirs()
-        val repo = createRealmRepositoriesModule {
-            this.directory(tempDir.toString())
-        }
+        val id = addAccount(username, baseUrl).await()
+        val clientDir = context.filesDir.resolve("clients/${id}")
+        clientDir.mkdirs()
+        val repo = createExposedRepositoriesModule(Database.connect("jdbc:h2:${clientDir.resolve("data")}", "org.h2.Driver"))
         try{
             val client = MatrixClient.login(baseUrl = Url(baseUrl),
                 identifier = IdentifierType.User(username),
                 password = password,
                 repositoriesModule = repo,
-                mediaStore = OkioMediaStore(context.filesDir.absolutePath.toPath().resolve("media")),
+                mediaStore = OkioMediaStore(context.filesDir.resolve("clients/media").absolutePath.toPath()),
                 scope = scope,
             ).getOrThrow()
-            val newDir = context.filesDir.resolve("clients").resolve("${client.userId}")
-            newDir.mkdirs()
-            tempDir.renameTo(newDir)
-            Toast.makeText(context, context.getString(R.string.logged_in).format(client.userId), Toast.LENGTH_LONG).show()
-            success(Account(client.userId.full, baseUrl))
+            Toast.makeText(context, context.getString(R.string.logged_in).format(client.userId), Toast.LENGTH_SHORT).show()
+            onAccountEvent(AccountEvent.ActivateAccount(id, client.userId.domain))
+            onClickGoBack()
         } catch (e: Throwable) {
-            tempDir.deleteRecursively()
+            clientDir.deleteRecursively()
             abort(e.message ?: context.getString(R.string.generic_error))
         }
     }
 }
+
+/**
+ * Results:
+ * Realm: Cannot create multiple realms with same name, temp, then rename strategy does not work and the temp directory may be left empty, leading to invalid databases.
+ * SQLite: Not supported
+ * H2: Renaming DB causes crash, and the program automatically adds .mv.db extension at the end, so renaming is annoying
+ *
+ * Potential solution: Add ID to DB, use ID as folder names to ensure uniqueness
+ */
