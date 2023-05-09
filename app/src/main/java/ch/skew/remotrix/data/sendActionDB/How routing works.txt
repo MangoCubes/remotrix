@@ -1,0 +1,27 @@
+Accounts will be held in "accounts" database.
+
+When a message arrives from SMS to Matrix, the following info are available to this app, and are used in choosing the destination space/room and Matrix sender.
+ - Content (Matches regex)
+ - Sender name (Matches regex)
+Instead of implementing additional conditions, there will be regex helpers.
+
+There will be SendAction table named "send_action", which instructs how the message should be sent. This table contains the following:
+ - ID
+ - Sender ID (Foreign key from Accounts table)
+ - Space ID (Cannot be room ID)
+ - Name format
+Name format string has %1 and %2 in it, each representing sender phone number and sender name.
+Both doesn't have to be in this string, but this is used to create room name within that space.
+Example: %2 (%1) -> John Doe (6643231482)
+
+Conditions will be stored in "conditions" database, and will contain the following:
+ - Content regex (null = any)
+ - Sender regex (null = any)
+ - Priority (lower = higher priority)
+ - Send action ID (Foreign key from SendAction table)
+ - Reformat pattern
+Conditions will be loaded sorted by priority, and the send action ID in the first match will be used to send message via Matrix, or to process the message.
+If reformat patter is set, then the message is reformatted according to the format included. This uses captured values from Content regex and Sender regex.
+If Send action is null but not reformat pattern, then the message is transformed and is used against next condition's Content regex.
+If reformat pattern is null, message is sent via Matrix or passed down to the next condition with no modification.
+If a message matches a condition and both Send action ID and Reformat pattern are null, then the message is dropped.
