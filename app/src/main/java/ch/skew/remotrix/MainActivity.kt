@@ -32,6 +32,9 @@ import ch.skew.remotrix.data.RemotrixDB
 import ch.skew.remotrix.data.accountDB.AccountEvent
 import ch.skew.remotrix.data.accountDB.AccountEventAsync
 import ch.skew.remotrix.data.accountDB.AccountViewModel
+import ch.skew.remotrix.data.sendActionDB.SendAction
+import ch.skew.remotrix.data.sendActionDB.SendActionEvent
+import ch.skew.remotrix.data.sendActionDB.SendActionViewModel
 import ch.skew.remotrix.ui.theme.RemotrixTheme
 import kotlinx.coroutines.Deferred
 
@@ -50,7 +53,17 @@ class MainActivity : ComponentActivity() {
         factoryProducer = {
             object: ViewModelProvider.Factory {
                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                    return AccountViewModel(db.dao) as T
+                    return AccountViewModel(db.accountDao) as T
+                }
+            }
+        }
+    )
+
+    private val sendActionViewModel by viewModels<SendActionViewModel>(
+        factoryProducer = {
+            object: ViewModelProvider.Factory {
+                override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                    return SendActionViewModel(db.sendActionDao) as T
                 }
             }
         }
@@ -59,7 +72,14 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             val accounts by accountViewModel.accounts.collectAsState()
-            RemotrixApp(accountViewModel::onEvent, accountViewModel::onEventAsync, accounts)
+            val sendActions by sendActionViewModel.sendActions.collectAsState()
+            RemotrixApp(
+                accountViewModel::onEvent,
+                accountViewModel::onEventAsync,
+                accounts,
+                sendActionViewModel::onEvent,
+                sendActions
+            )
         }
     }
 }
@@ -67,7 +87,9 @@ class MainActivity : ComponentActivity() {
 fun RemotrixApp(
     onAccountEvent: (AccountEvent) -> Unit,
     onAccountEventAsync: (AccountEventAsync) -> Deferred<Long>,
-    accounts: List<Account>
+    accounts: List<Account>,
+    onSendActionEvent: (SendActionEvent) -> Unit,
+    sendActions: List<SendAction>
 ) {
     val navController = rememberNavController()
     RemotrixTheme {
