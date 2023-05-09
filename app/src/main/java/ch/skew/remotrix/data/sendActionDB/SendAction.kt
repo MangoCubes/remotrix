@@ -26,8 +26,8 @@ data class SendAction(
      * Account that will be used for sending messages via Matrix
      * Obviously will be foreign key
      */
-    @ColumnInfo(index = true, name = "id")
-    val userId: Long,
+    @ColumnInfo(index = true, name = "sender_id")
+    val senderId: Long,
     /**
      * ID of the space that would be used to send messages
      * This must be space, and this account requires permission to create a room within this space
@@ -44,5 +44,5 @@ data class SendAction(
      * ID of this send action
      */
     @PrimaryKey(autoGenerate = true)
-val id: Long,
+    val id: Long,
 )
