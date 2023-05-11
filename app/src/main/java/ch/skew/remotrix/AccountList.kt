@@ -9,7 +9,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -74,7 +76,8 @@ fun AccountList(
         }
     ) { padding ->
         Column(
-            modifier = Modifier.padding(padding)
+            modifier = Modifier
+                .padding(padding)
                 .fillMaxSize()
         ) {
             if (accounts.isNotEmpty()) {
@@ -129,6 +132,7 @@ fun SessionItem(
     account: Account,
     delAccount: (Account) -> Unit
 ) {
+    val open = remember{ mutableStateOf(false) }
     ListItem(
         headlineText = { Text(account.fullName()) },
         supportingText = { Text(account.baseUrl) },
@@ -139,10 +143,16 @@ fun SessionItem(
             )
         },
         trailingContent = {
-            IconButton(onClick = { delAccount(account)} ) {
+            IconButton(onClick = { open.value = true } ) {
                 Icon(
-                    Icons.Filled.Delete,
-                    contentDescription = stringResource(R.string.delete_account),
+                    Icons.Filled.MoreVert,
+                    contentDescription = stringResource(R.string.account_options),
+                )
+            }
+            DropdownMenu(expanded = open.value, onDismissRequest = { open.value = false }) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.delete)) },
+                    onClick = { delAccount(account) }
                 )
             }
         }

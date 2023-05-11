@@ -25,4 +25,5 @@
     <string name="cancel">Cancel</string>
     <string name="del_account_help">Account will be logged out first, and cryptographic data on this device will be removed.</string>
     <string name="del_account_title">Delete account %s?</string>
+    <string name="account_options">Account options</string>
 </resources>
