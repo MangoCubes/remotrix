@@ -26,4 +26,8 @@
     <string name="del_account_help">Account will be logged out first, and cryptographic data on this device will be removed.</string>
     <string name="del_account_title">Delete account %s?</string>
     <string name="account_options">Account options</string>
+    <string name="send_test_message">Send test message</string>
+    <string name="failed_to_send_message">Failed to send message.</string>
+    <string name="test_msg">Test message sent from Remotrix.</string>
+    <string name="test_msg_sent">Test message sent; Check account management room for its arrival.</string>
 </resources>

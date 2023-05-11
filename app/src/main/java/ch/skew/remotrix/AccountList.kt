@@ -35,7 +35,10 @@ import kotlinx.coroutines.launch
 import net.folivo.trixnity.client.MatrixClient
 import net.folivo.trixnity.client.fromStore
 import net.folivo.trixnity.client.media.okio.OkioMediaStore
+import net.folivo.trixnity.client.room
+import net.folivo.trixnity.client.room.message.text
 import net.folivo.trixnity.client.store.repository.realm.createRealmRepositoriesModule
+import net.folivo.trixnity.core.model.RoomId
 import okio.Path.Companion.toPath
 
 @Composable
@@ -82,7 +85,7 @@ fun AccountList(
         ) {
             if (accounts.isNotEmpty()) {
                 accounts.forEach {
-                    SessionItem(it) { account -> askDel.value = account }
+                    SessionItem(it, context) { account -> askDel.value = account }
                 }
             } else {
                 ScreenHelper(stringResource(R.string.add_account_help))
@@ -130,9 +133,11 @@ fun deleteAccount(
 @Composable
 fun SessionItem(
     account: Account,
+    context: Context,
     delAccount: (Account) -> Unit
 ) {
     val open = remember{ mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
     ListItem(
         headlineText = { Text(account.fullName()) },
         supportingText = { Text(account.baseUrl) },
@@ -151,10 +156,42 @@ fun SessionItem(
             }
             DropdownMenu(expanded = open.value, onDismissRequest = { open.value = false }) {
                 DropdownMenuItem(
+                    text = { Text(stringResource(R.string.send_test_message)) },
+                    onClick = {
+                        open.value = false
+                        sendTestMessage(context, scope, account)
+                    }
+                )
+                DropdownMenuItem(
                     text = { Text(stringResource(R.string.delete)) },
-                    onClick = { delAccount(account) }
+                    onClick = {
+                        open.value = false
+                        delAccount(account)
+                    }
                 )
             }
         }
     )
+}
+
+fun sendTestMessage(context: Context, scope: CoroutineScope, account: Account){
+    val clientDir = context.filesDir.resolve("clients/${account.id}")
+    scope.launch {
+        val client = MatrixClient.fromStore(
+            repositoriesModule = createRealmRepositoriesModule {
+                this.directory(clientDir.toString())
+            },
+            mediaStore = OkioMediaStore(context.filesDir.resolve("clients/media").absolutePath.toPath()),
+            scope = scope
+        ).getOrNull()
+        if(client !== null){
+            client.startSync()
+            client.room.sendMessage(RoomId("")) {
+                text(context.getString(R.string.test_msg))
+            }
+            Toast.makeText(context, context.getString(R.string.test_msg_sent), Toast.LENGTH_SHORT).show()
+        } else {
+            Toast.makeText(context, context.getString(R.string.failed_to_send_message), Toast.LENGTH_SHORT).show()
+        }
+    }
 }
