@@ -35,4 +35,5 @@
     <string name="confirm">Confirm</string>
     <string name="choose_manager_account">Choose manager account</string>
     <string name="manager_id">New Manager ID</string>
+    <string name="invalid_id">Invalid ID.</string>
 </resources>

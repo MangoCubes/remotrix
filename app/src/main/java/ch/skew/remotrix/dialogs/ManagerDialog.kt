@@ -1,5 +1,7 @@
 package ch.skew.remotrix.dialogs
 
+import android.content.Context
+import android.widget.Toast
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -14,6 +16,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import ch.skew.remotrix.R
 import ch.skew.remotrix.data.RemotrixSettings
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -24,18 +27,14 @@ fun ManagerDialog(
 ) {
     if(isOpen){
         val scope = rememberCoroutineScope()
-        val settings = RemotrixSettings(LocalContext.current)
+        val context = LocalContext.current
+        val settings = RemotrixSettings(context)
         val managerId = settings.getId.collectAsState(initial = "")
         val currentId = remember { mutableStateOf("") }
         AlertDialog(
             onDismissRequest = close,
             confirmButton = {
-                Button({
-                    scope.launch {
-                        settings.saveId(currentId.value)
-                    }
-                    close()
-                }) {
+                Button({onConfirm(context, scope, close, settings, currentId.value)}) {
                     Text(stringResource(R.string.confirm))
                 }
             },
@@ -58,4 +57,17 @@ fun ManagerDialog(
             }
         )
     }
+}
+
+fun onConfirm(context: Context, scope: CoroutineScope, close: () -> Unit, settings: RemotrixSettings, currentId: String){
+    // Temporary solution: This pattern does not necessarily filter all invalid IDs.
+    val idPattern = Regex("@[A-z0-9]+:[A-z0-9\\.]+")
+    if(idPattern.matchEntire(currentId) === null){
+        Toast.makeText(context, context.getString(R.string.invalid_id), Toast.LENGTH_SHORT).show()
+        return
+    }
+    scope.launch {
+        settings.saveId(currentId)
+    }
+    close()
 }

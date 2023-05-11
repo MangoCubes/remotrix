@@ -13,7 +13,9 @@ data class Account(
     @ColumnInfo(name = "domain")
     val domain: String?,
     @ColumnInfo(name = "base_url")
-    val baseUrl: String
+    val baseUrl: String,
+//    @ColumnInfo(name = "management_room")
+//    val managementRoom: String
 ) {
     fun fullName(): String {
         return "@${this.userId}:${this.domain}"
