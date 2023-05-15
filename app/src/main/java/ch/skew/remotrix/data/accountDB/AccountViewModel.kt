@@ -30,7 +30,7 @@ class AccountViewModel(
         when(event){
             is AccountEvent.DeleteAccount -> {
                 viewModelScope.launch {
-                    dao.delete(event.account)
+                    dao.delete(event.id)
                 }
             }
 

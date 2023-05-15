@@ -5,7 +5,7 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 
 @Entity(tableName = "accounts")
-data class Account(
+data class AccountData(
     @PrimaryKey(autoGenerate = true)
     val id: Int,
     @ColumnInfo(name = "user_id")
@@ -15,9 +15,5 @@ data class Account(
     @ColumnInfo(name = "base_url")
     val baseUrl: String,
     @ColumnInfo(name = "management_room")
-    val managementRoom: String
-) {
-    fun fullName(): String {
-        return "@${this.userId}:${this.domain}"
-    }
-}
+    val managementRoom: String?
+)

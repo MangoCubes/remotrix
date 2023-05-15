@@ -27,8 +27,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import ch.skew.remotrix.classes.Account
 import ch.skew.remotrix.components.ScreenHelper
-import ch.skew.remotrix.data.accountDB.Account
 import ch.skew.remotrix.data.accountDB.AccountEvent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -124,7 +124,7 @@ fun deleteAccount(
         } catch (e: Throwable) {
             Toast.makeText(context, "Cannot locate account data. Account will be removed from device only.", Toast.LENGTH_LONG).show()
         }
-        onAccountEvent(AccountEvent.DeleteAccount(account))
+        onAccountEvent(AccountEvent.DeleteAccount(account.id))
         close()
     }
 }

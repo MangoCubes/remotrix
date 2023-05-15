@@ -30,9 +30,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.room.Room
+import ch.skew.remotrix.classes.Account
 import ch.skew.remotrix.components.ListHeader
 import ch.skew.remotrix.data.RemotrixDB
-import ch.skew.remotrix.data.accountDB.Account
 import ch.skew.remotrix.data.accountDB.AccountEvent
 import ch.skew.remotrix.data.accountDB.AccountEventAsync
 import ch.skew.remotrix.data.accountDB.AccountViewModel
@@ -81,7 +81,7 @@ class MainActivity : ComponentActivity() {
             RemotrixApp(
                 accountViewModel::onEvent,
                 accountViewModel::onEventAsync,
-                accounts,
+                Account.from(accounts),
                 sendActionViewModel::onEvent,
                 sendActions
             )

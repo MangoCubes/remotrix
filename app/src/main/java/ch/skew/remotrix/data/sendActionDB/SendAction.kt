@@ -4,7 +4,7 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
-import ch.skew.remotrix.data.accountDB.Account
+import ch.skew.remotrix.data.accountDB.AccountData
 
 /**
  * Determines where messages should be sent to upon receiving messages via SMS.
@@ -14,7 +14,7 @@ import ch.skew.remotrix.data.accountDB.Account
     tableName = "send_action",
     foreignKeys = [
         ForeignKey(
-            entity = Account::class,
+            entity = AccountData::class,
             parentColumns = arrayOf("id"),
             childColumns = arrayOf("id"),
             onDelete = ForeignKey.CASCADE
