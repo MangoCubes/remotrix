@@ -36,4 +36,7 @@
     <string name="choose_manager_account">Choose manager account</string>
     <string name="manager_id">New Manager ID</string>
     <string name="invalid_id">Invalid ID.</string>
+    <string name="management_room_name">Management room for %s</string>
+    <string name="management_room_desc">User may send messages to this room in order to manage automated actions of account %s.</string>
+    <string name="cannot_create_management_room">Unable to create management room. Perhaps your Manager ID is invalid?</string>
 </resources>

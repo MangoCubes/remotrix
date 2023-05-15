@@ -17,6 +17,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -25,6 +26,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import ch.skew.remotrix.components.PasswordField
+import ch.skew.remotrix.data.RemotrixSettings
 import ch.skew.remotrix.data.accountDB.AccountEvent
 import ch.skew.remotrix.data.accountDB.AccountEventAsync
 import io.ktor.http.Url
@@ -36,6 +38,8 @@ import net.folivo.trixnity.client.login
 import net.folivo.trixnity.client.media.okio.OkioMediaStore
 import net.folivo.trixnity.client.store.repository.realm.createRealmRepositoriesModule
 import net.folivo.trixnity.clientserverapi.model.authentication.IdentifierType
+import net.folivo.trixnity.clientserverapi.model.rooms.DirectoryVisibility
+import net.folivo.trixnity.core.model.UserId
 import okio.Path.Companion.toPath
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -77,6 +81,8 @@ fun NewAccount(
             val revealPassword = remember{ mutableStateOf(false) }
             val enabled = remember{ mutableStateOf(true) }
             val errorMsg = remember{ mutableStateOf("") }
+            val settings = RemotrixSettings(context)
+            val managerId = settings.getId.collectAsState(initial = "")
             TextField(
                 modifier = formPadding,
                 value = username.value,
@@ -108,7 +114,7 @@ fun NewAccount(
                     revealPassword.value = false
                     enabled.value = false
                     errorMsg.value = ""
-                    onLoginClick(context, scope, username.value, password.value, baseUrl.value, { id, baseUrl ->
+                    onLoginClick(context, scope, username.value, password.value, baseUrl.value, managerId.value, { id, baseUrl ->
                         onAccountEventAsync(AccountEventAsync.AddAccount(id, baseUrl))
                     },
                     {
@@ -128,6 +134,7 @@ fun onLoginClick(
     username: String,
     password: String,
     inputUrl: String,
+    managerId: String,
     addAccount: (String, String) -> Deferred<Long>,
     abort: (String) -> Unit,
     onAccountEvent: (AccountEvent) -> Unit,
@@ -144,20 +151,29 @@ fun onLoginClick(
         val repo = createRealmRepositoriesModule {
             this.directory(clientDir.toString())
         }
-        try{
-            val client = MatrixClient.login(baseUrl = Url(baseUrl),
-                identifier = IdentifierType.User(username),
-                password = password,
-                repositoriesModule = repo,
-                mediaStore = OkioMediaStore(context.filesDir.resolve("clients/media").absolutePath.toPath()),
-                scope = scope,
-            ).getOrThrow()
-            Toast.makeText(context, context.getString(R.string.logged_in).format(client.userId), Toast.LENGTH_SHORT).show()
-            onAccountEvent(AccountEvent.ActivateAccount(id, client.userId.domain))
-            onClickGoBack()
-        } catch (e: Throwable) {
+        val client = MatrixClient.login(baseUrl = Url(baseUrl),
+            identifier = IdentifierType.User(username),
+            password = password,
+            repositoriesModule = repo,
+            mediaStore = OkioMediaStore(context.filesDir.resolve("clients/media").absolutePath.toPath()),
+            scope = scope,
+        ).getOrElse {
             clientDir.deleteRecursively()
-            abort(e.message ?: context.getString(R.string.generic_error))
+            abort(it.message ?: context.getString(R.string.generic_error))
+            return@launch
         }
+        client.api.rooms.createRoom(
+            visibility = DirectoryVisibility.PRIVATE,
+            name = context.getString(R.string.management_room_name).format(client.userId),
+            topic = context.getString(R.string.management_room_desc).format(client.userId),
+            invite = setOf(UserId(managerId))
+        ).getOrElse {
+            clientDir.deleteRecursively()
+            abort(it.message ?: context.getString(R.string.cannot_create_management_room))
+            return@launch
+        }
+        Toast.makeText(context, context.getString(R.string.logged_in).format(client.userId), Toast.LENGTH_SHORT).show()
+        onAccountEvent(AccountEvent.ActivateAccount(id, client.userId.domain))
+        onClickGoBack()
     }
 }
