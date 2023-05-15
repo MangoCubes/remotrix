@@ -162,7 +162,7 @@ fun onLoginClick(
             abort(it.message ?: context.getString(R.string.generic_error))
             return@launch
         }
-        client.api.rooms.createRoom(
+        val roomId = client.api.rooms.createRoom(
             visibility = DirectoryVisibility.PRIVATE,
             name = context.getString(R.string.management_room_name).format(client.userId),
             topic = context.getString(R.string.management_room_desc).format(client.userId),
@@ -173,7 +173,7 @@ fun onLoginClick(
             return@launch
         }
         Toast.makeText(context, context.getString(R.string.logged_in).format(client.userId), Toast.LENGTH_SHORT).show()
-        onAccountEvent(AccountEvent.ActivateAccount(id, client.userId.domain))
+        onAccountEvent(AccountEvent.ActivateAccount(id, client.userId.domain, roomId.full))
         onClickGoBack()
     }
 }
