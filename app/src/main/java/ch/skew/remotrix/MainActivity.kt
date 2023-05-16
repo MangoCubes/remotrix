@@ -19,8 +19,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -41,7 +39,6 @@ import ch.skew.remotrix.data.accountDB.AccountViewModel
 import ch.skew.remotrix.data.sendActionDB.SendAction
 import ch.skew.remotrix.data.sendActionDB.SendActionEvent
 import ch.skew.remotrix.data.sendActionDB.SendActionViewModel
-import ch.skew.remotrix.dialogs.ManagerDialog
 import ch.skew.remotrix.ui.theme.RemotrixTheme
 import kotlinx.coroutines.Deferred
 
@@ -112,7 +109,8 @@ fun RemotrixApp(
         ) {
             composable(route = Destination.Home.route) {
                 HomeScreen(
-                    onClickAccountList = { navController.navigate(Destination.AccountList.route) }
+                    onClickAccountList = { navController.navigate(Destination.AccountList.route) },
+                    onClickShowSetup = { navController.navigate(Destination.Setup.route) }
                 )
             }
             composable(route = Destination.AccountList.route) {
@@ -131,7 +129,9 @@ fun RemotrixApp(
                 )
             }
             composable(route = Destination.Setup.route) {
-                SetupScreen()
+                SetupScreen(
+                    done = { navController.navigate(Destination.Home.route) }
+                )
             }
         }
     }
@@ -139,16 +139,14 @@ fun RemotrixApp(
 @Preview
 @Composable
 fun PreviewHomeScreen() {
-    HomeScreen({}, true)
+    HomeScreen({}, {})
 }
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     onClickAccountList: () -> Unit,
-    preview: Boolean = false
+    onClickShowSetup: () -> Unit
 ) {
-    val showDialog = remember{ mutableStateOf(preview) }
-    ManagerDialog(isOpen = showDialog.value) { showDialog.value = false }
     Scaffold(
         topBar = {
             TopAppBar({
@@ -167,7 +165,7 @@ fun HomeScreen(
                         contentDescription = stringResource(R.string.manage_accounts),
                     )
                 },
-                modifier = Modifier.clickable { showDialog.value = true }
+                modifier = Modifier.clickable {onClickShowSetup()}
             )
             ListItem(
                 headlineText = { Text(stringResource(R.string.manage_accounts)) },
