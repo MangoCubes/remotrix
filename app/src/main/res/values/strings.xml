@@ -39,4 +39,11 @@
     <string name="management_room_name">Management room for %s</string>
     <string name="management_room_desc">User may send messages to this room in order to manage automated actions of account %s.</string>
     <string name="cannot_create_management_room">Unable to create management room. Perhaps your Manager ID is invalid?</string>
+    <string name="setup_remotrix">Setup Remotrix</string>
+    <string name="welcome_1">Before we begin, some settings must be done.</string>
+    <string name="welcome_2">Note that while you can change them in the future, migration does not exist yet. As a result, it would be very tedious.</string>
+    <string name="welcome_3">Therefore, it is best to set these as if they cannot be changed later.</string>
+    <string name="welcome_4">First off, please enter an account name in the form of \'@username:example.com. The account entered will be used as admin account, and bots will respond to commands from this account.</string>
+    <string name="welcome_5">Next, please select a space. A space is a feature in Matrix where it basically acts like folder for rooms. This app automatically generates rooms, and it is essential that rooms are easily discoverable for bots.</string>
+    <string name="welcome">Welcome.</string>
 </resources>
