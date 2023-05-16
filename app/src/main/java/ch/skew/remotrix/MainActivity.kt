@@ -130,7 +130,8 @@ fun RemotrixApp(
             }
             composable(route = Destination.Setup.route) {
                 SetupScreen(
-                    done = { navController.navigate(Destination.Home.route) }
+                    done = { navController.navigate(Destination.Home.route) },
+                    goBack = { navController.popBackStack() }
                 )
             }
         }

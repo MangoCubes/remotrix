@@ -13,6 +13,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -27,7 +28,8 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SetupScreen(
-    done: () -> Unit
+    done: () -> Unit,
+    goBack: () -> Unit
 ) {
     val formPadding = Modifier
         .fillMaxWidth()
@@ -38,6 +40,8 @@ fun SetupScreen(
         )
     val context = LocalContext.current
     val settings = RemotrixSettings(context)
+    val existingId = settings.getId.collectAsState(initial = "")
+    val existingSpace = settings.getSpaceId.collectAsState(initial = "")
     val currentId = remember { mutableStateOf("") }
     val currentSpace = remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()
@@ -68,7 +72,7 @@ fun SetupScreen(
                 onValueChange = { currentId.value = it },
                 label = { Text(stringResource(R.string.manager_id)) },
                 singleLine = true,
-                placeholder = { Text(if(currentId.value === "") stringResource(R.string.example_account) else currentId.value) },
+                placeholder = { Text(if(existingId.value === "") stringResource(R.string.example_account) else existingId.value) },
                 modifier = formPadding
             )
             ListItem(
@@ -82,7 +86,7 @@ fun SetupScreen(
                 onValueChange = { currentSpace.value = it },
                 label = { Text(stringResource(R.string.existing_space_id)) },
                 singleLine = true,
-                placeholder = { Text(if(currentSpace.value === "") stringResource(R.string.sample_space_id) else currentSpace.value) },
+                placeholder = { Text(if(existingSpace.value === "") stringResource(R.string.sample_space_id) else existingSpace.value) },
                 modifier = formPadding
             )
             Button(
@@ -90,6 +94,13 @@ fun SetupScreen(
                 content = { Text(stringResource(R.string.confirm)) },
                 onClick = {onConfirm(currentId.value, currentSpace.value, context, scope, settings, done) }
             )
+            if(existingId.value !== "" && existingSpace.value !== "") {
+                Button(
+                    modifier = formPadding,
+                    content = { Text(stringResource(R.string.cancel)) },
+                    onClick = goBack
+                )
+            }
         }
     }
 }
