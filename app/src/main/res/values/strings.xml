@@ -50,6 +50,6 @@
     <string name="set_remotrix_space">Set Remotrix Space</string>
     <string name="example_account">\@username:example.com</string>
     <string name="existing_space_id">Existing space ID</string>
-    <string name="sample_space_id">!IntELLIgiBle:example.com</string>
+    <string name="sample_space_id">!unIntELLIgiBle:example.com</string>
     <string name="invalid_space_id">Invalid space ID.</string>
 </resources>

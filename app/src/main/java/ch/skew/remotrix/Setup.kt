@@ -79,7 +79,7 @@ fun SetupScreen() {
             )
             TextField(
                 value = currentSpace.value,
-                onValueChange = { currentId.value = it },
+                onValueChange = { currentSpace.value = it },
                 label = { Text(stringResource(R.string.existing_space_id)) },
                 singleLine = true,
                 placeholder = { Text(stringResource(R.string.sample_space_id)) },

@@ -22,6 +22,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.ViewModel
@@ -33,6 +34,7 @@ import androidx.room.Room
 import ch.skew.remotrix.classes.Account
 import ch.skew.remotrix.components.ListHeader
 import ch.skew.remotrix.data.RemotrixDB
+import ch.skew.remotrix.data.RemotrixSettings
 import ch.skew.remotrix.data.accountDB.AccountEvent
 import ch.skew.remotrix.data.accountDB.AccountEventAsync
 import ch.skew.remotrix.data.accountDB.AccountViewModel
@@ -96,12 +98,17 @@ fun RemotrixApp(
     onSendActionEvent: (SendActionEvent) -> Unit,
     sendActions: List<SendAction>
 ) {
-
+    val settings = RemotrixSettings(LocalContext.current)
+    val managerId = settings.getId.collectAsState(initial = "-")
+    val spaceId = settings.getSpaceId.collectAsState(initial = "-")
     val navController = rememberNavController()
     RemotrixTheme {
         NavHost(
             navController = navController,
-            startDestination = Destination.Home.route
+            startDestination =
+                if(managerId.value === "" || spaceId.value === "") Destination.Setup.route
+                else Destination.Home.route
+
         ) {
             composable(route = Destination.Home.route) {
                 HomeScreen(
@@ -123,6 +130,9 @@ fun RemotrixApp(
                     onAccountEventAsync = onAccountEventAsync
                 )
             }
+            composable(route = Destination.Setup.route) {
+                SetupScreen()
+            }
         }
     }
 }
@@ -134,7 +144,7 @@ fun PreviewHomeScreen() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    onClickAccountList: () -> Unit = {},
+    onClickAccountList: () -> Unit,
     preview: Boolean = false
 ) {
     val showDialog = remember{ mutableStateOf(preview) }
