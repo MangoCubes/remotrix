@@ -39,7 +39,11 @@ import net.folivo.trixnity.client.media.okio.OkioMediaStore
 import net.folivo.trixnity.client.store.repository.realm.createRealmRepositoriesModule
 import net.folivo.trixnity.clientserverapi.model.authentication.IdentifierType
 import net.folivo.trixnity.clientserverapi.model.rooms.DirectoryVisibility
+import net.folivo.trixnity.core.model.RoomId
 import net.folivo.trixnity.core.model.UserId
+import net.folivo.trixnity.core.model.events.Event
+import net.folivo.trixnity.core.model.events.m.space.ChildEventContent
+import net.folivo.trixnity.core.model.events.m.space.ParentEventContent
 import okio.Path.Companion.toPath
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -83,6 +87,7 @@ fun NewAccount(
             val errorMsg = remember{ mutableStateOf("") }
             val settings = RemotrixSettings(context)
             val managerId = settings.getId.collectAsState(initial = "")
+            val managementSpace = settings.getSpaceId.collectAsState(initial = "")
             TextField(
                 modifier = formPadding,
                 value = username.value,
@@ -114,7 +119,7 @@ fun NewAccount(
                     revealPassword.value = false
                     enabled.value = false
                     errorMsg.value = ""
-                    onLoginClick(context, scope, username.value, password.value, baseUrl.value, managerId.value, { id, baseUrl ->
+                    onLoginClick(context, scope, username.value, password.value, baseUrl.value, managerId.value, managementSpace.value, { id, baseUrl ->
                         onAccountEventAsync(AccountEventAsync.AddAccount(id, baseUrl))
                     },
                     {
@@ -135,6 +140,7 @@ fun onLoginClick(
     password: String,
     inputUrl: String,
     managerId: String,
+    managementSpaceId: String,
     addAccount: (String, String) -> Deferred<Long>,
     abort: (String) -> Unit,
     onAccountEvent: (AccountEvent) -> Unit,
@@ -162,16 +168,36 @@ fun onLoginClick(
             abort(it.message ?: context.getString(R.string.generic_error))
             return@launch
         }
+
+        /**
+         * Step 1: Room is created by the new account. It also claims to be child of the management space.
+         * Step 2: This account attempts to append the new room as the management space's child.
+         * Step 3-1: If it fails, new account leaves the room to delete it.
+         * Step 3-2: If it succeeds, an invitation is sent to manager.
+         */
+        val via = setOf(client.userId.domain)
         val roomId = client.api.rooms.createRoom(
             visibility = DirectoryVisibility.PRIVATE,
             name = context.getString(R.string.management_room_name).format(client.userId),
             topic = context.getString(R.string.management_room_desc).format(client.userId),
-            invite = setOf(UserId(managerId))
+            initialState = listOf(
+                Event.InitialStateEvent(
+                    content = ParentEventContent(true, via),
+                    stateKey = managementSpaceId
+                )
+            )
         ).getOrElse {
             clientDir.deleteRecursively()
             abort(it.message ?: context.getString(R.string.cannot_create_management_room))
             return@launch
         }
+        client.api.rooms.sendStateEvent(RoomId(managementSpaceId), ChildEventContent(suggested = false, via = via), roomId.full).getOrElse {
+            client.api.rooms.leaveRoom(roomId)
+            client.logout()
+            abort(context.getString(R.string.no_child_space_permission).format(client.userId))
+            return@launch
+        }
+            client.api.rooms.inviteUser(roomId, UserId(managerId))
         Toast.makeText(context, context.getString(R.string.logged_in).format(client.userId), Toast.LENGTH_SHORT).show()
         onAccountEvent(AccountEvent.ActivateAccount(id, client.userId.domain, roomId.full))
         onClickGoBack()

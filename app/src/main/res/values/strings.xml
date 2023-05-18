@@ -53,4 +53,6 @@
     <string name="sample_space_id">!unIntELLIgiBle:example.com</string>
     <string name="invalid_space_id">Invalid space ID.</string>
     <string name="setup_complete">Setup complete.</string>
+    <string name="no_child_space_permission">%s has no permission to create child room in the management space. Please grant it first.</string>
+    <string name="cannot_find_space">%s cannot locate management space. Please invite this account to that space first.</string>
 </resources>
