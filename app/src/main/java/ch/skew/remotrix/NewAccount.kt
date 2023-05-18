@@ -86,8 +86,8 @@ fun NewAccount(
             val enabled = remember{ mutableStateOf(true) }
             val errorMsg = remember{ mutableStateOf("") }
             val settings = RemotrixSettings(context)
-            val managerId = settings.getId.collectAsState(initial = "")
-            val managementSpace = settings.getSpaceId.collectAsState(initial = "")
+            val managerId = settings.getManagerId.collectAsState(initial = "")
+            val managementSpace = settings.getManagementSpaceId.collectAsState(initial = "")
             TextField(
                 modifier = formPadding,
                 value = username.value,
@@ -140,7 +140,7 @@ fun onLoginClick(
     password: String,
     inputUrl: String,
     managerId: String,
-    managementSpaceId: String,
+    managementSpaceId: String?,
     addAccount: (String, String) -> Deferred<Long>,
     abort: (String) -> Unit,
     onAccountEvent: (AccountEvent) -> Unit,
@@ -180,24 +180,28 @@ fun onLoginClick(
             visibility = DirectoryVisibility.PRIVATE,
             name = context.getString(R.string.management_room_name).format(client.userId),
             topic = context.getString(R.string.management_room_desc).format(client.userId),
-            initialState = listOf(
+            initialState = if(managementSpaceId === null) null else listOf(
                 Event.InitialStateEvent(
                     content = ParentEventContent(true, via),
                     stateKey = managementSpaceId
                 )
             )
         ).getOrElse {
+            // Assumes that room has not been created at all
             clientDir.deleteRecursively()
             abort(it.message ?: context.getString(R.string.cannot_create_management_room))
             return@launch
         }
-        client.api.rooms.sendStateEvent(RoomId(managementSpaceId), ChildEventContent(suggested = false, via = via), roomId.full).getOrElse {
-            client.api.rooms.leaveRoom(roomId)
-            client.logout()
-            abort(context.getString(R.string.no_child_space_permission).format(client.userId))
-            return@launch
+        // If room is created under a certain space, it needs to be registered under parent room
+        if(managementSpaceId !== null){
+            client.api.rooms.sendStateEvent(RoomId(managementSpaceId), ChildEventContent(suggested = false, via = via), roomId.full).getOrElse {
+                client.api.rooms.leaveRoom(roomId)
+                client.logout()
+                abort(context.getString(R.string.no_child_space_permission).format(client.userId))
+                return@launch
+            }
         }
-            client.api.rooms.inviteUser(roomId, UserId(managerId))
+        client.api.rooms.inviteUser(roomId, UserId(managerId))
         Toast.makeText(context, context.getString(R.string.logged_in).format(client.userId), Toast.LENGTH_SHORT).show()
         onAccountEvent(AccountEvent.ActivateAccount(id, client.userId.domain, roomId.full))
         onClickGoBack()

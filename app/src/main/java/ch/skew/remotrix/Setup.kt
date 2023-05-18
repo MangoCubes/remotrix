@@ -20,16 +20,18 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import ch.skew.remotrix.data.RemotrixSettings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
+@Preview
 @Composable
 fun SetupScreen(
-    done: () -> Unit,
-    goBack: () -> Unit
+    done: () -> Unit = {},
+    goBack: () -> Unit = {}
 ) {
     val formPadding = Modifier
         .fillMaxWidth()
@@ -40,10 +42,12 @@ fun SetupScreen(
         )
     val context = LocalContext.current
     val settings = RemotrixSettings(context)
-    val existingId = settings.getId.collectAsState(initial = "")
-    val existingSpace = settings.getSpaceId.collectAsState(initial = "")
-    val currentId = remember { mutableStateOf("") }
-    val currentSpace = remember { mutableStateOf("") }
+    val existingManagerId = settings.getManagerId.collectAsState(initial = "")
+    val existingManagementSpaceId = settings.getManagementSpaceId.collectAsState(initial = "")
+    val existingMsgSpaceId = settings.getMsgSpaceId.collectAsState(initial = "")
+    val currentManagerId = remember { mutableStateOf("") }
+    val currentManagementSpaceId = remember { mutableStateOf("") }
+    val currentMsgSpaceId = remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()
     Scaffold(
         topBar = {
@@ -68,33 +72,54 @@ fun SetupScreen(
                 }
             )
             TextField(
-                value = currentId.value,
-                onValueChange = { currentId.value = it },
+                value = currentManagerId.value,
+                onValueChange = { currentManagerId.value = it },
                 label = { Text(stringResource(R.string.manager_id)) },
                 singleLine = true,
-                placeholder = { Text(if(existingId.value === "") stringResource(R.string.example_account) else existingId.value) },
+                placeholder = { Text(if(existingManagerId.value === "") stringResource(R.string.example_account) else existingManagerId.value) },
                 modifier = formPadding
             )
             ListItem(
-                headlineText = { Text(stringResource(R.string.set_remotrix_space)) },
+                headlineText = { Text(stringResource(R.string.set_remotrix_spaces)) },
                 supportingText = {
                     Text(stringResource(R.string.welcome_5))
+                    Text(stringResource(R.string.welcome_6))
+                }
+            )
+            ListItem(
+                headlineText = { Text(stringResource(R.string.message_space)) },
+                supportingText = {
+                    Text(stringResource(R.string.welcome_6))
                 }
             )
             TextField(
-                value = currentSpace.value,
-                onValueChange = { currentSpace.value = it },
+                value = currentMsgSpaceId.value,
+                onValueChange = { currentMsgSpaceId.value = it },
                 label = { Text(stringResource(R.string.existing_space_id)) },
                 singleLine = true,
-                placeholder = { Text(if(existingSpace.value === "") stringResource(R.string.sample_space_id) else existingSpace.value) },
+                placeholder = { Text(if(existingMsgSpaceId.value === "") stringResource(R.string.sample_space_id) else existingMsgSpaceId.value) },
+                modifier = formPadding
+            )
+            ListItem(
+                headlineText = { Text(stringResource(R.string.management_space)) },
+                supportingText = {
+                    Text(stringResource(R.string.welcome_7))
+                }
+            )
+            TextField(
+                value = currentManagementSpaceId.value,
+                onValueChange = { currentManagementSpaceId.value = it },
+                label = { Text(stringResource(R.string.existing_space_id)) },
+                singleLine = true,
+                placeholder = { Text(if(existingManagementSpaceId.value === null) stringResource(R.string.sample_space_id) else existingManagementSpaceId.value!!) },
                 modifier = formPadding
             )
             Button(
                 modifier = formPadding,
                 content = { Text(stringResource(R.string.confirm)) },
-                onClick = {onConfirm(currentId.value, currentSpace.value, context, scope, settings, done) }
+                onClick = {onConfirm(currentManagerId.value, currentManagementSpaceId.value, currentManagementSpaceId.value, context, scope, settings, done) }
             )
-            if(existingId.value !== "" && existingSpace.value !== "") {
+            if(existingManagerId.value !== "" && existingManagementSpaceId.value !== "") {
                 Button(
                     modifier = formPadding,
                     content = { Text(stringResource(R.string.cancel)) },
@@ -105,20 +130,21 @@ fun SetupScreen(
     }
 }
 
-fun onConfirm(userId: String, spaceId: String, context: Context, scope: CoroutineScope, settings: RemotrixSettings, done: () -> Unit){
+fun onConfirm(userId: String, msgSpaceId: String, managementSpaceId: String?, context: Context, scope: CoroutineScope, settings: RemotrixSettings, done: () -> Unit){
     val idPattern = Regex("@[A-z0-9]+:[A-z0-9\\.]+")
     val spacePattern = Regex("![A-z]+:[A-z0-9\\.]+")
     if(idPattern.matchEntire(userId) === null){
         Toast.makeText(context, context.getString(R.string.invalid_id), Toast.LENGTH_SHORT).show()
         return
     }
-    if(spacePattern.matchEntire(spaceId) === null){
+    if(spacePattern.matchEntire(msgSpaceId) === null || (managementSpaceId !== null && spacePattern.matchEntire(managementSpaceId) === null)){
         Toast.makeText(context, context.getString(R.string.invalid_space_id), Toast.LENGTH_SHORT).show()
         return
     }
     scope.launch {
-        settings.saveId(userId)
-        settings.saveSpaceId(spaceId)
+        settings.saveManagerId(userId)
+        settings.saveMsgSpaceId(msgSpaceId)
+        settings.saveManagementSpaceId(managementSpaceId)
         Toast.makeText(context, context.getString(R.string.setup_complete), Toast.LENGTH_SHORT).show()
         done()
     }
