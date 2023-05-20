@@ -44,10 +44,8 @@ fun SetupScreen(
     val settings = RemotrixSettings(context)
     val existingManagerId = settings.getManagerId.collectAsState(initial = "")
     val existingManagementSpaceId = settings.getManagementSpaceId.collectAsState(initial = "")
-    val existingMsgSpaceId = settings.getMsgSpaceId.collectAsState(initial = "")
     val currentManagerId = remember { mutableStateOf("") }
     val currentManagementSpaceId = remember { mutableStateOf("") }
-    val currentMsgSpaceId = remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()
     Scaffold(
         topBar = {
@@ -84,23 +82,9 @@ fun SetupScreen(
                 }
             )
             ListItem(
-                headlineText = { Text(stringResource(R.string.message_space)) },
-                supportingText = {
-                    Text(stringResource(R.string.welcome_4))
-                }
-            )
-            TextField(
-                value = currentMsgSpaceId.value,
-                onValueChange = { currentMsgSpaceId.value = it },
-                label = { Text(stringResource(R.string.existing_space_id)) },
-                singleLine = true,
-                placeholder = { Text(if(existingMsgSpaceId.value === "") stringResource(R.string.sample_space_id) else existingMsgSpaceId.value) },
-                modifier = formPadding
-            )
-            ListItem(
                 headlineText = { Text(stringResource(R.string.management_space)) },
                 supportingText = {
-                    Text(stringResource(R.string.welcome_5))
+                    Text(stringResource(R.string.welcome_4))
                 }
             )
             TextField(
@@ -114,7 +98,7 @@ fun SetupScreen(
             Button(
                 modifier = formPadding,
                 content = { Text(stringResource(R.string.confirm)) },
-                onClick = {onConfirm(currentManagerId.value, currentManagementSpaceId.value, currentManagementSpaceId.value, context, scope, settings, done) }
+                onClick = {onConfirm(currentManagerId.value, currentManagementSpaceId.value, context, scope, settings, done) }
             )
             if(existingManagerId.value !== "" && existingManagementSpaceId.value !== "") {
                 Button(
@@ -127,20 +111,19 @@ fun SetupScreen(
     }
 }
 
-fun onConfirm(userId: String, msgSpaceId: String, managementSpaceId: String?, context: Context, scope: CoroutineScope, settings: RemotrixSettings, done: () -> Unit){
+fun onConfirm(userId: String, managementSpaceId: String?, context: Context, scope: CoroutineScope, settings: RemotrixSettings, done: () -> Unit){
     val idPattern = Regex("@[A-z0-9]+:[A-z0-9\\.]+")
     val spacePattern = Regex("![A-z]+:[A-z0-9\\.]+")
     if(idPattern.matchEntire(userId) === null){
         Toast.makeText(context, context.getString(R.string.invalid_id), Toast.LENGTH_SHORT).show()
         return
     }
-    if(spacePattern.matchEntire(msgSpaceId) === null || (managementSpaceId !== null && spacePattern.matchEntire(managementSpaceId) === null)){
+    if(managementSpaceId !== null && spacePattern.matchEntire(managementSpaceId) === null){
         Toast.makeText(context, context.getString(R.string.invalid_space_id), Toast.LENGTH_SHORT).show()
         return
     }
     scope.launch {
         settings.saveManagerId(userId)
-        settings.saveMsgSpaceId(msgSpaceId)
         settings.saveManagementSpaceId(managementSpaceId)
         Toast.makeText(context, context.getString(R.string.setup_complete), Toast.LENGTH_SHORT).show()
         done()
