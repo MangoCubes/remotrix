@@ -97,13 +97,12 @@ fun RemotrixApp(
 ) {
     val settings = RemotrixSettings(LocalContext.current)
     val managerId = settings.getManagerId.collectAsState(initial = "-")
-    val msgSpaceId = settings.getMsgSpaceId.collectAsState(initial = "-")
     val navController = rememberNavController()
     RemotrixTheme {
         NavHost(
             navController = navController,
             startDestination =
-                if(managerId.value === "" || msgSpaceId.value === "") Destination.Setup.route
+                if(managerId.value === "") Destination.Setup.route
                 else Destination.Home.route
 
         ) {
