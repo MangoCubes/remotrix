@@ -61,14 +61,12 @@ fun SetupScreen(
                 headlineText = { Text(stringResource(R.string.welcome)) },
                 supportingText = {
                     Text(stringResource(R.string.welcome_1))
-                    Text(stringResource(R.string.welcome_2))
-                    Text(stringResource(R.string.welcome_3))
                 }
             )
             ListItem(
                 headlineText = { Text(stringResource(R.string.set_admin_account)) },
                 supportingText = {
-                    Text(stringResource(R.string.welcome_4))
+                    Text(stringResource(R.string.welcome_2))
                 }
             )
             TextField(
@@ -82,14 +80,13 @@ fun SetupScreen(
             ListItem(
                 headlineText = { Text(stringResource(R.string.set_remotrix_spaces)) },
                 supportingText = {
-                    Text(stringResource(R.string.welcome_5))
-                    Text(stringResource(R.string.welcome_6))
+                    Text(stringResource(R.string.welcome_3))
                 }
             )
             ListItem(
                 headlineText = { Text(stringResource(R.string.message_space)) },
                 supportingText = {
-                    Text(stringResource(R.string.welcome_6))
+                    Text(stringResource(R.string.welcome_4))
                 }
             )
             TextField(
@@ -103,7 +100,7 @@ fun SetupScreen(
             ListItem(
                 headlineText = { Text(stringResource(R.string.management_space)) },
                 supportingText = {
-                    Text(stringResource(R.string.welcome_7))
+                    Text(stringResource(R.string.welcome_5))
                 }
             )
             TextField(
