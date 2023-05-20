@@ -56,4 +56,5 @@
     <string name="cannot_find_space">%s cannot locate management space. Please invite this account to that space first.</string>
     <string name="message_space">Message Space</string>
     <string name="management_space">Management Space</string>
+    <string name="message_space_id">Message Space ID</string>
 </resources>

@@ -20,7 +20,7 @@ class AccountViewModel(
         when(event){
             is AccountEventAsync.AddAccount -> {
                 return viewModelScope.async {
-                    dao.insert(event.userId, event.baseUrl)
+                    dao.insert(event.userId, event.baseUrl, event.messageSpace)
                 }
             }
         }

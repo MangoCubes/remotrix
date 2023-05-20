@@ -15,5 +15,7 @@ data class AccountData(
     @ColumnInfo(name = "base_url")
     val baseUrl: String,
     @ColumnInfo(name = "management_room")
-    val managementRoom: String?
+    val managementRoom: String?,
+    @ColumnInfo(name = "message_space")
+    val messageSpace: String
 )

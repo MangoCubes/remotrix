@@ -82,6 +82,7 @@ fun NewAccount(
             val username = remember{ mutableStateOf("") }
             val password = remember{ mutableStateOf("") }
             val baseUrl = remember{ mutableStateOf("") }
+            val messageSpaceId = remember{ mutableStateOf("") }
             val revealPassword = remember{ mutableStateOf(false) }
             val enabled = remember{ mutableStateOf(true) }
             val errorMsg = remember{ mutableStateOf("") }
@@ -112,6 +113,14 @@ fun NewAccount(
                 singleLine = true,
                 enabled = enabled.value
             )
+            TextField(
+                modifier = formPadding,
+                value = messageSpaceId.value,
+                onValueChange = { messageSpaceId.value = it },
+                label = { Text(stringResource(R.string.message_space_id)) },
+                singleLine = true,
+                enabled = enabled.value
+            )
             Button(
                 modifier = formPadding,
                 content = { Text(stringResource(R.string.log_in)) },
@@ -119,8 +128,8 @@ fun NewAccount(
                     revealPassword.value = false
                     enabled.value = false
                     errorMsg.value = ""
-                    onLoginClick(context, scope, username.value, password.value, baseUrl.value, managerId.value, managementSpace.value, { id, baseUrl ->
-                        onAccountEventAsync(AccountEventAsync.AddAccount(id, baseUrl))
+                    onLoginClick(context, scope, username.value, password.value, baseUrl.value, managerId.value, managementSpace.value, {
+                        onAccountEventAsync(AccountEventAsync.AddAccount(username.value, baseUrl.value, messageSpaceId.value))
                     },
                     {
                         errorMsg.value = it
@@ -141,7 +150,7 @@ fun onLoginClick(
     inputUrl: String,
     managerId: String,
     managementSpaceId: String?,
-    addAccount: (String, String) -> Deferred<Long>,
+    addAccount: () -> Deferred<Long>,
     abort: (String) -> Unit,
     onAccountEvent: (AccountEvent) -> Unit,
     onClickGoBack: () -> Unit
@@ -151,7 +160,7 @@ fun onLoginClick(
     else if (!inputUrl.startsWith("http")) baseUrl = "https://$inputUrl"
     else baseUrl = inputUrl
     scope.launch {
-        val id = addAccount(username, baseUrl).await()
+        val id = addAccount().await()
         val clientDir = context.filesDir.resolve("clients/${id}")
         clientDir.mkdirs()
         val repo = createRealmRepositoriesModule {

@@ -6,5 +6,5 @@ sealed interface AccountEvent {
 }
 
 sealed interface AccountEventAsync {
-    data class AddAccount(val userId: String, val baseUrl: String): AccountEventAsync
+    data class AddAccount(val userId: String, val baseUrl: String, val messageSpace: String): AccountEventAsync
 }
