@@ -128,7 +128,7 @@ fun NewAccount(
                     revealPassword.value = false
                     enabled.value = false
                     errorMsg.value = ""
-                    onLoginClick(context, scope, username.value, password.value, baseUrl.value, managerId.value, managementSpace.value, {
+                    onLoginClick(context, scope, username.value, password.value, baseUrl.value, managerId.value, managementSpace.value, messageSpaceId.value, {
                         onAccountEventAsync(AccountEventAsync.AddAccount(username.value, baseUrl.value, messageSpaceId.value))
                     },
                     {
@@ -150,6 +150,7 @@ fun onLoginClick(
     inputUrl: String,
     managerId: String,
     managementSpaceId: String?,
+    messagingSpace: String,
     addAccount: () -> Deferred<Long>,
     abort: (String) -> Unit,
     onAccountEvent: (AccountEvent) -> Unit,
@@ -178,6 +179,10 @@ fun onLoginClick(
             return@launch
         }
 
+        client.api.rooms.joinRoom(RoomId(messagingSpace)).getOrElse {
+            abort(context.getString(R.string.cannot_join_message_space))
+        }
+
         /**
          * Step 1: Room is created by the new account. It also claims to be child of the management space.
          * Step 2: This account attempts to append the new room as the management space's child.
@@ -185,9 +190,10 @@ fun onLoginClick(
          * Step 3-2: If it succeeds, an invitation is sent to manager.
          */
         val via = setOf(client.userId.domain)
+        val roomName = context.getString(R.string.management_room_name).format(client.userId)
         val roomId = client.api.rooms.createRoom(
             visibility = DirectoryVisibility.PRIVATE,
-            name = context.getString(R.string.management_room_name).format(client.userId),
+            name = roomName,
             topic = context.getString(R.string.management_room_desc).format(client.userId),
             initialState = if(managementSpaceId === null) null else listOf(
                 Event.InitialStateEvent(
@@ -198,12 +204,15 @@ fun onLoginClick(
         ).getOrElse {
             // Assumes that room has not been created at all
             clientDir.deleteRecursively()
+            client.logout()
             abort(it.message ?: context.getString(R.string.cannot_create_management_room))
             return@launch
         }
         // If room is created under a certain space, it needs to be registered under parent room
         if(managementSpaceId !== null){
+            client.api.rooms.joinRoom(RoomId(managementSpaceId))
             client.api.rooms.sendStateEvent(RoomId(managementSpaceId), ChildEventContent(suggested = false, via = via), roomId.full).getOrElse {
+                clientDir.deleteRecursively()
                 client.api.rooms.leaveRoom(roomId)
                 client.logout()
                 abort(context.getString(R.string.no_child_space_permission).format(client.userId))

@@ -186,7 +186,7 @@ fun sendTestMessage(context: Context, scope: CoroutineScope, account: Account){
         ).getOrNull()
         if(client !== null){
             client.startSync()
-            client.room.sendMessage(RoomId("")) {
+            client.room.sendMessage(RoomId(account.managementRoom)) {
                 text(context.getString(R.string.test_msg))
             }
             Toast.makeText(context, context.getString(R.string.test_msg_sent), Toast.LENGTH_SHORT).show()
