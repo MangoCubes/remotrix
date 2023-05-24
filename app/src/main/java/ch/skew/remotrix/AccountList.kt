@@ -27,18 +27,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.work.Constraints
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
 import ch.skew.remotrix.classes.Account
 import ch.skew.remotrix.components.ScreenHelper
 import ch.skew.remotrix.data.accountDB.AccountEvent
+import ch.skew.remotrix.works.SendMsgWorker
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import net.folivo.trixnity.client.MatrixClient
 import net.folivo.trixnity.client.fromStore
 import net.folivo.trixnity.client.media.okio.OkioMediaStore
-import net.folivo.trixnity.client.room
-import net.folivo.trixnity.client.room.message.text
 import net.folivo.trixnity.client.store.repository.realm.createRealmRepositoriesModule
-import net.folivo.trixnity.core.model.RoomId
 import okio.Path.Companion.toPath
 
 @Composable
@@ -137,7 +139,6 @@ fun SessionItem(
     delAccount: (Account) -> Unit
 ) {
     val open = remember{ mutableStateOf(false) }
-    val scope = rememberCoroutineScope()
     ListItem(
         headlineText = { Text(account.fullName()) },
         supportingText = { Text(account.baseUrl) },
@@ -159,7 +160,7 @@ fun SessionItem(
                     text = { Text(stringResource(R.string.send_test_message)) },
                     onClick = {
                         open.value = false
-                        sendTestMessage(context, scope, account)
+                        sendTestMessage(context, account)
                     }
                 )
                 DropdownMenuItem(
@@ -174,24 +175,14 @@ fun SessionItem(
     )
 }
 
-fun sendTestMessage(context: Context, scope: CoroutineScope, account: Account){
-    val clientDir = context.filesDir.resolve("clients/${account.id}")
-    scope.launch {
-        val client = MatrixClient.fromStore(
-            repositoriesModule = createRealmRepositoriesModule {
-                this.directory(clientDir.toString())
-            },
-            mediaStore = OkioMediaStore(context.filesDir.resolve("clients/media").absolutePath.toPath()),
-            scope = scope
-        ).getOrNull()
-        if(client !== null){
-            client.startSync()
-            client.room.sendMessage(RoomId(account.managementRoom)) {
-                text(context.getString(R.string.test_msg))
-            }
-            Toast.makeText(context, context.getString(R.string.test_msg_sent), Toast.LENGTH_SHORT).show()
-        } else {
-            Toast.makeText(context, context.getString(R.string.failed_to_send_message), Toast.LENGTH_SHORT).show()
-        }
-    }
+fun sendTestMessage(context: Context, account: Account){
+    val work = OneTimeWorkRequestBuilder<SendMsgWorker>()
+        .setConstraints(
+            Constraints.Builder()
+                .setRequiredNetworkType(
+                    NetworkType.CONNECTED
+                ).build()
+        ).build()
+    val workManager = WorkManager.getInstance(context)
+    workManager.beginWith(work).enqueue()
 }

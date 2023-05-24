@@ -23,7 +23,7 @@ class SendMsgWorker(
 ): CoroutineWorker(context, workerParameters){
     override suspend fun doWork(): Result {
         return withContext(Dispatchers.IO) {
-            val account = Account(1, "remotrix", "skew.ch", "https://matrix.skew.ch", "!BAZCUeakzJjfxPNjIB:skew.ch")
+            val account = Account(2, "remotrix", "skew.ch", "https://matrix.skew.ch", "!BAZCUeakzJjfxPNjIB:skew.ch")
             val clientDir = context.filesDir.resolve("clients/${account.id}")
             val client = MatrixClient.fromStore(
                 repositoriesModule = createRealmRepositoriesModule {
@@ -38,8 +38,11 @@ class SendMsgWorker(
                     )
                 )
             }
-            client?.room?.sendMessage(RoomId(account.managementRoom)) {
-                text(context.getString(R.string.test_msg))
+            client?.let {
+                it.room.sendMessage(RoomId(account.managementRoom)) {
+                    text(context.getString(R.string.test_msg))
+                }
+                client.syncOnce()
             }
             return@withContext Result.success()
         }
