@@ -43,6 +43,9 @@ import net.folivo.trixnity.client.fromStore
 import net.folivo.trixnity.client.media.okio.OkioMediaStore
 import net.folivo.trixnity.client.store.repository.realm.createRealmRepositoriesModule
 import okio.Path.Companion.toPath
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 
 @Composable
 @Preview
@@ -177,6 +180,8 @@ fun SessionItem(
 }
 
 fun sendTestMessage(context: Context, account: Account){
+    val formatter = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
+    val current = formatter.format(Calendar.getInstance().time)
     val work = OneTimeWorkRequestBuilder<SendMsgWorker>()
         .setConstraints(
             Constraints.Builder()
@@ -188,9 +193,10 @@ fun sendTestMessage(context: Context, account: Account){
             Data.Builder()
                 .putInt("senderId", account.id)
                 .putInt("msgType", 1)
-                .putStringArray("payload", arrayOf(account.managementRoom, context.getString(R.string.test_msg)))
+                .putStringArray("payload", arrayOf(account.managementRoom, context.getString(R.string.test_msg).format(current)))
                 .build()
         ).build()
+    Toast.makeText(context, context.getString(R.string.test_msg_sent).format(current), Toast.LENGTH_LONG).show()
     val workManager = WorkManager.getInstance(context)
     workManager.beginWith(work).enqueue()
 }
