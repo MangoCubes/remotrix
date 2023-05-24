@@ -47,15 +47,17 @@ class SendMsgWorker(
                     )
                 )
             }
+            if(client === null) return@withContext Result.failure(
+                workDataOf(
+                    "error" to "Client cannot be constructed."
+                )
+            )
+            client.startSync()
             if(msg is TestMsg){
-                client?.let {
-                    client.syncOnce()
-                    it.room.sendMessage(msg.to) {
-                        text(msg.payload)
-                    }
-                    client.syncOnce()
-                    return@withContext Result.success()
+                client.room.sendMessage(msg.to) {
+                    text(msg.payload)
                 }
+                return@withContext Result.success()
             }
             return@withContext Result.failure(
                 workDataOf(
