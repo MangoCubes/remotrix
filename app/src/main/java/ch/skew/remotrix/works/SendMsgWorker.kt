@@ -4,9 +4,10 @@ import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
-import ch.skew.remotrix.R
-import ch.skew.remotrix.classes.Account
+import ch.skew.remotrix.classes.MsgToSend
+import ch.skew.remotrix.classes.TestMsg
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import net.folivo.trixnity.client.MatrixClient
 import net.folivo.trixnity.client.fromStore
@@ -14,7 +15,6 @@ import net.folivo.trixnity.client.media.okio.OkioMediaStore
 import net.folivo.trixnity.client.room
 import net.folivo.trixnity.client.room.message.text
 import net.folivo.trixnity.client.store.repository.realm.createRealmRepositoriesModule
-import net.folivo.trixnity.core.model.RoomId
 import okio.Path.Companion.toPath
 
 class SendMsgWorker(
@@ -23,8 +23,13 @@ class SendMsgWorker(
 ): CoroutineWorker(context, workerParameters){
     override suspend fun doWork(): Result {
         return withContext(Dispatchers.IO) {
-            val account = Account(2, "remotrix", "skew.ch", "https://matrix.skew.ch", "!BAZCUeakzJjfxPNjIB:skew.ch")
-            val clientDir = context.filesDir.resolve("clients/${account.id}")
+            val msg = MsgToSend.from(inputData.getInt("msgType", -1), inputData.getInt("senderId", 0), inputData.getStringArray("payload"))
+            if(msg === null) return@withContext Result.failure(
+                workDataOf(
+                    "error" to "Invalid message."
+                )
+            )
+            val clientDir = context.filesDir.resolve("clients/${msg.senderId}")
             val client = MatrixClient.fromStore(
                 repositoriesModule = createRealmRepositoriesModule {
                     this.directory(clientDir.toString())
@@ -38,11 +43,14 @@ class SendMsgWorker(
                     )
                 )
             }
-            client?.let {
-                it.room.sendMessage(RoomId(account.managementRoom)) {
-                    text(context.getString(R.string.test_msg))
+            if(msg is TestMsg){
+                client?.let {
+                    it.room.sendMessage(msg.to) {
+                        text(msg.payload)
+                    }
+                    client.startSync()
+                    delay(1000)
                 }
-                client.syncOnce()
             }
             return@withContext Result.success()
         }

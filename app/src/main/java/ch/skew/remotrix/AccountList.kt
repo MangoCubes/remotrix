@@ -28,6 +28,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.work.Constraints
+import androidx.work.Data
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
@@ -182,6 +183,13 @@ fun sendTestMessage(context: Context, account: Account){
                 .setRequiredNetworkType(
                     NetworkType.CONNECTED
                 ).build()
+        )
+        .setInputData(
+            Data.Builder()
+                .putInt("senderId", account.id)
+                .putInt("msgType", 1)
+                .putStringArray("payload", arrayOf(account.managementRoom, context.getString(R.string.test_msg)))
+                .build()
         ).build()
     val workManager = WorkManager.getInstance(context)
     workManager.beginWith(work).enqueue()
