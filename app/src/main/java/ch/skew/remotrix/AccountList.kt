@@ -31,6 +31,7 @@ import androidx.work.Constraints
 import androidx.work.Data
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.OutOfQuotaPolicy
 import androidx.work.WorkManager
 import ch.skew.remotrix.classes.Account
 import ch.skew.remotrix.components.ScreenHelper
@@ -195,8 +196,10 @@ fun sendTestMessage(context: Context, account: Account){
                 .putInt("msgType", 1)
                 .putStringArray("payload", arrayOf(account.managementRoom, context.getString(R.string.test_msg).format(current)))
                 .build()
-        ).build()
+        )
+        .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+        .build()
     Toast.makeText(context, context.getString(R.string.test_msg_sent).format(current), Toast.LENGTH_LONG).show()
     val workManager = WorkManager.getInstance(context)
-    workManager.beginWith(work).enqueue()
+    workManager.enqueue(work)
 }

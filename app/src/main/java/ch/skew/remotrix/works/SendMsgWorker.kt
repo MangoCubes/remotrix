@@ -1,13 +1,14 @@
 package ch.skew.remotrix.works
 
 import android.content.Context
+import android.util.Log
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import ch.skew.remotrix.classes.MsgToSend
 import ch.skew.remotrix.classes.TestMsg
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import net.folivo.trixnity.client.MatrixClient
 import net.folivo.trixnity.client.fromStore
@@ -22,7 +23,8 @@ class SendMsgWorker(
     private val workerParameters: WorkerParameters
 ): CoroutineWorker(context, workerParameters){
     override suspend fun doWork(): Result {
-        return withContext(Dispatchers.IO) {
+        val result = withContext(Dispatchers.IO) {
+            Log.i("Remotrix", "Running task")
             val msg = MsgToSend.from(inputData.getInt("msgType", -1), inputData.getInt("senderId", 0), inputData.getStringArray("payload"))
             if(msg === null) return@withContext Result.failure(
                 workDataOf(
@@ -30,12 +32,14 @@ class SendMsgWorker(
                 )
             )
             val clientDir = context.filesDir.resolve("clients/${msg.senderId}")
+            val repo = createRealmRepositoriesModule {
+                this.directory(clientDir.toString())
+            }
+            val media = OkioMediaStore(context.filesDir.resolve("clients/media").absolutePath.toPath())
             val client = MatrixClient.fromStore(
-                repositoriesModule = createRealmRepositoriesModule {
-                    this.directory(clientDir.toString())
-                },
-                mediaStore = OkioMediaStore(context.filesDir.resolve("clients/media").absolutePath.toPath()),
-                scope = this
+                repositoriesModule = repo,
+                mediaStore = media,
+                scope = CoroutineScope(Dispatchers.IO)
             ).getOrElse {
                 return@withContext Result.failure(
                     workDataOf(
@@ -45,14 +49,20 @@ class SendMsgWorker(
             }
             if(msg is TestMsg){
                 client?.let {
+                    client.syncOnce()
                     it.room.sendMessage(msg.to) {
                         text(msg.payload)
                     }
-                    client.startSync()
-                    delay(1000)
+                    client.syncOnce()
+                    return@withContext Result.success()
                 }
             }
-            return@withContext Result.success()
+            return@withContext Result.failure(
+                workDataOf(
+                    "error" to "Message type is invalid."
+                )
+            )
         }
+        return result
     }
 }
