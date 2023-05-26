@@ -1,6 +1,7 @@
 package ch.skew.remotrix
 
 import android.os.Bundle
+import android.os.StrictMode
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -30,6 +31,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.room.Room
 import ch.skew.remotrix.classes.Account
+import ch.skew.remotrix.classes.Destination
 import ch.skew.remotrix.components.ListHeader
 import ch.skew.remotrix.data.RemotrixDB
 import ch.skew.remotrix.data.RemotrixSettings
@@ -73,6 +75,7 @@ class MainActivity : ComponentActivity() {
         }
     )
     override fun onCreate(savedInstanceState: Bundle?) {
+        StrictMode.enableDefaults()
         super.onCreate(savedInstanceState)
         setContent {
             val accounts by accountViewModel.accounts.collectAsState()

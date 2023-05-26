@@ -1,4 +1,4 @@
-package ch.skew.remotrix
+package ch.skew.remotrix.classes
 
 enum class Destination(val route: String) {
     Home("home"),
