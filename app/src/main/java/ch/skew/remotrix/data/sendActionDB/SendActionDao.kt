@@ -9,11 +9,9 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface SendActionDao{
     @Insert
-    suspend fun insert(sendAction: SendAction): Long
+    suspend fun insert(sendAction: SendAction)
     @Delete
     suspend fun delete(sendAction: SendAction)
     @Query("SELECT * FROM send_action")
-    fun getAllSendActions(): Flow<List<SendAction>>
-    @Query("SELECT * FROM send_action WHERE sender_id = :senderId")
-    fun getSendActionsBySenderId(senderId: Long): Flow<List<SendAction>>
+    fun getAll(): Flow<List<SendAction>>
 }

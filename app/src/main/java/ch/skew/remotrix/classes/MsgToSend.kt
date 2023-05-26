@@ -29,8 +29,7 @@ class SMSMsg(
     val sender: String, //Phone number of the SMS sender
     override val payload: String //Content of SMS message
 ): MsgToSend(payload) {
-    fun getRoomId(rules: List<SendAction>): RoomId{
+    fun getRoomId(rules: List<SendAction>): Pair<Int, RoomId>{
         throw Error("Not implemented")
     }
 }
-

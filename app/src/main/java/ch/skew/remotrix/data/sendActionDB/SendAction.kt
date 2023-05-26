@@ -16,7 +16,7 @@ import ch.skew.remotrix.data.accountDB.AccountData
         ForeignKey(
             entity = AccountData::class,
             parentColumns = arrayOf("id"),
-            childColumns = arrayOf("id"),
+            childColumns = arrayOf("sender_id"),
             onDelete = ForeignKey.CASCADE
         )
     ]
@@ -26,20 +26,23 @@ data class SendAction(
      * Account that will be used for sending messages via Matrix
      * Obviously will be foreign key
      */
-    @ColumnInfo(index = true, name = "sender_id")
-    val senderId: Long,
+    @ColumnInfo(name = "sender_id", index = true)
+    val senderId: Int,
     /**
-     * ID of the space that would be used to send messages
-     * This must be space, and this account requires permission to create a room within this space
+     * Regex that gets testes against the phone number of the sender
      */
-    @ColumnInfo(name = "space_id")
-    val spaceId: String,
+    @ColumnInfo(name = "sender_regex")
+    val senderRegex: String,
     /**
-     * A string that contains the following: %1 and %2
-     * This string will be used as a name for new rooms created when a message arrives from someone you have never received one from before
+     * Regex that gets testes against the body of the message
      */
-    @ColumnInfo(name = "name_format")
-    val nameFormat: String,
+    @ColumnInfo(name = "body_regex")
+    val bodyRegex: String,
+    /**
+     * Priority: Lower means tested against first
+     */
+    @ColumnInfo(name = "priority", index = true)
+    val priority: Int,
     /**
      * ID of this send action
      */
