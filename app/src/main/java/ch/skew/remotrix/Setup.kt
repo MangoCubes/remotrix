@@ -31,7 +31,8 @@ import kotlinx.coroutines.launch
 @Composable
 fun SetupScreen(
     done: () -> Unit = {},
-    goBack: () -> Unit = {}
+    goBack: () -> Unit = {},
+    openedBefore: Boolean = true
 ) {
     val formPadding = Modifier
         .fillMaxWidth()
@@ -46,6 +47,7 @@ fun SetupScreen(
     val existingManagementSpaceId = settings.getManagementSpaceId.collectAsState(initial = "")
     val currentManagerId = remember { mutableStateOf("") }
     val currentManagementSpaceId = remember { mutableStateOf("") }
+
     val scope = rememberCoroutineScope()
     Scaffold(
         topBar = {
@@ -100,7 +102,7 @@ fun SetupScreen(
                 content = { Text(stringResource(R.string.confirm)) },
                 onClick = {onConfirm(currentManagerId.value, currentManagementSpaceId.value, context, scope, settings, done) }
             )
-            if(existingManagerId.value !== "" && existingManagementSpaceId.value !== "") {
+            if(openedBefore) {
                 Button(
                     modifier = formPadding,
                     content = { Text(stringResource(R.string.cancel)) },
@@ -111,6 +113,7 @@ fun SetupScreen(
     }
 }
 
+@Suppress("RegExpRedundantEscape")
 fun onConfirm(userId: String, managementSpaceId: String?, context: Context, scope: CoroutineScope, settings: RemotrixSettings, done: () -> Unit){
     val idPattern = Regex("@[A-z0-9]+:[A-z0-9\\.]+")
     val spacePattern = Regex("![A-z]+:[A-z0-9\\.]+")
@@ -125,6 +128,7 @@ fun onConfirm(userId: String, managementSpaceId: String?, context: Context, scop
     scope.launch {
         settings.saveManagerId(userId)
         settings.saveManagementSpaceId(managementSpaceId)
+        settings.saveOpenedBefore()
         Toast.makeText(context, context.getString(R.string.setup_complete), Toast.LENGTH_SHORT).show()
         done()
     }

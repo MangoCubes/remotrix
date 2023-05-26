@@ -55,6 +55,7 @@ class MainActivity : ComponentActivity() {
         ).build()
     }
 
+    @Suppress("UNCHECKED_CAST")
     private val accountViewModel by viewModels<AccountViewModel>(
         factoryProducer = {
             object: ViewModelProvider.Factory {
@@ -64,7 +65,7 @@ class MainActivity : ComponentActivity() {
             }
         }
     )
-
+    @Suppress("UNCHECKED_CAST")
     private val sendActionViewModel by viewModels<SendActionViewModel>(
         factoryProducer = {
             object: ViewModelProvider.Factory {
@@ -99,13 +100,13 @@ fun RemotrixApp(
     sendActions: List<SendAction>
 ) {
     val settings = RemotrixSettings(LocalContext.current)
-    val managerId = settings.getManagerId.collectAsState(initial = "-")
+    val openedBefore = settings.getOpenedBefore.collectAsState(initial = null)
     val navController = rememberNavController()
     RemotrixTheme {
-        NavHost(
+        if (openedBefore.value !== null) NavHost(
             navController = navController,
             startDestination =
-                if(managerId.value === "") Destination.Setup.route
+                if(!openedBefore.value!!) Destination.Setup.route
                 else Destination.Home.route
 
         ) {
@@ -133,7 +134,8 @@ fun RemotrixApp(
             composable(route = Destination.Setup.route) {
                 SetupScreen(
                     done = { navController.navigate(Destination.Home.route) },
-                    goBack = { navController.popBackStack() }
+                    goBack = { navController.popBackStack() },
+                    openedBefore = openedBefore.value!!
                 )
             }
         }

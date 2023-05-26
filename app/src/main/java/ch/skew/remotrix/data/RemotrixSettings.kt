@@ -14,6 +14,7 @@ class RemotrixSettings(
         private val Context.dataStore by preferencesDataStore(name = "settings")
         val managerId = stringPreferencesKey("managerId")
         val managementSpaceId = stringPreferencesKey("managementSpaceId")
+        val openedBefore = stringPreferencesKey("openedBefore")
     }
 
     val getManagerId: Flow<String> = context.dataStore.data.map { preferences ->
@@ -24,6 +25,9 @@ class RemotrixSettings(
         preferences[managementSpaceId]
     }
 
+    val getOpenedBefore: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[openedBefore] == "1"
+    }
 
     suspend fun saveManagerId(name: String) {
         context.dataStore.edit { preferences ->
@@ -35,6 +39,11 @@ class RemotrixSettings(
         context.dataStore.edit { preferences ->
             if (id === null) preferences.remove(managementSpaceId)
             else preferences[managementSpaceId] = id
+        }
+    }
+    suspend fun saveOpenedBefore() {
+        context.dataStore.edit { preferences ->
+            preferences[openedBefore] = "1"
         }
     }
 }
