@@ -17,25 +17,27 @@ class OnSMS : BroadcastReceiver(){
         if(intent?.action.equals("android.provider.Telephony.SMS_RECEIVED")){
             if(context == null) return
             val msgs = Telephony.Sms.Intents.getMessagesFromIntent(intent)
-            msgs.forEach { msg ->
-                val work = OneTimeWorkRequestBuilder<SendMsgWorker>()
-                    .setConstraints(
-                        Constraints.Builder()
-                            .setRequiredNetworkType(
-                                NetworkType.CONNECTED
-                            ).build()
-                    )
-                    .setInputData(
-                        Data.Builder()
-                            .putInt("msgType", 2)
-                            .putStringArray("payload", arrayOf(msg.originatingAddress, msg.messageBody))
-                            .build()
-                    )
-                    .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
-                    .build()
-                val workManager = WorkManager.getInstance(context)
-                workManager.enqueue(work)
+            val msgList = mutableListOf<String>()
+            msgs.forEach {
+                msgList.add(it.messageBody)
             }
+            val work = OneTimeWorkRequestBuilder<SendMsgWorker>()
+                .setConstraints(
+                    Constraints.Builder()
+                        .setRequiredNetworkType(
+                            NetworkType.CONNECTED
+                        ).build()
+                )
+                .setInputData(
+                    Data.Builder()
+                        .putInt("msgType", 2)
+                        .putStringArray("payload", arrayOf(msgs[0].originatingAddress, msgList.joinToString("")))
+                        .build()
+                )
+                .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+                .build()
+            val workManager = WorkManager.getInstance(context)
+            workManager.enqueue(work)
         }
     }
 }
