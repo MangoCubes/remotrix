@@ -13,5 +13,8 @@ interface SendActionDao{
     @Delete
     suspend fun delete(sendAction: SendAction)
     @Query("SELECT * FROM send_action")
-    fun getAll(): Flow<List<SendAction>>
+    fun getAllAsFlow(): Flow<List<SendAction>>
+
+    @Query("SELECT * FROM send_action")
+    fun getAll(): List<SendAction>
 }

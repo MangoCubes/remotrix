@@ -9,7 +9,7 @@ import kotlinx.coroutines.launch
 class SendActionViewModel(
     private val dao: SendActionDao
 ): ViewModel() {
-    val sendActions = dao.getAll().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    val sendActions = dao.getAllAsFlow().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun onEvent(event: SendActionEvent) {
         when(event) {

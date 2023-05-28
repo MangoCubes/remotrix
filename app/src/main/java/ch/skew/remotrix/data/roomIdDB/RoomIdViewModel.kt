@@ -2,7 +2,6 @@ package ch.skew.remotrix.data.roomIdDB
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 
 
@@ -10,7 +9,7 @@ class RoomIdViewModel(
     private val dao: RoomIdDao
 ): ViewModel() {
 
-    fun getRoomId(phoneNumber: String, senderId: String): Flow<String>{
+    fun getRoomId(phoneNumber: String, senderId: Int): String?{
         return dao.getDestRoom(phoneNumber, senderId)
     }
 
