@@ -3,7 +3,7 @@ package ch.skew.remotrix.data.roomIdDB
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 
-@Entity(tableName = "room_id", primaryKeys = ["phone_number", "sender_id"])
+@Entity(tableName = "room_ids", primaryKeys = ["phone_number", "sender_id"])
 data class RoomIdData(
     @ColumnInfo(name = "phone_number")
     val phoneNumber: String,

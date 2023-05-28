@@ -12,6 +12,6 @@ interface RoomIdDao{
     suspend fun insert(roomIdData: RoomIdData)
     @Delete
     suspend fun delete(roomIdData: RoomIdData)
-    @Query("SELECT room_id FROM room_id WHERE phone_number = :phoneNumber AND sender_id = :senderId")
+    @Query("SELECT room_id FROM room_ids WHERE phone_number = :phoneNumber AND sender_id = :senderId")
     fun getDestRoom(phoneNumber: String, senderId: String): Flow<String>
 }
