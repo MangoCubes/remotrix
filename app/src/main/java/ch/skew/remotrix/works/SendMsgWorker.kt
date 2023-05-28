@@ -48,6 +48,7 @@ class SendMsgWorker(
                     "error" to "Invalid message."
                 )
             )
+            val settings = RemotrixSettings(applicationContext)
             val db = Room.databaseBuilder(
                 applicationContext,
                 RemotrixDB::class.java, "accounts.db"
@@ -55,7 +56,9 @@ class SendMsgWorker(
 
             val sendAs = when (msg) {
                 is SMSMsg -> {
-                    msg.getSenderId(db.sendActionDao.getAll() + SendAction(1, "", "", 0, 100))
+                    val defaultAccount = settings.getDefaultSend.first()
+                    val match = msg.getSenderId(db.sendActionDao.getAll())
+                    if (match !== null) match else defaultAccount
                 }
 
                 is TestMsg -> {
@@ -109,7 +112,7 @@ class SendMsgWorker(
                 val via = setOf(client.userId.domain)
                 val msgSpace = db.accountDao.getMessageSpace(sendAs)
                 val sendTo = db.roomIdDao.getDestRoom(msg.sender, sendAs)
-                val managerId = RemotrixSettings(applicationContext).getManagerId.first()
+                val managerId = settings.getManagerId.first()
                 val roomId: RoomId
                 if(sendTo === null) {
                     roomId = client.api.rooms.createRoom(
@@ -147,8 +150,11 @@ class SendMsgWorker(
                     )
                 }
 
-                client.api.rooms.inviteUser(roomId, UserId(managerId))
-                if (sendTo === null) db.roomIdDao.insert(RoomIdData(msg.sender, sendAs, roomId.full))
+
+                if (sendTo === null) {
+                    db.roomIdDao.insert(RoomIdData(msg.sender, sendAs, roomId.full))
+                    client.api.rooms.inviteUser(roomId, UserId(managerId))
+                }
                 client.room.sendMessage(roomId) {
                     text(msg.payload)
                 }

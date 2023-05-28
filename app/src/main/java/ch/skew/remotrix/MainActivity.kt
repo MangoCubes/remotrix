@@ -1,7 +1,6 @@
 package ch.skew.remotrix
 
 import android.os.Bundle
-import android.os.StrictMode
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -83,7 +82,6 @@ class MainActivity : ComponentActivity() {
         }
     )
     override fun onCreate(savedInstanceState: Bundle?) {
-        StrictMode.enableDefaults()
         super.onCreate(savedInstanceState)
         setContent {
             val accounts by accountViewModel.accounts.collectAsState()
