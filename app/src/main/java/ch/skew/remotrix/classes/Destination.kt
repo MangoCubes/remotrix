@@ -1,7 +1,8 @@
-package ch.skew.remotrix
+package ch.skew.remotrix.classes
 
 enum class Destination(val route: String) {
     Home("home"),
     AccountList("account_list"),
-    NewAccount("new_account")
+    NewAccount("new_account"),
+    Setup("setup")
 }

@@ -3,12 +3,15 @@ package ch.skew.remotrix
 import android.content.Context
 import android.widget.Toast
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -23,8 +26,18 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import ch.skew.remotrix.data.Account
-import ch.skew.remotrix.data.AccountEvent
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.work.Constraints
+import androidx.work.Data
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.OutOfQuotaPolicy
+import androidx.work.WorkManager
+import ch.skew.remotrix.classes.Account
+import ch.skew.remotrix.components.DelAccountDialog
+import ch.skew.remotrix.components.ScreenHelper
+import ch.skew.remotrix.data.accountDB.AccountEvent
+import ch.skew.remotrix.works.SendMsgWorker
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import net.folivo.trixnity.client.MatrixClient
@@ -32,6 +45,15 @@ import net.folivo.trixnity.client.fromStore
 import net.folivo.trixnity.client.media.okio.OkioMediaStore
 import net.folivo.trixnity.client.store.repository.realm.createRealmRepositoriesModule
 import okio.Path.Companion.toPath
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
+
+@Composable
+@Preview
+fun AccountListPreview() {
+    AccountList(listOf(), {}, {}, {})
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -64,9 +86,17 @@ fun AccountList(
             )
         }
     ) { padding ->
-        Column(modifier = Modifier.padding(padding)) {
-            accounts.forEach {
-                SessionItem(it) { account -> askDel.value = account }
+        Column(
+            modifier = Modifier
+                .padding(padding)
+                .fillMaxSize()
+        ) {
+            if (accounts.isNotEmpty()) {
+                accounts.forEach {
+                    SessionItem(it, context) { account -> askDel.value = account }
+                }
+            } else {
+                ScreenHelper(stringResource(R.string.add_account_help))
             }
         }
     }
@@ -82,26 +112,27 @@ fun deleteAccount(
     if (account === null) return
     scope.launch {
         try {
-            val dir = context.filesDir.resolve("clients").resolve(account.userId)
+            val clientDir = context.filesDir.resolve("clients/${account.id}")
             val repo = createRealmRepositoriesModule {
-                this.directory(dir.toString())
+                this.directory(clientDir.toString())
             }
+            val mediaStore = OkioMediaStore(context.filesDir.resolve("clients/media").absolutePath.toPath())
             val matrixClient = MatrixClient.fromStore(
                 repositoriesModule = repo,
-                mediaStore = OkioMediaStore(context.filesDir.absolutePath.toPath().resolve("media")),
+                mediaStore = mediaStore,
                 scope = scope,
-            ).getOrNull()
+            ).getOrThrow()
             if(matrixClient === null) {
                 Toast.makeText(context, "Cannot logout. Account will be removed from device only.", Toast.LENGTH_LONG).show()
             } else {
                 matrixClient.logout()
-                Toast.makeText(context, "Logout successful.", Toast.LENGTH_LONG).show()
+                Toast.makeText(context, "Logout successful.", Toast.LENGTH_SHORT).show()
             }
-            dir.deleteRecursively()
+            context.filesDir.resolve("clients").resolve("${account.userId}.mv.db").delete()
         } catch (e: Throwable) {
             Toast.makeText(context, "Cannot locate account data. Account will be removed from device only.", Toast.LENGTH_LONG).show()
         }
-        onAccountEvent(AccountEvent.DeleteAccount(account))
+        onAccountEvent(AccountEvent.DeleteAccount(account.id))
         close()
     }
 }
@@ -110,24 +141,66 @@ fun deleteAccount(
 @Composable
 fun SessionItem(
     account: Account,
+    context: Context,
     delAccount: (Account) -> Unit
 ) {
+    val open = remember{ mutableStateOf(false) }
     ListItem(
-        headlineText = { Text(account.userId) },
-        supportingText = { Text(account.homeServer) },
+        headlineText = { Text(account.fullName()) },
+        supportingText = { Text(account.baseUrl) },
         leadingContent = {
             Icon(
                 Icons.Filled.AccountCircle,
-                contentDescription = account.homeServer,
+                contentDescription = account.fullName(),
             )
         },
         trailingContent = {
-            IconButton(onClick = { delAccount(account)} ) {
+            IconButton(onClick = { open.value = true } ) {
                 Icon(
-                    Icons.Filled.Delete,
-                    contentDescription = stringResource(R.string.delete_account),
+                    Icons.Filled.MoreVert,
+                    contentDescription = stringResource(R.string.account_options),
+                )
+            }
+            DropdownMenu(expanded = open.value, onDismissRequest = { open.value = false }) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.send_test_message)) },
+                    onClick = {
+                        open.value = false
+                        sendTestMessage(context, account)
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.delete)) },
+                    onClick = {
+                        open.value = false
+                        delAccount(account)
+                    }
                 )
             }
         }
     )
+}
+
+fun sendTestMessage(context: Context, account: Account){
+    val formatter = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
+    val current = formatter.format(Calendar.getInstance().time)
+    val work = OneTimeWorkRequestBuilder<SendMsgWorker>()
+        .setConstraints(
+            Constraints.Builder()
+                .setRequiredNetworkType(
+                    NetworkType.CONNECTED
+                ).build()
+        )
+        .setInputData(
+            Data.Builder()
+                .putInt("senderId", account.id)
+                .putInt("msgType", 1)
+                .putStringArray("payload", arrayOf(account.managementRoom, context.getString(R.string.test_msg).format(current)))
+                .build()
+        )
+        .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+        .build()
+    Toast.makeText(context, context.getString(R.string.test_msg_sent).format(current), Toast.LENGTH_LONG).show()
+    val workManager = WorkManager.getInstance(context)
+    workManager.enqueue(work)
 }
