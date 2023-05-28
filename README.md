@@ -8,4 +8,6 @@ Whenever you receive SMS on the phone that has this app installed, this app will
  - [ ] Maintenance room, for when you want to update your settings without getting to your phone, or need to test things out real quick
  - [ ] Multiple senders (or none, in case you want to filter out spams), chosen based on the SMS sender and content regex
  - [ ] Send messages back
- 
+
+## Screenshot
+ ![image](https://github.com/MangoCubes/remotrix/assets/10383115/060e6375-7e1a-4c80-b46a-8652cfc320e6)
