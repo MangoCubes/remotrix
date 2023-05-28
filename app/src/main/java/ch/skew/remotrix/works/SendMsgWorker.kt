@@ -26,10 +26,10 @@ import net.folivo.trixnity.client.media.okio.OkioMediaStore
 import net.folivo.trixnity.client.room
 import net.folivo.trixnity.client.room.message.text
 import net.folivo.trixnity.client.store.repository.realm.createRealmRepositoriesModule
-import net.folivo.trixnity.clientserverapi.model.rooms.DirectoryVisibility
 import net.folivo.trixnity.core.model.RoomId
 import net.folivo.trixnity.core.model.UserId
 import net.folivo.trixnity.core.model.events.Event
+import net.folivo.trixnity.core.model.events.m.room.JoinRulesEventContent
 import net.folivo.trixnity.core.model.events.m.space.ChildEventContent
 import net.folivo.trixnity.core.model.events.m.space.ParentEventContent
 import okio.Path.Companion.toPath
@@ -113,13 +113,21 @@ class SendMsgWorker(
                 val roomId: RoomId
                 if(sendTo === null) {
                     roomId = client.api.rooms.createRoom(
-                        visibility = DirectoryVisibility.PRIVATE,
                         name = msg.sender,
                         topic = context.getString(R.string.msg_room_desc).format(msg.sender),
                         initialState = listOf(
                             Event.InitialStateEvent(
                                 content = ParentEventContent(true, via),
                                 stateKey = msgSpace
+                            ),
+                            Event.InitialStateEvent(
+                                content = JoinRulesEventContent(
+                                    joinRule = JoinRulesEventContent.JoinRule.Restricted,
+                                    allow = setOf(
+                                        JoinRulesEventContent.AllowCondition(RoomId(msgSpace), JoinRulesEventContent.AllowCondition.AllowConditionType.RoomMembership)
+                                    )
+                                ),
+                                stateKey = ""
                             )
                         )
                     ).getOrElse {
