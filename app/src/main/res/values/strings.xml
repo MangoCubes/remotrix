@@ -59,4 +59,8 @@
     <string name="message_space_id">Message Space ID</string>
     <string name="cannot_join_message_space">Failed to join messaging space. If the room is not public, you must send invitation to this account prior to adding account here.</string>
     <string name="msg_room_desc">Messages from %s</string>
+    <string name="behaviour">Behaviour</string>
+    <string name="choose_default_account">Choose Default Account</string>
+    <string name="choose_default_account_desc">Choose which account the message should be sent with if it matches no rules in the list.</string>
+    <string name="choose">Choose</string>
 </resources>
