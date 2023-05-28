@@ -58,4 +58,5 @@
     <string name="management_space">Management Space</string>
     <string name="message_space_id">Message Space ID</string>
     <string name="cannot_join_message_space">Failed to join messaging space. If the room is not public, you must send invitation to this account prior to adding account here.</string>
+    <string name="msg_room_desc">Messages from %s</string>
 </resources>
