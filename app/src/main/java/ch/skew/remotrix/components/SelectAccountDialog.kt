@@ -32,7 +32,8 @@ fun SelectAccountDialogPreview(){
         confirm = {},
         title = "Please select an account",
         noneChosenDesc = "Choose none",
-        show = true
+        show = true,
+        defaultSelected = 1
     )
 }
 
@@ -40,18 +41,18 @@ fun SelectAccountDialogPreview(){
 fun SelectAccountDialog(
     accounts: List<Account>,
     close: () -> Unit,
-    confirm: () -> Unit,
+    confirm: (Int?) -> Unit,
     title: String,
     noneChosenDesc: String?,
-    show: Boolean
+    show: Boolean,
+    defaultSelected: Int?
 ){
-    val chosen = remember { mutableStateOf<Int?>(null) }
+    val chosen = remember { mutableStateOf<Int?>(defaultSelected) }
     if(show) {
         AlertDialog(
             onDismissRequest = close,
             confirmButton = {
-                Button(
-                    confirm,
+                Button({ confirm(chosen.value) },
                     enabled = (noneChosenDesc === null && chosen.value !== null) || (noneChosenDesc !== null)
                 ) {
                     Text(stringResource(R.string.choose))
