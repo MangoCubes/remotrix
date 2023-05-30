@@ -2,8 +2,8 @@ package ch.skew.remotrix
 
 import android.content.Context
 import android.widget.Toast
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -48,6 +48,43 @@ import net.folivo.trixnity.core.model.events.m.space.ChildEventContent
 import net.folivo.trixnity.core.model.events.m.space.ParentEventContent
 import okio.Path.Companion.toPath
 
+enum class VerificationStep {
+    /**
+     * Status before starting login
+     */
+    STANDBY,
+
+    /**
+     * Status just after pressing button and waiting for login to go through
+     */
+    STARTED,
+
+    /**
+     * Using this account to join the messaging space
+     */
+    JOINING_MESSAGING_SPACE,
+
+    /**
+     * Checking if this account have sufficient permission in the messaging space
+     */
+    VERIFYING_PERMISSIONS,
+
+    /**
+     * Creating a management room
+     */
+    CREATING_MANAGEMENT_ROOM,
+
+    /**
+     * Appending the management room under the management space as child
+     */
+    APPENDING_ROOM_AS_CHILD,
+
+    /**
+     * Inviting the manager to the room
+     */
+    INVITING_MANAGER
+}
+
 @Composable
 @Preview
 fun NewAccountPreview(){
@@ -63,13 +100,7 @@ fun NewAccount(
 ){
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val formPadding = Modifier
-        .fillMaxWidth()
-        .padding(
-            top = 10.dp,
-            start = 10.dp,
-            end = 10.dp
-        )
+    val step = remember { mutableStateOf(VerificationStep.STANDBY) }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -85,7 +116,9 @@ fun NewAccount(
         Column(
             modifier = Modifier
                 .padding(padding)
-                .fillMaxSize()
+                .padding(horizontal = 10.dp)
+                .fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             val username = remember{ mutableStateOf("") }
             val password = remember{ mutableStateOf("") }
@@ -98,7 +131,7 @@ fun NewAccount(
             val managerId = settings.getManagerId.collectAsState(initial = "")
             val managementSpace = settings.getManagementSpaceId.collectAsState(initial = "")
             TextField(
-                modifier = formPadding,
+                modifier = Modifier.fillMaxWidth(),
                 value = username.value,
                 onValueChange = { username.value = it },
                 label = { Text(stringResource(R.string.username)) },
@@ -106,7 +139,7 @@ fun NewAccount(
                 enabled = enabled.value
             )
             PasswordField(
-                modifier = formPadding,
+                modifier = Modifier.fillMaxWidth(),
                 value = password.value,
                 onValueChange = { password.value = it },
                 visibility = revealPassword.value,
@@ -114,7 +147,7 @@ fun NewAccount(
                 enabled = enabled.value
             )
             TextField(
-                modifier = formPadding,
+                modifier = Modifier.fillMaxWidth(),
                 value = baseUrl.value,
                 onValueChange = { baseUrl.value = it },
                 label = { Text(stringResource(R.string.homeserver_url_label)) },
@@ -122,7 +155,7 @@ fun NewAccount(
                 enabled = enabled.value
             )
             TextField(
-                modifier = formPadding,
+                modifier = Modifier.fillMaxWidth(),
                 value = messageSpaceId.value,
                 onValueChange = { messageSpaceId.value = it },
                 label = { Text(stringResource(R.string.message_space_id)) },
@@ -130,7 +163,7 @@ fun NewAccount(
                 enabled = enabled.value
             )
             Button(
-                modifier = formPadding,
+                modifier = Modifier.fillMaxWidth(),
                 content = { Text(stringResource(R.string.log_in)) },
                 onClick = {
                     revealPassword.value = false
@@ -151,12 +184,21 @@ fun NewAccount(
                             enabled.value = true
                         },
                         onAccountEvent,
-                        onClickGoBack
+                        onClickGoBack,
+                        { step.value = it }
                     )
                 },
                 enabled = enabled.value
             )
-            Text(errorMsg.value, modifier = formPadding)
+            if (errorMsg.value.isNotEmpty()) Text(errorMsg.value)
+            Column {
+                if(step.value === VerificationStep.STARTED)Text(stringResource(R.string.logging_in))
+                if(step.value === VerificationStep.JOINING_MESSAGING_SPACE)Text(stringResource(R.string.joining_the_messaging_space))
+                if(step.value === VerificationStep.VERIFYING_PERMISSIONS)Text(stringResource(R.string.checking_if_this_account_have_correct_permissions))
+                if(step.value === VerificationStep.CREATING_MANAGEMENT_ROOM)Text(stringResource(R.string.creating_management_room))
+                if(step.value === VerificationStep.APPENDING_ROOM_AS_CHILD)Text(stringResource(R.string.appending_management_room_as_child_room))
+                if(step.value === VerificationStep.INVITING_MANAGER)Text(stringResource(R.string.inviting_manager_account))
+            }
         }
     }
 }
@@ -172,14 +214,16 @@ fun onLoginClick(
     addAccount: (AccountEventAsync) -> Deferred<Long>,
     abort: (String) -> Unit,
     onAccountEvent: (AccountEvent) -> Unit,
-    onClickGoBack: () -> Unit
+    onClickGoBack: () -> Unit,
+    update: (VerificationStep) -> Unit
 ) {
     val baseUrl: String
     if (inputUrl === "") baseUrl = "https://matrix-client.matrix.org"
     else if (!inputUrl.startsWith("http")) baseUrl = "https://$inputUrl"
     else baseUrl = inputUrl
+    val localpart = Regex("@([a-z0-9_.-]+):").find(username.lowercase())?.value ?: username.lowercase()
     scope.launch {
-        val localpart = Regex("@([a-z0-9_.-]+):").find(username.lowercase())?.value ?: username.lowercase()
+        update(VerificationStep.STARTED)
         val id = addAccount(AccountEventAsync.AddAccount(localpart, baseUrl, messagingSpace)).await()
         val clientDir = context.filesDir.resolve("clients/${id}")
         clientDir.mkdirs()
@@ -197,10 +241,13 @@ fun onLoginClick(
             abort(it.message ?: context.getString(R.string.generic_error))
             return@launch
         }
+        update(VerificationStep.JOINING_MESSAGING_SPACE)
 
         client.api.rooms.joinRoom(RoomId(messagingSpace)).getOrElse {
             abort(context.getString(R.string.cannot_join_message_space))
         }
+
+        update(VerificationStep.CREATING_MANAGEMENT_ROOM)
 
         /**
          * Step 1: Room is created by the new account. It also claims to be child of the management space.
@@ -229,6 +276,7 @@ fun onLoginClick(
         }
         // If room is created under a certain space, it needs to be registered under parent room
         if(managementSpaceId !== null){
+            update(VerificationStep.APPENDING_ROOM_AS_CHILD)
             client.api.rooms.joinRoom(RoomId(managementSpaceId))
             client.api.rooms.sendStateEvent(RoomId(managementSpaceId), ChildEventContent(suggested = false, via = via), roomId.full).getOrElse {
                 clientDir.deleteRecursively()
@@ -238,6 +286,7 @@ fun onLoginClick(
                 return@launch
             }
         }
+        update(VerificationStep.INVITING_MANAGER)
         client.api.rooms.inviteUser(roomId, UserId(managerId))
         Toast.makeText(context, context.getString(R.string.logged_in).format(client.userId), Toast.LENGTH_SHORT).show()
         onAccountEvent(AccountEvent.ActivateAccount(id, client.userId.domain, roomId.full))
