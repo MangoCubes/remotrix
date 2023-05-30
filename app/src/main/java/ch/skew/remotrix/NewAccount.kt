@@ -24,6 +24,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import ch.skew.remotrix.components.PasswordField
 import ch.skew.remotrix.data.RemotrixSettings
@@ -32,6 +33,7 @@ import ch.skew.remotrix.data.accountDB.AccountEventAsync
 import io.ktor.http.Url
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import net.folivo.trixnity.client.MatrixClient
 import net.folivo.trixnity.client.login
@@ -46,6 +48,12 @@ import net.folivo.trixnity.core.model.events.m.space.ChildEventContent
 import net.folivo.trixnity.core.model.events.m.space.ParentEventContent
 import okio.Path.Companion.toPath
 
+@Composable
+@Preview
+fun NewAccountPreview(){
+    val scope = rememberCoroutineScope()
+    NewAccount({}, {}, {scope.async {return@async 1}})
+}
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NewAccount(
@@ -128,13 +136,23 @@ fun NewAccount(
                     revealPassword.value = false
                     enabled.value = false
                     errorMsg.value = ""
-                    onLoginClick(context, scope, username.value, password.value, baseUrl.value, managerId.value, managementSpace.value, messageSpaceId.value, {
-                        onAccountEventAsync(AccountEventAsync.AddAccount(username.value, baseUrl.value, messageSpaceId.value))
-                    },
-                    {
-                        errorMsg.value = it
-                        enabled.value = true
-                    }, onAccountEvent, onClickGoBack)
+                    onLoginClick(
+                        context,
+                        scope,
+                        username.value,
+                        password.value,
+                        baseUrl.value,
+                        managerId.value,
+                        managementSpace.value,
+                        messageSpaceId.value,
+                        onAccountEventAsync,
+                        {
+                            errorMsg.value = it
+                            enabled.value = true
+                        },
+                        onAccountEvent,
+                        onClickGoBack
+                    )
                 },
                 enabled = enabled.value
             )
@@ -151,7 +169,7 @@ fun onLoginClick(
     managerId: String,
     managementSpaceId: String?,
     messagingSpace: String,
-    addAccount: () -> Deferred<Long>,
+    addAccount: (AccountEventAsync) -> Deferred<Long>,
     abort: (String) -> Unit,
     onAccountEvent: (AccountEvent) -> Unit,
     onClickGoBack: () -> Unit
@@ -161,7 +179,8 @@ fun onLoginClick(
     else if (!inputUrl.startsWith("http")) baseUrl = "https://$inputUrl"
     else baseUrl = inputUrl
     scope.launch {
-        val id = addAccount().await()
+        val localpart = Regex("@([a-z0-9_.-]+):").find(username.lowercase())?.value ?: username.lowercase()
+        val id = addAccount(AccountEventAsync.AddAccount(localpart, baseUrl, messagingSpace)).await()
         val clientDir = context.filesDir.resolve("clients/${id}")
         clientDir.mkdirs()
         val repo = createRealmRepositoriesModule {
