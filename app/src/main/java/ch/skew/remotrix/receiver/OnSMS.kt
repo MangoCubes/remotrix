@@ -21,6 +21,7 @@ class OnSMS : BroadcastReceiver(){
             val msgList = mutableListOf<String>()
             val sender = msgs[0].originatingAddress
             if (sender === null) return
+            // Apparently, there may be msgs[1], but this is only when the message is an MMS, content being longer than a single SMS.
             msgs.forEach {
                 msgList.add(it.messageBody)
             }
@@ -40,6 +41,10 @@ class OnSMS : BroadcastReceiver(){
                 .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
                 .build()
             val workManager = WorkManager.getInstance(context)
+            /**
+             * APPEND_OR_REPLACE has been chosen because sending multiple messages concurrently seems to have negative effect on the cryptography behind it.
+             * Therefore, while messages to multiple different rooms are sent without limit, multiple messages to single room will be sent in serial.
+             */
             workManager.enqueueUniqueWork(sender, ExistingWorkPolicy.APPEND_OR_REPLACE, work)
         }
     }

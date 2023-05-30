@@ -6,8 +6,6 @@
     <string name="account_list">Manage Accounts</string>
     <string name="add_new_account">Add new account</string>
     <string name="go_back">Go back</string>
-    <string name="new_account">Add New Account</string>
-    <string name="homeserver_url_label">Homeserver URL (Defaults to Matrix.org)</string>
     <string name="username">Username</string>
     <string name="password">Password</string>
     <string name="hide_password">Hide password</string>
@@ -19,7 +17,6 @@
     <string name="add_account_help">Press + in the top right corner to add a new account.</string>
     <string name="one_account_limit_help">Only one account can be added for now.</string>
     <string name="setup">Setup</string>
-    <string name="logged_in">Logged in as %s</string>
     <string name="delete_account">Delete account</string>
     <string name="delete">Delete</string>
     <string name="cancel">Cancel</string>
@@ -36,9 +33,6 @@
     <string name="choose_manager_account">Choose manager account</string>
     <string name="manager_id">New Manager ID</string>
     <string name="invalid_id">Invalid ID.</string>
-    <string name="management_room_name">Management room for %s</string>
-    <string name="management_room_desc">User may send messages to this room in order to manage automated actions of account %s.</string>
-    <string name="cannot_create_management_room">Unable to create management room.</string>
     <string name="setup_remotrix">Setup Remotrix</string>
     <string name="welcome_1">Before we begin, some settings must be done. Note that while you can change them in the future, migration does not exist yet. As a result, it would be very tedious. Therefore, it is best to set these as if they cannot be changed later.</string>
     <string name="welcome_2">First off, please enter an account name in the form of \'@username:example.com. The account entered will be used as admin account, and bots will respond to commands from this account.</string>
@@ -52,12 +46,10 @@
     <string name="sample_space_id">!unIntELLIgiBle:example.com</string>
     <string name="invalid_space_id">Invalid space ID.</string>
     <string name="setup_complete">Setup complete.</string>
-    <string name="no_child_space_permission">%s has no permission to create child room in the management space. Please grant it first.</string>
     <string name="cannot_find_space">%s cannot locate management space. Please invite this account to that space first.</string>
     <string name="message_space">Message Space</string>
     <string name="management_space">Management Space</string>
     <string name="message_space_id">Message Space ID</string>
-    <string name="cannot_join_message_space">Failed to join messaging space. If the room is not public, you must send invitation to this account prior to adding account here.</string>
     <string name="msg_room_desc">Messages from %s</string>
     <string name="behaviour">Behaviour</string>
     <string name="choose_default_account">Choose Default Account</string>

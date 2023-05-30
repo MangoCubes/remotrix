@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="logging_in">Logging in…</string>
+    <string name="joining_the_messaging_space">Joining the messaging space…</string>
+    <string name="checking_if_this_account_have_correct_permissions">Checking if this account have correct permissions…</string>
+    <string name="creating_management_room">Creating management room…</string>
+    <string name="appending_management_room_as_child_room">Appending management room as child room…</string>
+    <string name="inviting_manager_account">Inviting manager account…</string>
+    <string name="new_account">Add New Account</string>
+    <string name="homeserver_url_label">Homeserver URL (Defaults to Matrix.org)</string>
+    <string name="management_room_name">Management room for %s</string>
+    <string name="management_room_desc">User may send messages to this room in order to manage automated actions of account %s.</string>
+    <string name="cannot_create_management_room">Unable to create management room.</string>
+    <string name="no_child_space_permission">%s has no permission to create child room in the management space. Please grant it first.</string>
+    <string name="logged_in">Logged in as %s</string>
+    <string name="cannot_join_message_space">Failed to join messaging space. If the room is not public, you must send invitation to this account prior to adding account here.</string>
+    <string name="failed_to_find_room_permission_settings">Failed to find room permission settings.</string>
+    <string name="cannot_create_child_room">"Cannot create child room: "</string>
+    <string name="cannot_create_room_in_the_messaging_space">"Cannot create room in the messaging space: "</string>
+</resources>
