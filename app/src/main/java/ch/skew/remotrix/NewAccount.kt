@@ -217,14 +217,13 @@ fun onLoginClick(
     onClickGoBack: () -> Unit,
     update: (VerificationStep) -> Unit
 ) {
-    val baseUrl: String
-    if (inputUrl === "") baseUrl = "https://matrix-client.matrix.org"
-    else if (!inputUrl.startsWith("http")) baseUrl = "https://$inputUrl"
-    else baseUrl = inputUrl
-    val localpart = Regex("@([a-z0-9_.-]+):").find(username.lowercase())?.value ?: username.lowercase()
+    val baseUrl: String = if (inputUrl === "") "https://matrix-client.matrix.org"
+    else if (!inputUrl.startsWith("http")) "https://$inputUrl"
+    else inputUrl
+    val localPart = Regex("@([a-z0-9_.-]+):").find(username.lowercase())?.value ?: username.lowercase()
     scope.launch {
         update(VerificationStep.STARTED)
-        val id = addAccount(AccountEventAsync.AddAccount(localpart, baseUrl, messagingSpace)).await()
+        val id = addAccount(AccountEventAsync.AddAccount(localPart, baseUrl, messagingSpace)).await()
         val clientDir = context.filesDir.resolve("clients/${id}")
         clientDir.mkdirs()
         val repo = createRealmRepositoriesModule {
@@ -243,19 +242,52 @@ fun onLoginClick(
         }
         update(VerificationStep.JOINING_MESSAGING_SPACE)
 
-        client.api.rooms.joinRoom(RoomId(messagingSpace)).getOrElse {
-            abort(context.getString(R.string.cannot_join_message_space))
+        val msgSpace = RoomId(messagingSpace)
+        // The "via" part of m.space.child/parent event.
+        val via = setOf(client.userId.domain)
+        val testRoom = client.api.rooms.createRoom(
+            visibility = DirectoryVisibility.PRIVATE,
+            name = "Test room",
+            initialState = listOf(
+                // Initial event for making this room child of the message room
+                Event.InitialStateEvent(
+                    content = ParentEventContent(true, via),
+                    stateKey = messagingSpace
+                )
+            )
+        ).getOrElse {
+            client.logout()
+            clientDir.deleteRecursively()
+            abort(context.getString(R.string.cannot_create_room_in_the_messaging_space) + (it.message ?: context.getString(R.string.generic_error)))
+            return@launch
+        }
+        // This state ensures that the parent room recognises the child room as its child.
+        client.api.rooms.sendStateEvent(
+            msgSpace,
+            ChildEventContent(suggested = false, via = via),
+            testRoom.full
+        ).getOrElse {
+            // Forwarder leaves the room to ensure it is removed in case state cannot be set.
+            client.api.rooms.leaveRoom(testRoom)
+            client.logout()
+            clientDir.deleteRecursively()
+            abort(context.getString(R.string.cannot_create_child_room) + (it.message ?: context.getString(R.string.generic_error)))
+            return@launch
         }
 
-        update(VerificationStep.CREATING_MANAGEMENT_ROOM)
+        client.api.rooms.sendStateEvent(testRoom, ChildEventContent(
 
+        ), testRoom.full)
+        client.api.rooms.leaveRoom(testRoom)
+
+
+        update(VerificationStep.CREATING_MANAGEMENT_ROOM)
         /**
          * Step 1: Room is created by the new account. It also claims to be child of the management space.
          * Step 2: This account attempts to append the new room as the management space's child.
          * Step 3-1: If it fails, new account leaves the room to delete it.
          * Step 3-2: If it succeeds, an invitation is sent to manager.
          */
-        val via = setOf(client.userId.domain)
         val roomName = context.getString(R.string.management_room_name).format(client.userId)
         val roomId = client.api.rooms.createRoom(
             visibility = DirectoryVisibility.PRIVATE,
@@ -268,9 +300,9 @@ fun onLoginClick(
                 )
             )
         ).getOrElse {
+            client.logout()
             // Assumes that room has not been created at all
             clientDir.deleteRecursively()
-            client.logout()
             abort(it.message ?: context.getString(R.string.cannot_create_management_room))
             return@launch
         }
