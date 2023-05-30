@@ -4,13 +4,6 @@ import ch.skew.remotrix.data.sendActionDB.SendAction
 import net.folivo.trixnity.core.model.RoomId
 
 /**
- * One value given for each message type
- */
-enum class MsgType {
-    TEST, SMS
-}
-
-/**
  * Abstract class that covers all form of messages sent by this app
  */
 abstract class MsgToSend(
@@ -19,11 +12,15 @@ abstract class MsgToSend(
     companion object{
         /**
          * Constructs a list of MsgToSend subclasses, based on msgType
+         * Because Enum cannot fit into worker inputData, Int is temporarily used to differentiate between various message types.
+         * 1: TestMsg
+         * 2: SMSMsg
+         * -1: Default and invalid, these should be dropped.
          */
-        fun from(msgType: MsgType, senderId: Int, payload: Array<String>?): MsgToSend?{
+        fun from(msgType: Int, senderId: Int, payload: Array<String>?): MsgToSend?{
             if(payload === null) return null
-            if(msgType == MsgType.TEST) return TestMsg(senderId, RoomId(payload[0]), payload[1])
-            else if(msgType == MsgType.SMS) return SMSMsg(payload[0], payload[1])
+            if(msgType == 1) return TestMsg(senderId, RoomId(payload[0]), payload[1])
+            else if(msgType == 2) return SMSMsg(payload[0], payload[1])
             else return null
         }
     }
