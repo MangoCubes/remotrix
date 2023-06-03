@@ -10,7 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.AdminPanelSettings
-import androidx.compose.material.icons.filled.Message
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
@@ -20,9 +20,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -36,7 +33,6 @@ import androidx.room.Room
 import ch.skew.remotrix.classes.Account
 import ch.skew.remotrix.classes.Destination
 import ch.skew.remotrix.components.ListHeader
-import ch.skew.remotrix.components.SelectAccountDialog
 import ch.skew.remotrix.data.RemotrixDB
 import ch.skew.remotrix.data.RemotrixSettings
 import ch.skew.remotrix.data.accountDB.AccountEvent
@@ -47,7 +43,6 @@ import ch.skew.remotrix.data.sendActionDB.SendActionEvent
 import ch.skew.remotrix.data.sendActionDB.SendActionViewModel
 import ch.skew.remotrix.ui.theme.RemotrixTheme
 import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.launch
 
 
 class MainActivity : ComponentActivity() {
@@ -120,7 +115,7 @@ fun RemotrixApp(
                     accounts,
                     onClickAccountList = { navController.navigate(Destination.AccountList.route) },
                     onClickShowSetup = { navController.navigate(Destination.Setup.route) },
-                    defaultSend.value!!
+                    onClickSettings = { navController.navigate(Destination.Settings.route) }
                 )
             }
             composable(route = Destination.AccountList.route) {
@@ -145,6 +140,12 @@ fun RemotrixApp(
                     openedBefore = openedBefore.value!!
                 )
             }
+            composable(route = Destination.Settings.route) {
+                Settings(
+                    accounts = accounts,
+                    defaultSend = defaultSend.value!!
+                )
+            }
         }
     }
 }
@@ -154,13 +155,11 @@ fun RemotrixApp(
 fun HomeScreen(
     accounts: List<Account> = listOf(),
     onClickAccountList: () -> Unit = {},
+    onClickSettings: () -> Unit = {},
     onClickShowSetup: () -> Unit = {},
-    defaultSend: Int = -1
+    defaultSend: Int = -1,
+    sendActions: List<SendAction> = listOf()
 ) {
-    val open = remember { mutableStateOf(false) }
-    val scope = rememberCoroutineScope()
-    val context = LocalContext.current
-    val settings = RemotrixSettings(context)
     Scaffold(
         topBar = {
             TopAppBar({
@@ -192,34 +191,19 @@ fun HomeScreen(
                 },
                 modifier = Modifier.clickable { onClickAccountList() }
             )
-            ListHeader(stringResource(R.string.behaviour))
+            val desc = stringResource(R.string.settings_desc) + if (sendActions.isEmpty() && defaultSend == -1) stringResource(R.string.settings_desc_warning) else ""
             ListItem(
-                headlineText = { Text(stringResource(R.string.choose_default_account)) },
-                supportingText = { Text(stringResource(R.string.choose_default_account_desc)) },
+                headlineText = { Text(stringResource(R.string.settings)) },
+                supportingText = { Text(desc) },
                 leadingContent = {
                     Icon(
-                        Icons.Filled.Message,
-                        contentDescription = stringResource(R.string.choose_default_account)
+                        Icons.Filled.Settings,
+                        contentDescription = stringResource(R.string.settings)
                     )
                 },
-                modifier = Modifier.clickable { open.value = true }
+                modifier = Modifier.clickable { onClickSettings() }
             )
             ListHeader(stringResource(R.string.current_status))
-
         }
     }
-    SelectAccountDialog(
-        accounts = accounts,
-        close = { open.value = false },
-        confirm = {
-            scope.launch {
-                settings.saveDefaultSend(it)
-            }
-            open.value = false
-        },
-        title = "Choose Default Account",
-        noneChosenDesc = "Drop messages that do not match any rules",
-        show = open.value,
-        defaultSelected = defaultSend
-    )
 }

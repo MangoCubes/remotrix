@@ -47,6 +47,11 @@ class SendMsgWorker(
             val payload = inputData.getStringArray("payload")
             val msg = MsgToSend.from(msgType, senderId, payload)
             // Message that does not have valid type code will be dropped and TODO: logged.
+            val settings = RemotrixSettings(applicationContext)
+            val db = Room.databaseBuilder(
+                applicationContext,
+                RemotrixDB::class.java, "accounts.db"
+            ).build()
             if(msg === null) return@withContext Result.failure(
                 workDataOf(
                     "error" to context.getString(R.string.error_message_is_not_sent_because_its_type_code_is_not_recognised),
@@ -57,11 +62,7 @@ class SendMsgWorker(
                 )
             )
             // Database is loaded after this initial check
-            val settings = RemotrixSettings(applicationContext)
-            val db = Room.databaseBuilder(
-                applicationContext,
-                RemotrixDB::class.java, "accounts.db"
-            ).build()
+
 
             // Matrix Account to send message with is chosen at this step.
             val sendAs = when (msg) {

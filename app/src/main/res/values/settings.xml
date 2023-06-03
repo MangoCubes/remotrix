@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="choose_default_account">Choose Default Account</string>
+    <string name="choose_default_account_desc">Choose which account the message should be sent with if it matches no rules in the list.</string>
+</resources>
