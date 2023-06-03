@@ -56,4 +56,6 @@
     <string name="current_status">Current Status</string>
     <string name="settings_desc_warning">\nWarning: You have no rules nor default account set! Messages will not be sent with this setup.</string>
     <string name="none_option">Drop messages that do not match any rules</string>
+    <string name="view_logs">View Logs</string>
+    <string name="view_logs_desc">View logs of the messages. Note that you must enable it in options prior.</string>
 </resources>

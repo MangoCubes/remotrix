@@ -11,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
@@ -113,9 +114,8 @@ fun RemotrixApp(
             composable(route = Destination.Home.route) {
                 HomeScreen(
                     accounts,
-                    onClickAccountList = { navController.navigate(Destination.AccountList.route) },
-                    onClickShowSetup = { navController.navigate(Destination.Setup.route) },
-                    onClickSettings = { navController.navigate(Destination.Settings.route) }
+                    navigate = { navController.navigate(it) },
+                    defaultSend = defaultSend.value!!
                 )
             }
             composable(route = Destination.AccountList.route) {
@@ -146,6 +146,9 @@ fun RemotrixApp(
                     defaultSend = defaultSend.value!!
                 )
             }
+            composable(route = Destination.Logs.route) {
+
+            }
         }
     }
 }
@@ -154,9 +157,7 @@ fun RemotrixApp(
 @Composable
 fun HomeScreen(
     accounts: List<Account> = listOf(),
-    onClickAccountList: () -> Unit = {},
-    onClickSettings: () -> Unit = {},
-    onClickShowSetup: () -> Unit = {},
+    navigate: (String) -> Unit = {},
     defaultSend: Int = -1,
     sendActions: List<SendAction> = listOf()
 ) {
@@ -178,7 +179,7 @@ fun HomeScreen(
                         contentDescription = stringResource(R.string.manage_accounts),
                     )
                 },
-                modifier = Modifier.clickable {onClickShowSetup()}
+                modifier = Modifier.clickable { navigate(Destination.Setup.route) }
             )
             ListItem(
                 headlineText = { Text(stringResource(R.string.manage_accounts)) },
@@ -189,7 +190,7 @@ fun HomeScreen(
                         contentDescription = stringResource(R.string.manage_accounts),
                     )
                 },
-                modifier = Modifier.clickable { onClickAccountList() }
+                modifier = Modifier.clickable { navigate(Destination.AccountList.route) }
             )
             val desc = stringResource(R.string.settings_desc) + if (sendActions.isEmpty() && defaultSend == -1) stringResource(R.string.settings_desc_warning) else ""
             ListItem(
@@ -201,9 +202,20 @@ fun HomeScreen(
                         contentDescription = stringResource(R.string.settings)
                     )
                 },
-                modifier = Modifier.clickable { onClickSettings() }
+                modifier = Modifier.clickable { navigate(Destination.Settings.route) }
             )
             ListHeader(stringResource(R.string.current_status))
+            ListItem(
+                headlineText = { Text(stringResource(R.string.view_logs)) },
+                supportingText = { Text(stringResource(R.string.view_logs_desc)) },
+                leadingContent = {
+                    Icon(
+                        Icons.Filled.Storage,
+                        contentDescription = stringResource(R.string.view_logs)
+                    )
+                },
+                modifier = Modifier.clickable { navigate(Destination.Logs.route) }
+            )
         }
     }
 }

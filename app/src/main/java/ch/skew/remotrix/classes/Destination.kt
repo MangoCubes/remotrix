@@ -5,5 +5,6 @@ enum class Destination(val route: String) {
     AccountList("account_list"),
     NewAccount("new_account"),
     Setup("setup"),
-    Settings("settings")
+    Settings("settings"),
+    Logs("logs")
 }
