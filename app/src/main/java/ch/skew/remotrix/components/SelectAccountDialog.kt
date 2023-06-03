@@ -47,7 +47,7 @@ fun SelectAccountDialog(
     show: Boolean,
     defaultSelected: Int?
 ){
-    val chosen = remember { mutableStateOf<Int?>(defaultSelected) }
+    val chosen = remember { mutableStateOf(defaultSelected) }
     if(show) {
         AlertDialog(
             onDismissRequest = close,

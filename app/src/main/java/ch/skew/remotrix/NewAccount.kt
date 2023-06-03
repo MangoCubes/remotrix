@@ -229,10 +229,12 @@ fun onLoginClick(
         val repo = createRealmRepositoriesModule {
             this.directory(clientDir.toString())
         }
-        val client = MatrixClient.login(baseUrl = Url(baseUrl),
+        val client = MatrixClient.login(
+            baseUrl = Url(baseUrl),
             identifier = IdentifierType.User(username),
             password = password,
             repositoriesModule = repo,
+            deviceId = "Remotrix",
             mediaStore = OkioMediaStore(context.filesDir.resolve("clients/media").absolutePath.toPath()),
             scope = scope,
         ).getOrElse {

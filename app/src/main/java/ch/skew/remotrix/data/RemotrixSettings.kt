@@ -30,8 +30,8 @@ class RemotrixSettings(
         preferences[openedBefore] == "1"
     }
 
-    val getDefaultSend: Flow<Int?> = context.dataStore.data.map { preferences ->
-        preferences[defaultSend]?.toInt()
+    val getDefaultSend: Flow<Int> = context.dataStore.data.map { preferences ->
+        preferences[defaultSend]?.toInt() ?: -1
     }
 
     suspend fun saveManagerId(name: String) {

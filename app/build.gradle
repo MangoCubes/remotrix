@@ -23,7 +23,7 @@ android {
 
     buildTypes {
         release {
-            minifyEnabled false
+            minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
@@ -53,33 +53,33 @@ dependencies {
     def ktor_ver = "2.3.0"
     def room_ver = "2.5.1"
 
-    implementation "androidx.navigation:navigation-compose:$nav_ver"
-    implementation 'androidx.core:core-ktx:1.10.1'
-    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.6.1'
-    implementation 'androidx.activity:activity-compose:1.7.1'
-    implementation platform('androidx.compose:compose-bom:2022.10.00')
-    implementation 'androidx.compose.ui:ui'
-    implementation 'androidx.compose.ui:ui-graphics'
-    implementation 'androidx.compose.ui:ui-tooling-preview'
-    implementation 'androidx.compose.material3:material3'
+    implementation "androidx.navigation:navigation-compose:$nav_ver" // 62653
+    implementation 'androidx.core:core-ktx:1.10.1' // Cannot compile
+    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.6.1' // 62958
+    implementation 'androidx.activity:activity-compose:1.7.2' // Cannot compile
+    implementation platform('androidx.compose:compose-bom:2022.10.00') // Cannot compile
+    implementation 'androidx.compose.ui:ui' // 62705
+    implementation 'androidx.compose.ui:ui-graphics' // 62714
+    implementation 'androidx.compose.ui:ui-tooling-preview' // 62710
+    implementation 'androidx.compose.material3:material3' // 62062
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
     androidTestImplementation platform('androidx.compose:compose-bom:2022.10.00')
     androidTestImplementation 'androidx.compose.ui:ui-test-junit4'
     debugImplementation 'androidx.compose.ui:ui-tooling'
-    debugImplementation 'androidx.compose.ui:ui-test-manifest'
+    debugImplementation 'androidx.compose.ui:ui-test-manifest' // Whole tests: 60700
 
-    implementation "androidx.compose.material:material-icons-extended"
-    implementation "net.folivo:trixnity-client:$trix_ver"
-    implementation "net.folivo:trixnity-client-repository-realm:$trix_ver"
-    implementation "net.folivo:trixnity-client-media-okio:$trix_ver"
-    implementation "io.ktor:ktor-client-core:$ktor_ver"
-    implementation "io.ktor:ktor-client-okhttp:$ktor_ver"
+    implementation "androidx.compose.material:material-icons-extended" // 56312
+    implementation "net.folivo:trixnity-client:$trix_ver" // 62724
+    implementation "net.folivo:trixnity-client-repository-realm:$trix_ver" // 25567
+    implementation "net.folivo:trixnity-client-media-okio:$trix_ver" // 62708
+    implementation "io.ktor:ktor-client-core:$ktor_ver" // 62705
+    implementation "io.ktor:ktor-client-okhttp:$ktor_ver" // 62343
 
-    kapt "androidx.room:room-compiler:$room_ver"
-    implementation "androidx.room:room-ktx:$room_ver"
-    implementation "androidx.datastore:datastore-preferences:1.0.0"
+    kapt "androidx.room:room-compiler:$room_ver" // 62697
+    implementation "androidx.room:room-ktx:$room_ver" // 62704
+    implementation "androidx.datastore:datastore-preferences:1.0.0" // 62386
 
-    implementation "androidx.work:work-runtime-ktx:2.8.1"
+    implementation "androidx.work:work-runtime-ktx:2.8.1" // 62507
 }

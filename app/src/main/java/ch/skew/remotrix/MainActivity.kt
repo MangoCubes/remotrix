@@ -47,7 +47,6 @@ import ch.skew.remotrix.data.sendActionDB.SendActionEvent
 import ch.skew.remotrix.data.sendActionDB.SendActionViewModel
 import ch.skew.remotrix.ui.theme.RemotrixTheme
 import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 
@@ -106,9 +105,10 @@ fun RemotrixApp(
 ) {
     val settings = RemotrixSettings(LocalContext.current)
     val openedBefore = settings.getOpenedBefore.collectAsState(initial = null)
+    val defaultSend = settings.getDefaultSend.collectAsState(initial = null)
     val navController = rememberNavController()
     RemotrixTheme {
-        if (openedBefore.value !== null) NavHost(
+        if (openedBefore.value !== null && defaultSend.value !== null) NavHost(
             navController = navController,
             startDestination =
                 if(!openedBefore.value!!) Destination.Setup.route
@@ -119,7 +119,8 @@ fun RemotrixApp(
                 HomeScreen(
                     accounts,
                     onClickAccountList = { navController.navigate(Destination.AccountList.route) },
-                    onClickShowSetup = { navController.navigate(Destination.Setup.route) }
+                    onClickShowSetup = { navController.navigate(Destination.Setup.route) },
+                    defaultSend.value!!
                 )
             }
             composable(route = Destination.AccountList.route) {
@@ -148,19 +149,15 @@ fun RemotrixApp(
     }
 }
 @Preview
-@Composable
-fun PreviewHomeScreen() {
-    HomeScreen(listOf(), {}, {})
-}
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    accounts: List<Account>,
-    onClickAccountList: () -> Unit,
-    onClickShowSetup: () -> Unit
+    accounts: List<Account> = listOf(),
+    onClickAccountList: () -> Unit = {},
+    onClickShowSetup: () -> Unit = {},
+    defaultSend: Int = -1
 ) {
     val open = remember { mutableStateOf(false) }
-    val defaultAccount = remember { mutableStateOf<Int?>(null) }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val settings = RemotrixSettings(context)
@@ -205,15 +202,10 @@ fun HomeScreen(
                         contentDescription = stringResource(R.string.choose_default_account)
                     )
                 },
-                modifier = Modifier.clickable {
-                    scope.launch {
-                        defaultAccount.value = settings.getDefaultSend.first()
-                        open.value = true
-                    }
-
-
-                }
+                modifier = Modifier.clickable { open.value = true }
             )
+            ListHeader(stringResource(R.string.current_status))
+
         }
     }
     SelectAccountDialog(
@@ -228,6 +220,6 @@ fun HomeScreen(
         title = "Choose Default Account",
         noneChosenDesc = "Drop messages that do not match any rules",
         show = open.value,
-        defaultSelected = defaultAccount.value
+        defaultSelected = defaultSend
     )
 }

@@ -69,6 +69,8 @@ class SendMsgWorker(
                 is SMSMsg -> {
                     // Default account is loaded up from the settings.
                     val defaultAccount = settings.getDefaultSend.first()
+                    // Account ID of -1 is set to none.
+                    if(defaultAccount == -1) return@withContext Result.success()
                     // Forwarder rules are loaded here, and are immediately put through getSenderId to determine the forwarder
                     val match = msg.getSenderId(db.sendActionDao.getAll())
                     // If match is not found, default account is chosen.
@@ -93,10 +95,6 @@ class SendMsgWorker(
                     )
                 }
             }
-            
-            // If sendAs is null, it means the message did not match any rule and should be dropped.
-             if (sendAs === null) return@withContext Result.success()
-
             // Matrix client is loaded here.
             val clientDir = context.filesDir.resolve("clients/${sendAs}")
             val repo = createRealmRepositoriesModule {

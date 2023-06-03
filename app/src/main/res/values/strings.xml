@@ -55,4 +55,5 @@
     <string name="choose_default_account">Choose Default Account</string>
     <string name="choose_default_account_desc">Choose which account the message should be sent with if it matches no rules in the list.</string>
     <string name="choose">Choose</string>
+    <string name="current_status">Current Status</string>
 </resources>
