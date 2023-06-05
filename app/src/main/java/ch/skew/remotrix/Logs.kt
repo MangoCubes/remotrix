@@ -79,7 +79,7 @@ fun Logs(
                 items(logs) { log ->
                     val accountUsed = accounts.find {it.id == log.senderId}
                     val msg = if (accountUsed === null) stringResource(R.string.unknown_account_id).format(log.senderId)
-                    else stringResource(R.string.known_account_id).format(accountUsed)
+                    else stringResource(R.string.known_account_id).format(accountUsed.userId)
                     Text("[${if(log.success) stringResource(R.string.success) else stringResource(R.string.failure)}] " + log.timestamp + ": " + msg)
                 }
             }
