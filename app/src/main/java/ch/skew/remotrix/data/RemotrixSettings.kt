@@ -64,9 +64,9 @@ class RemotrixSettings(
         }
     }
 
-    suspend fun saveLogging() {
+    suspend fun saveLogging(set: Boolean) {
         context.dataStore.edit { preferences ->
-            preferences[logging] = "1"
+            preferences[logging] = if(set) "1" else "0"
         }
     }
 }

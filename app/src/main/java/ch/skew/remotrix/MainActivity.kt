@@ -161,6 +161,7 @@ fun RemotrixApp(
                     accounts = accounts,
                     defaultSend = defaultSend.value!!,
                     goBack = { navController.popBackStack() },
+                    logging = logging.value!!
                 )
             }
             composable(route = Destination.Logs.route) {
