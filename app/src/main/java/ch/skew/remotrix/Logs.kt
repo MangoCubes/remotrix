@@ -27,12 +27,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import ch.skew.remotrix.classes.Account
 import ch.skew.remotrix.data.logDB.LogData
-import ch.skew.remotrix.data.logDB.MsgError
+import ch.skew.remotrix.data.logDB.MsgStatus
 
 @Preview
 @Composable
 fun LogsPreview(){
-    Logs(listOf(), listOf(LogData(1, "9:41", true, null, null, 1, 1, "hello world"), LogData(2, "9:42", false, MsgError.CANNOT_CREATE_CHILD_ROOM, "asdf", 2, 1, "hello world")), true)
+    Logs(listOf(), listOf(LogData(1, "9:41", MsgStatus.MESSAGE_SENT, null, 1, 1, "hello world"), LogData(2, "9:42", MsgStatus.CANNOT_CREATE_CHILD_ROOM, "asdf", 2, 1, "hello world")), true)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -80,7 +80,7 @@ fun Logs(
                     val accountUsed = accounts.find {it.id == log.senderId}
                     val msg = if (accountUsed === null) stringResource(R.string.unknown_account_id).format(log.senderId)
                     else stringResource(R.string.known_account_id).format(accountUsed.userId)
-                    Text("[${if(log.success) stringResource(R.string.success) else stringResource(R.string.failure)}] " + log.timestamp + ": " + msg)
+                    Text("[${if(log.status === MsgStatus.MESSAGE_SENT || log.status === MsgStatus.MESSAGE_DROPPED) stringResource(R.string.success) else stringResource(R.string.failure)}] " + log.timestamp + ": " + msg)
                 }
             }
         }

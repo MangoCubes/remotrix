@@ -17,13 +17,13 @@ class LogViewModel(
         when(event){
             is LogEvent.AddFailure -> {
                 viewModelScope.launch {
-                    dao.insertError(event.error, event.errorMsg, event.msgType, event.senderId, event.payload)
+                    dao.insertError(event.status, event.errorMsg, event.msgType, event.senderId, event.payload)
                 }
             }
 
             is LogEvent.AddSuccess -> {
                 viewModelScope.launch {
-                    dao.insertSuccess(event.msgType, event.senderId, event.payload)
+                    dao.insertSuccess(event.status, event.msgType, event.senderId, event.payload)
                 }
             }
         }

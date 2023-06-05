@@ -11,7 +11,7 @@ import ch.skew.remotrix.classes.SMSMsg
 import ch.skew.remotrix.classes.TestMsg
 import ch.skew.remotrix.data.RemotrixDB
 import ch.skew.remotrix.data.RemotrixSettings
-import ch.skew.remotrix.data.logDB.MsgError
+import ch.skew.remotrix.data.logDB.MsgStatus
 import ch.skew.remotrix.data.roomIdDB.RoomIdData
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -56,7 +56,7 @@ class SendMsgWorker(
             val logging = settings.getLogging.first()
             if(msg === null) {
                 if(logging) db.logDao.insertError(
-                    MsgError.UNRECOGNISED_MESSAGE_CODE,
+                    MsgStatus.UNRECOGNISED_MESSAGE_CODE,
                     null,
                     msgType,
                     senderId,
@@ -64,7 +64,7 @@ class SendMsgWorker(
                 )
                 return@withContext Result.failure(
                     workDataOf(
-                        "error" to MsgError.UNRECOGNISED_MESSAGE_CODE,
+                        "error" to MsgStatus.UNRECOGNISED_MESSAGE_CODE,
                         "msgType" to msgType,
                         "errorMsg" to null,
                         "senderId" to senderId,
@@ -82,7 +82,15 @@ class SendMsgWorker(
                     // Default account is loaded up from the settings.
                     val defaultAccount = settings.getDefaultSend.first()
                     // Account ID of -1 is set to none.
-                    if(defaultAccount == -1) return@withContext Result.success()
+                    if(defaultAccount == -1) {
+                        if(logging) db.logDao.insertSuccess(
+                            MsgStatus.MESSAGE_DROPPED,
+                            msgType,
+                            senderId,
+                            payload?.joinToString(", ") ?: "Empty payload"
+                        )
+                        return@withContext Result.success()
+                    }
                     // Forwarder rules are loaded here, and are immediately put through getSenderId to determine the forwarder
                     val match = msg.getSenderId(db.sendActionDao.getAll())
                     // If match is not found, default account is chosen.
@@ -96,7 +104,7 @@ class SendMsgWorker(
 
                 else -> {
                     if(logging) db.logDao.insertError(
-                        MsgError.NO_SUITABLE_FORWARDER,
+                        MsgStatus.NO_SUITABLE_FORWARDER,
                         null,
                         msgType,
                         senderId,
@@ -105,7 +113,7 @@ class SendMsgWorker(
                     // This shouldn't execute but still
                     return@withContext Result.failure(
                         workDataOf(
-                            "error" to MsgError.NO_SUITABLE_FORWARDER,
+                            "error" to MsgStatus.NO_SUITABLE_FORWARDER,
                             "msgType" to msgType,
                             "errorMsg" to null,
                             "senderId" to senderId,
@@ -127,7 +135,7 @@ class SendMsgWorker(
                 scope = scope
             ).getOrElse {
                 if(logging) db.logDao.insertError(
-                    MsgError.CANNOT_LOAD_MATRIX_CLIENT,
+                    MsgStatus.CANNOT_LOAD_MATRIX_CLIENT,
                     it.message,
                     msgType,
                     senderId,
@@ -135,7 +143,7 @@ class SendMsgWorker(
                 )
                 return@withContext Result.failure(
                     workDataOf(
-                        "error" to MsgError.CANNOT_LOAD_MATRIX_CLIENT,
+                        "error" to MsgStatus.CANNOT_LOAD_MATRIX_CLIENT,
                         "errorMsg" to it,
                         "msgType" to msgType,
                         "senderId" to senderId,
@@ -147,7 +155,7 @@ class SendMsgWorker(
             // Not sure why Result may be success but have null client, but still
             if(client === null) {
                 if(logging) db.logDao.insertError(
-                    MsgError.CANNOT_LOAD_MATRIX_CLIENT,
+                    MsgStatus.CANNOT_LOAD_MATRIX_CLIENT,
                     null,
                     msgType,
                     senderId,
@@ -155,7 +163,7 @@ class SendMsgWorker(
                 )
                 return@withContext Result.failure(
                     workDataOf(
-                        "error" to MsgError.CANNOT_LOAD_MATRIX_CLIENT,
+                        "error" to MsgStatus.CANNOT_LOAD_MATRIX_CLIENT,
                         "errorMsg" to null,
                         "msgType" to msgType,
                         "senderId" to senderId,
@@ -171,6 +179,12 @@ class SendMsgWorker(
                 client.startSync()
                 delay(10000) //Temporary fix, TODO: Figure out how to stop the code until a message is confirmed to be sent
                 scope.cancel()
+                if(logging) db.logDao.insertSuccess(
+                    MsgStatus.MESSAGE_SENT,
+                    msgType,
+                    senderId,
+                    payload?.joinToString(", ") ?: "Empty payload"
+                )
                 return@withContext Result.success()
             } else if(msg is SMSMsg){
                 val msgSpace = db.accountDao.getMessageSpace(sendAs)
@@ -203,7 +217,7 @@ class SendMsgWorker(
                         )
                     ).getOrElse {
                         if(logging) db.logDao.insertError(
-                            MsgError.CANNOT_CREATE_ROOM,
+                            MsgStatus.CANNOT_CREATE_ROOM,
                             it.message,
                             msgType,
                             senderId,
@@ -211,7 +225,7 @@ class SendMsgWorker(
                         )
                         return@withContext Result.failure(
                             workDataOf(
-                                "error" to MsgError.CANNOT_CREATE_ROOM,
+                                "error" to MsgStatus.CANNOT_CREATE_ROOM,
                                 "errorMsg" to it,
                                 "msgType" to msgType,
                                 "senderId" to senderId,
@@ -228,7 +242,7 @@ class SendMsgWorker(
                         // Forwarder leaves the room to ensure it is removed in case state cannot be set.
                         client.api.rooms.leaveRoom(roomId)
                         if(logging) db.logDao.insertError(
-                            MsgError.CANNOT_CREATE_CHILD_ROOM,
+                            MsgStatus.CANNOT_CREATE_CHILD_ROOM,
                             it.message,
                             msgType,
                             senderId,
@@ -236,7 +250,7 @@ class SendMsgWorker(
                         )
                         return@withContext Result.failure(
                             workDataOf(
-                                "error" to MsgError.CANNOT_CREATE_CHILD_ROOM,
+                                "error" to MsgStatus.CANNOT_CREATE_CHILD_ROOM,
                                 "errorMsg" to it,
                                 "msgType" to msgType,
                                 "senderId" to senderId,
@@ -256,11 +270,17 @@ class SendMsgWorker(
                 client.startSync()
                 delay(10000) //Temporary fix, TODO: Figure out how to stop the code until a message is confirmed to be sent
                 scope.cancel()
+                if(logging) db.logDao.insertSuccess(
+                    MsgStatus.MESSAGE_SENT,
+                    msgType,
+                    senderId,
+                    payload?.joinToString(", ") ?: "Empty payload"
+                )
                 return@withContext Result.success()
             }
             // Again, this should not execute, but oh well.
             if(logging) db.logDao.insertError(
-                MsgError.UNRECOGNISED_MESSAGE_CLASS,
+                MsgStatus.UNRECOGNISED_MESSAGE_CLASS,
                 null,
                 msgType,
                 senderId,
@@ -268,7 +288,7 @@ class SendMsgWorker(
             )
             return@withContext Result.failure(
                 workDataOf(
-                    "error" to MsgError.UNRECOGNISED_MESSAGE_CLASS,
+                    "error" to MsgStatus.UNRECOGNISED_MESSAGE_CLASS,
                     "msgType" to msgType,
                     "errorMsg" to null,
                     "senderId" to senderId,
