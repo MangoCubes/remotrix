@@ -39,6 +39,8 @@ import ch.skew.remotrix.data.RemotrixSettings
 import ch.skew.remotrix.data.accountDB.AccountEvent
 import ch.skew.remotrix.data.accountDB.AccountEventAsync
 import ch.skew.remotrix.data.accountDB.AccountViewModel
+import ch.skew.remotrix.data.logDB.LogData
+import ch.skew.remotrix.data.logDB.LogViewModel
 import ch.skew.remotrix.data.sendActionDB.SendAction
 import ch.skew.remotrix.data.sendActionDB.SendActionEvent
 import ch.skew.remotrix.data.sendActionDB.SendActionViewModel
@@ -76,17 +78,29 @@ class MainActivity : ComponentActivity() {
             }
         }
     )
+    @Suppress("UNCHECKED_CAST")
+    private val logViewModel by viewModels<LogViewModel>(
+        factoryProducer = {
+            object: ViewModelProvider.Factory {
+                override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                    return LogViewModel(db.logDao) as T
+                }
+            }
+        }
+    )
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             val accounts by accountViewModel.accounts.collectAsState()
             val sendActions by sendActionViewModel.sendActions.collectAsState()
+            val logs by logViewModel.logs.collectAsState()
             RemotrixApp(
                 accountViewModel::onEvent,
                 accountViewModel::onEventAsync,
                 Account.from(accounts),
                 sendActionViewModel::onEvent,
-                sendActions
+                sendActions,
+                logs
             )
         }
     }
@@ -97,14 +111,16 @@ fun RemotrixApp(
     onAccountEventAsync: (AccountEventAsync) -> Deferred<Long>,
     accounts: List<Account>,
     onSendActionEvent: (SendActionEvent) -> Unit,
-    sendActions: List<SendAction>
+    sendActions: List<SendAction>,
+    logs: List<LogData>
 ) {
     val settings = RemotrixSettings(LocalContext.current)
     val openedBefore = settings.getOpenedBefore.collectAsState(initial = null)
     val defaultSend = settings.getDefaultSend.collectAsState(initial = null)
+    val logging = settings.getLogging.collectAsState(initial = null)
     val navController = rememberNavController()
     RemotrixTheme {
-        if (openedBefore.value !== null && defaultSend.value !== null) NavHost(
+        if (openedBefore.value !== null && defaultSend.value !== null && logging.value !== null) NavHost(
             navController = navController,
             startDestination =
                 if(!openedBefore.value!!) Destination.Setup.route
@@ -147,7 +163,11 @@ fun RemotrixApp(
                 )
             }
             composable(route = Destination.Logs.route) {
-
+                Logs(
+                    accounts = accounts,
+                    logs = logs,
+                    isEnabled = logging.value!!
+                )
             }
         }
     }

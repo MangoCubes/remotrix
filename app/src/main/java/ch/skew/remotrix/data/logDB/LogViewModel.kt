@@ -12,7 +12,6 @@ class LogViewModel(
 ): ViewModel() {
 
     val logs = dao.getLogs().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-    val failedLogs = dao.getFailedLogs().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun onEvent(event: LogEvent){
         when(event){

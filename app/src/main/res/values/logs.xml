@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="logs">Logs</string>
+    <string name="logging_disabled_alert">Logging feature is currently disabled. You can enable this in the settings.</string>
+    <string name="unknown_account_id">Message forwarded using unknown account of ID %s</string>
+    <string name="known_account_id">Message forwarded using account %s.</string>
+    <string name="success">Success</string>
+    <string name="failure">Failure</string>
+</resources>
