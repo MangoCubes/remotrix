@@ -18,6 +18,6 @@ interface AccountDao{
     fun getAccountById(id: Int): Flow<List<AccountData>>
     @Query("SELECT * FROM accounts WHERE user_id = :user_id AND domain NOT NULL LIMIT 1")
     fun getAccountByUserId(user_id: String): Flow<List<AccountData>>
-    @Query("UPDATE accounts SET domain = :domain, management_room = :managementRoom WHERE id = :accountId")
-    suspend fun activateAccount(accountId: Long, domain: String, managementRoom: String)
+    @Query("UPDATE accounts SET domain = :domain, management_room = :managementRoom, message_space = :messagingSpace WHERE id = :accountId")
+    suspend fun activateAccount(accountId: Long, domain: String, managementRoom: String, messagingSpace: String)
 }

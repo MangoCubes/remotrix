@@ -36,7 +36,7 @@ class AccountViewModel(
 
             is AccountEvent.ActivateAccount -> {
                 viewModelScope.launch {
-                    dao.activateAccount(event.id, event.domain, event.managementRoom)
+                    dao.activateAccount(event.id, event.domain, event.managementRoom, event.messageSpace)
                 }
             }
         }

@@ -49,7 +49,7 @@ class Account(
         fun from(accounts: List<AccountData>): List<Account>{
             val ret: MutableList<Account> = mutableListOf()
             for (a in accounts){
-                if(a.domain === null || a.managementRoom === null) continue
+                if(a.domain === null || a.managementRoom === null || a.messageSpace === null) continue
                 ret.add(Account(a.id, a.userId, a.domain, a.baseUrl, a.managementRoom, a.messageSpace))
             }
             return ret
