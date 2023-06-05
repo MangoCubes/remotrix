@@ -70,10 +70,9 @@ fun SelectAccountDialog(
                 Column() {
                     accounts.forEach {
                         @Suppress("IMPLICIT_BOXING_IN_IDENTITY_EQUALS")
-                        AccountRow(
-                            it,
-                            chosen.value !== null && it.id === chosen.value
-                        ) { chosen.value = it.id }
+                        LabelledRadioButton(it.fullName(), chosen.value !== null && it.id === chosen.value) {
+                            chosen.value = it.id
+                        }
                     }
                     if (noneChosenDesc !== null) Row(
                         Modifier
@@ -99,35 +98,6 @@ fun SelectAccountDialog(
                     }
                 }
             }
-        )
-    }
-}
-
-@Composable
-fun AccountRow(account: Account, selected: Boolean, onSelect: () -> Unit){
-    /**
-     * Recommended modifier from Android Compose website
-     */
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .height(56.dp)
-            .selectable(
-                selected = selected,
-                onClick = onSelect,
-                role = Role.RadioButton
-            )
-            .padding(horizontal = 16.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        RadioButton(
-            selected = selected,
-            onClick = null
-        )
-        Text(
-            text = account.fullName(),
-            style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.padding(start = 16.dp)
         )
     }
 }

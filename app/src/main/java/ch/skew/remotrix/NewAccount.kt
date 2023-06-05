@@ -220,10 +220,12 @@ fun onLoginClick(
     val baseUrl: String = if (inputUrl === "") "https://matrix-client.matrix.org"
     else if (!inputUrl.startsWith("http")) "https://$inputUrl"
     else inputUrl
-    val localPart = Regex("@([a-z0-9_.-]+):").find(username.lowercase())?.value ?: username.lowercase()
+    val localPart =
+        Regex("@([a-z0-9_.-]+):").find(username.lowercase())?.value ?: username.lowercase()
     scope.launch {
         update(VerificationStep.STARTED)
-        val id = addAccount(AccountEventAsync.AddAccount(localPart, baseUrl, messagingSpace)).await()
+        val id =
+            addAccount(AccountEventAsync.AddAccount(localPart, baseUrl, messagingSpace)).await()
         val clientDir = context.filesDir.resolve("clients/${id}")
         clientDir.mkdirs()
         val repo = createRealmRepositoriesModule {
@@ -260,7 +262,10 @@ fun onLoginClick(
         ).getOrElse {
             client.logout()
             clientDir.deleteRecursively()
-            abort(context.getString(R.string.cannot_create_room_in_the_messaging_space) + (it.message ?: context.getString(R.string.generic_error)))
+            abort(
+                context.getString(R.string.cannot_create_room_in_the_messaging_space) + (it.message
+                    ?: context.getString(R.string.generic_error))
+            )
             return@launch
         }
         // This state ensures that the parent room recognises the child room as its child.
@@ -273,13 +278,18 @@ fun onLoginClick(
             client.api.rooms.leaveRoom(testRoom)
             client.logout()
             clientDir.deleteRecursively()
-            abort(context.getString(R.string.cannot_create_child_room) + (it.message ?: context.getString(R.string.generic_error)))
+            abort(
+                context.getString(R.string.cannot_create_child_room) + (it.message
+                    ?: context.getString(R.string.generic_error))
+            )
             return@launch
         }
 
-        client.api.rooms.sendStateEvent(testRoom, ChildEventContent(
+        client.api.rooms.sendStateEvent(
+            testRoom, ChildEventContent(
 
-        ), testRoom.full)
+            ), testRoom.full
+        )
         client.api.rooms.leaveRoom(testRoom)
 
 
@@ -295,7 +305,7 @@ fun onLoginClick(
             visibility = DirectoryVisibility.PRIVATE,
             name = roomName,
             topic = context.getString(R.string.management_room_desc).format(client.userId),
-            initialState = if(managementSpaceId === null) null else listOf(
+            initialState = if (managementSpaceId === null) null else listOf(
                 Event.InitialStateEvent(
                     content = ParentEventContent(true, via),
                     stateKey = managementSpaceId
@@ -309,10 +319,14 @@ fun onLoginClick(
             return@launch
         }
         // If room is created under a certain space, it needs to be registered under parent room
-        if(managementSpaceId !== null){
+        if (managementSpaceId !== null) {
             update(VerificationStep.APPENDING_ROOM_AS_CHILD)
             client.api.rooms.joinRoom(RoomId(managementSpaceId))
-            client.api.rooms.sendStateEvent(RoomId(managementSpaceId), ChildEventContent(suggested = false, via = via), roomId.full).getOrElse {
+            client.api.rooms.sendStateEvent(
+                RoomId(managementSpaceId),
+                ChildEventContent(suggested = false, via = via),
+                roomId.full
+            ).getOrElse {
                 clientDir.deleteRecursively()
                 client.api.rooms.leaveRoom(roomId)
                 client.logout()
@@ -322,7 +336,11 @@ fun onLoginClick(
         }
         update(VerificationStep.INVITING_MANAGER)
         client.api.rooms.inviteUser(roomId, UserId(managerId))
-        Toast.makeText(context, context.getString(R.string.logged_in).format(client.userId), Toast.LENGTH_SHORT).show()
+        Toast.makeText(
+            context,
+            context.getString(R.string.logged_in).format(client.userId),
+            Toast.LENGTH_SHORT
+        ).show()
         onAccountEvent(AccountEvent.ActivateAccount(id, client.userId.domain, roomId.full))
         onClickGoBack()
     }
