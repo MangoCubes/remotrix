@@ -29,7 +29,11 @@ class Account(
     /**
      * Room ID of the management room
      */
-    val managementRoom: String
+    val managementRoom: String,
+    /**
+     * Room ID of the messaging space
+     */
+    val messageSpace: String
 ) {
     /**
      * Prints the full username
@@ -46,7 +50,7 @@ class Account(
             val ret: MutableList<Account> = mutableListOf()
             for (a in accounts){
                 if(a.domain === null || a.managementRoom === null) continue
-                ret.add(Account(a.id, a.userId, a.domain, a.baseUrl, a.managementRoom))
+                ret.add(Account(a.id, a.userId, a.domain, a.baseUrl, a.managementRoom, a.messageSpace))
             }
             return ret
         }

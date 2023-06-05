@@ -27,7 +27,7 @@ import ch.skew.remotrix.classes.Account
 @Preview
 fun SelectAccountDialogPreview(){
     SelectAccountDialog(
-        accounts = listOf(Account(1, "temp", "matrix.org", "example.com", "!room:example.com")),
+        accounts = listOf(Account(1, "temp", "matrix.org", "example.com", "!room:example.com", "!Example:example.com")),
         close = {},
         confirm = {},
         title = "Please select an account",
