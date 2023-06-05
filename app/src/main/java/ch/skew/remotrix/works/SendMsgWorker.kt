@@ -54,6 +54,7 @@ class SendMsgWorker(
             ).build()
             val logging = settings.getLogging.first()
             if(msg === null) {
+//                if(logging) db.logDao.insertError()
                 return@withContext Result.failure(
                     workDataOf(
                         "error" to context.getString(R.string.error_message_is_not_sent_because_its_type_code_is_not_recognised),
