@@ -44,6 +44,7 @@ import net.folivo.trixnity.client.MatrixClient
 import net.folivo.trixnity.client.fromStore
 import net.folivo.trixnity.client.media.okio.OkioMediaStore
 import net.folivo.trixnity.client.store.repository.realm.createRealmRepositoriesModule
+import net.folivo.trixnity.core.model.RoomId
 import okio.Path.Companion.toPath
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -123,14 +124,16 @@ fun deleteAccount(
                 scope = scope,
             ).getOrThrow()
             if(matrixClient === null) {
-                Toast.makeText(context, "Cannot logout. Account will be removed from device only.", Toast.LENGTH_LONG).show()
+                Toast.makeText(context, context.getString(R.string.cannot_logout_no_account), Toast.LENGTH_LONG).show()
             } else {
+                matrixClient.api.rooms.leaveRoom(RoomId(account.managementRoom))
+                matrixClient.api.rooms.leaveRoom(RoomId(account.messageSpace))
                 matrixClient.logout()
-                Toast.makeText(context, "Logout successful.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.logout_successful), Toast.LENGTH_SHORT).show()
             }
             context.filesDir.resolve("clients").resolve("${account.userId}.mv.db").delete()
         } catch (e: Throwable) {
-            Toast.makeText(context, "Cannot locate account data. Account will be removed from device only.", Toast.LENGTH_LONG).show()
+            Toast.makeText(context, context.getString(R.string.cannot_logout_data_not_found), Toast.LENGTH_LONG).show()
         }
         onAccountEvent(AccountEvent.DeleteAccount(account.id))
         close()
