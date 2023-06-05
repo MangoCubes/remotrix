@@ -5,8 +5,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -29,7 +31,8 @@ import kotlinx.coroutines.launch
 @Composable
 fun Settings(
     accounts: List<Account> = listOf(),
-    defaultSend: Int = -1
+    defaultSend: Int = -1,
+    goBack: () -> Unit = {}
 ) {
     val open = remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
@@ -39,8 +42,13 @@ fun Settings(
         topBar = {
             TopAppBar({
                 Text(stringResource(R.string.settings))
+            }, navigationIcon = {
+                IconButton(goBack) {
+                    Icon(Icons.Filled.ArrowBack, stringResource(R.string.go_back))
+                }
             })
-        }
+        },
+
     ) { padding ->
         Column(modifier = Modifier.padding(padding)) {
             ListItem(
@@ -68,6 +76,6 @@ fun Settings(
         title = stringResource(R.string.choose_default_account),
         noneChosenDesc = stringResource(R.string.none_option),
         show = open.value,
-        defaultSelected = defaultSend
+        defaultSelected = if(defaultSend == -1) null else defaultSend
     )
 }
