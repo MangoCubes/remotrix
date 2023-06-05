@@ -6,8 +6,8 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface AccountDao{
-    @Query("INSERT INTO accounts (user_id, domain, base_url, message_space) VALUES (:userId, NULL, :baseUrl, :messageSpace)")
-    suspend fun insert(userId: String, baseUrl: String, messageSpace: String): Long
+    @Query("INSERT INTO accounts (user_id, base_url) VALUES (:userId, :baseUrl)")
+    suspend fun insert(userId: String, baseUrl: String): Long
     @Query("SELECT message_space FROM accounts WHERE id = :id")
     suspend fun getMessageSpace(id: Int): String
     @Query("DELETE FROM accounts WHERE id = :id")

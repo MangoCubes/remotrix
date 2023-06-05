@@ -20,8 +20,8 @@ import ch.skew.remotrix.data.accountDB.AccountData
 data class RoomIdData(
     @ColumnInfo(name = "phone_number")
     val phoneNumber: String,
-    @ColumnInfo(name = "sender_id")
+    @ColumnInfo(name = "sender_id", index = true)
     val senderId: Int,
     @ColumnInfo(name = "room_id")
-    val roomId: String,
+    val roomId: String
 )

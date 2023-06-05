@@ -17,4 +17,7 @@
     <string name="failed_to_find_room_permission_settings">Failed to find room permission settings.</string>
     <string name="cannot_create_child_room">"Cannot create child room: "</string>
     <string name="cannot_create_room_in_the_messaging_space">"Cannot create room in the messaging space: "</string>
+    <string name="auto">Automatically create messaging space</string>
+    <string name="manual">Enter existing messaging space ID</string>
+    <string name="sms_forwarder">SMS Forwarder</string>
 </resources>
