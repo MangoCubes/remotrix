@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="choose_default_account">Choose Default Account</string>
+    <string name="choose_default_account_desc">Choose which account the message should be sent with if it matches no rules in the list.</string>
+    <string name="enable_logging">Enable Logging</string>
+    <string name="enable_logging_desc">Log all message sending attempts, both successful and unsuccessful. Message content will also be saved.</string>
+</resources>

@@ -10,7 +10,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.AdminPanelSettings
-import androidx.compose.material.icons.filled.Message
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
@@ -20,9 +21,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -36,19 +34,18 @@ import androidx.room.Room
 import ch.skew.remotrix.classes.Account
 import ch.skew.remotrix.classes.Destination
 import ch.skew.remotrix.components.ListHeader
-import ch.skew.remotrix.components.SelectAccountDialog
 import ch.skew.remotrix.data.RemotrixDB
 import ch.skew.remotrix.data.RemotrixSettings
 import ch.skew.remotrix.data.accountDB.AccountEvent
 import ch.skew.remotrix.data.accountDB.AccountEventAsync
 import ch.skew.remotrix.data.accountDB.AccountViewModel
+import ch.skew.remotrix.data.logDB.LogData
+import ch.skew.remotrix.data.logDB.LogViewModel
 import ch.skew.remotrix.data.sendActionDB.SendAction
 import ch.skew.remotrix.data.sendActionDB.SendActionEvent
 import ch.skew.remotrix.data.sendActionDB.SendActionViewModel
 import ch.skew.remotrix.ui.theme.RemotrixTheme
 import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
 
 
 class MainActivity : ComponentActivity() {
@@ -81,17 +78,29 @@ class MainActivity : ComponentActivity() {
             }
         }
     )
+    @Suppress("UNCHECKED_CAST")
+    private val logViewModel by viewModels<LogViewModel>(
+        factoryProducer = {
+            object: ViewModelProvider.Factory {
+                override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                    return LogViewModel(db.logDao) as T
+                }
+            }
+        }
+    )
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             val accounts by accountViewModel.accounts.collectAsState()
             val sendActions by sendActionViewModel.sendActions.collectAsState()
+            val logs by logViewModel.logs.collectAsState()
             RemotrixApp(
                 accountViewModel::onEvent,
                 accountViewModel::onEventAsync,
                 Account.from(accounts),
                 sendActionViewModel::onEvent,
-                sendActions
+                sendActions,
+                logs
             )
         }
     }
@@ -102,13 +111,16 @@ fun RemotrixApp(
     onAccountEventAsync: (AccountEventAsync) -> Deferred<Long>,
     accounts: List<Account>,
     onSendActionEvent: (SendActionEvent) -> Unit,
-    sendActions: List<SendAction>
+    sendActions: List<SendAction>,
+    logs: List<LogData>
 ) {
     val settings = RemotrixSettings(LocalContext.current)
     val openedBefore = settings.getOpenedBefore.collectAsState(initial = null)
+    val defaultSend = settings.getDefaultSend.collectAsState(initial = null)
+    val logging = settings.getLogging.collectAsState(initial = null)
     val navController = rememberNavController()
     RemotrixTheme {
-        if (openedBefore.value !== null) NavHost(
+        if (openedBefore.value !== null && defaultSend.value !== null && logging.value !== null) NavHost(
             navController = navController,
             startDestination =
                 if(!openedBefore.value!!) Destination.Setup.route
@@ -118,8 +130,8 @@ fun RemotrixApp(
             composable(route = Destination.Home.route) {
                 HomeScreen(
                     accounts,
-                    onClickAccountList = { navController.navigate(Destination.AccountList.route) },
-                    onClickShowSetup = { navController.navigate(Destination.Setup.route) }
+                    navigate = { navController.navigate(it) },
+                    defaultSend = defaultSend.value!!
                 )
             }
             composable(route = Destination.AccountList.route) {
@@ -144,26 +156,34 @@ fun RemotrixApp(
                     openedBefore = openedBefore.value!!
                 )
             }
+            composable(route = Destination.Settings.route) {
+                Settings(
+                    accounts = accounts,
+                    defaultSend = defaultSend.value!!,
+                    goBack = { navController.popBackStack() },
+                    logging = logging.value!!
+                )
+            }
+            composable(route = Destination.Logs.route) {
+                Logs(
+                    accounts = accounts,
+                    logs = logs,
+                    isEnabled = logging.value!!,
+                    goBack = { navController.popBackStack() },
+                )
+            }
         }
     }
 }
 @Preview
-@Composable
-fun PreviewHomeScreen() {
-    HomeScreen(listOf(), {}, {})
-}
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    accounts: List<Account>,
-    onClickAccountList: () -> Unit,
-    onClickShowSetup: () -> Unit
+    accounts: List<Account> = listOf(),
+    navigate: (String) -> Unit = {},
+    defaultSend: Int = -1,
+    sendActions: List<SendAction> = listOf()
 ) {
-    val open = remember { mutableStateOf(false) }
-    val defaultAccount = remember { mutableStateOf<Int?>(null) }
-    val scope = rememberCoroutineScope()
-    val context = LocalContext.current
-    val settings = RemotrixSettings(context)
     Scaffold(
         topBar = {
             TopAppBar({
@@ -182,7 +202,7 @@ fun HomeScreen(
                         contentDescription = stringResource(R.string.manage_accounts),
                     )
                 },
-                modifier = Modifier.clickable {onClickShowSetup()}
+                modifier = Modifier.clickable { navigate(Destination.Setup.route) }
             )
             ListItem(
                 headlineText = { Text(stringResource(R.string.manage_accounts)) },
@@ -193,41 +213,32 @@ fun HomeScreen(
                         contentDescription = stringResource(R.string.manage_accounts),
                     )
                 },
-                modifier = Modifier.clickable { onClickAccountList() }
+                modifier = Modifier.clickable { navigate(Destination.AccountList.route) }
             )
-            ListHeader(stringResource(R.string.behaviour))
+            val desc = stringResource(R.string.settings_desc) + if (sendActions.isEmpty() && defaultSend == -1) stringResource(R.string.settings_desc_warning) else ""
             ListItem(
-                headlineText = { Text(stringResource(R.string.choose_default_account)) },
-                supportingText = { Text(stringResource(R.string.choose_default_account_desc)) },
+                headlineText = { Text(stringResource(R.string.settings)) },
+                supportingText = { Text(desc) },
                 leadingContent = {
                     Icon(
-                        Icons.Filled.Message,
-                        contentDescription = stringResource(R.string.choose_default_account)
+                        Icons.Filled.Settings,
+                        contentDescription = stringResource(R.string.settings)
                     )
                 },
-                modifier = Modifier.clickable {
-                    scope.launch {
-                        defaultAccount.value = settings.getDefaultSend.first()
-                        open.value = true
-                    }
-
-
-                }
+                modifier = Modifier.clickable { navigate(Destination.Settings.route) }
+            )
+            ListHeader(stringResource(R.string.current_status))
+            ListItem(
+                headlineText = { Text(stringResource(R.string.view_logs)) },
+                supportingText = { Text(stringResource(R.string.view_logs_desc)) },
+                leadingContent = {
+                    Icon(
+                        Icons.Filled.Storage,
+                        contentDescription = stringResource(R.string.view_logs)
+                    )
+                },
+                modifier = Modifier.clickable { navigate(Destination.Logs.route) }
             )
         }
     }
-    SelectAccountDialog(
-        accounts = accounts,
-        close = { open.value = false },
-        confirm = {
-            scope.launch {
-                settings.saveDefaultSend(it)
-            }
-            open.value = false
-        },
-        title = "Choose Default Account",
-        noneChosenDesc = "Drop messages that do not match any rules",
-        show = open.value,
-        defaultSelected = defaultAccount.value
-    )
 }

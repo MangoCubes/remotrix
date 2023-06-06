@@ -52,7 +52,11 @@
     <string name="message_space_id">Message Space ID</string>
     <string name="msg_room_desc">Messages from %s</string>
     <string name="behaviour">Behaviour</string>
-    <string name="choose_default_account">Choose Default Account</string>
-    <string name="choose_default_account_desc">Choose which account the message should be sent with if it matches no rules in the list.</string>
     <string name="choose">Choose</string>
+    <string name="current_status">Current Status</string>
+    <string name="settings_desc_warning">\nWarning: You have no rules nor default account set! Messages will not be sent with this setup.</string>
+    <string name="none_option">Drop messages that do not match any rules</string>
+    <string name="view_logs">View Logs</string>
+    <string name="view_logs_desc">View logs of the messages. Note that you must enable it in options prior.</string>
+    <string name="creating_messaging_space">Creating messaging space…</string>
 </resources>

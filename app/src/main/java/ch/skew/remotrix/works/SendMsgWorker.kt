@@ -11,6 +11,7 @@ import ch.skew.remotrix.classes.SMSMsg
 import ch.skew.remotrix.classes.TestMsg
 import ch.skew.remotrix.data.RemotrixDB
 import ch.skew.remotrix.data.RemotrixSettings
+import ch.skew.remotrix.data.logDB.MsgStatus
 import ch.skew.remotrix.data.roomIdDB.RoomIdData
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -47,21 +48,32 @@ class SendMsgWorker(
             val payload = inputData.getStringArray("payload")
             val msg = MsgToSend.from(msgType, senderId, payload)
             // Message that does not have valid type code will be dropped and TODO: logged.
-            if(msg === null) return@withContext Result.failure(
-                workDataOf(
-                    "error" to context.getString(R.string.error_message_is_not_sent_because_its_type_code_is_not_recognised),
-                    "msgType" to msgType,
-                    "errorMsg" to null,
-                    "senderId" to senderId,
-                    "payload" to payload
-                )
-            )
-            // Database is loaded after this initial check
             val settings = RemotrixSettings(applicationContext)
             val db = Room.databaseBuilder(
                 applicationContext,
                 RemotrixDB::class.java, "accounts.db"
             ).build()
+            val logging = settings.getLogging.first()
+            if(msg === null) {
+                if(logging) db.logDao.insertError(
+                    MsgStatus.UNRECOGNISED_MESSAGE_CODE,
+                    null,
+                    msgType,
+                    senderId,
+                    payload?.joinToString(", ") ?: "Empty payload"
+                )
+                return@withContext Result.failure(
+                    workDataOf(
+                        "error" to MsgStatus.UNRECOGNISED_MESSAGE_CODE,
+                        "msgType" to msgType,
+                        "errorMsg" to null,
+                        "senderId" to senderId,
+                        "payload" to payload
+                    )
+                )
+            }
+            // Database is loaded after this initial check
+
 
             // Matrix Account to send message with is chosen at this step.
             val sendAs = when (msg) {
@@ -69,6 +81,16 @@ class SendMsgWorker(
                 is SMSMsg -> {
                     // Default account is loaded up from the settings.
                     val defaultAccount = settings.getDefaultSend.first()
+                    // Account ID of -1 is set to none.
+                    if(defaultAccount == -1) {
+                        if(logging) db.logDao.insertSuccess(
+                            MsgStatus.MESSAGE_DROPPED,
+                            msgType,
+                            senderId,
+                            payload?.joinToString(", ") ?: "Empty payload"
+                        )
+                        return@withContext Result.success()
+                    }
                     // Forwarder rules are loaded here, and are immediately put through getSenderId to determine the forwarder
                     val match = msg.getSenderId(db.sendActionDao.getAll())
                     // If match is not found, default account is chosen.
@@ -81,10 +103,17 @@ class SendMsgWorker(
                 }
 
                 else -> {
+                    if(logging) db.logDao.insertError(
+                        MsgStatus.NO_SUITABLE_FORWARDER,
+                        null,
+                        msgType,
+                        senderId,
+                        payload?.joinToString(", ") ?: "Empty payload"
+                    )
                     // This shouldn't execute but still
                     return@withContext Result.failure(
                         workDataOf(
-                            "error" to context.getString(R.string.error_message_is_not_sent_as_the_forwarder_could_not_be_decided),
+                            "error" to MsgStatus.NO_SUITABLE_FORWARDER,
                             "msgType" to msgType,
                             "errorMsg" to null,
                             "senderId" to senderId,
@@ -93,10 +122,6 @@ class SendMsgWorker(
                     )
                 }
             }
-            
-            // If sendAs is null, it means the message did not match any rule and should be dropped.
-             if (sendAs === null) return@withContext Result.success()
-
             // Matrix client is loaded here.
             val clientDir = context.filesDir.resolve("clients/${sendAs}")
             val repo = createRealmRepositoriesModule {
@@ -109,9 +134,16 @@ class SendMsgWorker(
                 mediaStore = media,
                 scope = scope
             ).getOrElse {
+                if(logging) db.logDao.insertError(
+                    MsgStatus.CANNOT_LOAD_MATRIX_CLIENT,
+                    it.message,
+                    msgType,
+                    senderId,
+                    payload?.joinToString(", ") ?: "Empty payload"
+                )
                 return@withContext Result.failure(
                     workDataOf(
-                        "error" to context.getString(R.string.error_matrix_client_could_not_be_loaded),
+                        "error" to MsgStatus.CANNOT_LOAD_MATRIX_CLIENT,
                         "errorMsg" to it,
                         "msgType" to msgType,
                         "senderId" to senderId,
@@ -121,15 +153,24 @@ class SendMsgWorker(
             }
             
             // Not sure why Result may be success but have null client, but still
-            if(client === null) return@withContext Result.failure(
-                workDataOf(
-                    "error" to context.getString(R.string.error_matrix_client_could_not_be_loaded),
-                    "errorMsg" to null,
-                    "msgType" to msgType,
-                    "senderId" to senderId,
-                    "payload" to payload
+            if(client === null) {
+                if(logging) db.logDao.insertError(
+                    MsgStatus.CANNOT_LOAD_MATRIX_CLIENT,
+                    null,
+                    msgType,
+                    senderId,
+                    payload?.joinToString(", ") ?: "Empty payload"
                 )
-            )
+                return@withContext Result.failure(
+                    workDataOf(
+                        "error" to MsgStatus.CANNOT_LOAD_MATRIX_CLIENT,
+                        "errorMsg" to null,
+                        "msgType" to msgType,
+                        "senderId" to senderId,
+                        "payload" to payload
+                    )
+                )
+            }
 
             if(msg is TestMsg){
                 client.room.sendMessage(msg.to) {
@@ -138,6 +179,12 @@ class SendMsgWorker(
                 client.startSync()
                 delay(10000) //Temporary fix, TODO: Figure out how to stop the code until a message is confirmed to be sent
                 scope.cancel()
+                if(logging) db.logDao.insertSuccess(
+                    MsgStatus.MESSAGE_SENT,
+                    msgType,
+                    senderId,
+                    payload?.joinToString(", ") ?: "Empty payload"
+                )
                 return@withContext Result.success()
             } else if(msg is SMSMsg){
                 val msgSpace = db.accountDao.getMessageSpace(sendAs)
@@ -169,9 +216,16 @@ class SendMsgWorker(
                             )
                         )
                     ).getOrElse {
+                        if(logging) db.logDao.insertError(
+                            MsgStatus.CANNOT_CREATE_ROOM,
+                            it.message,
+                            msgType,
+                            senderId,
+                            payload?.joinToString(", ") ?: "Empty payload"
+                        )
                         return@withContext Result.failure(
                             workDataOf(
-                                "error" to context.getString(R.string.error_matrix_client_failed_to_create_a_room),
+                                "error" to MsgStatus.CANNOT_CREATE_ROOM,
                                 "errorMsg" to it,
                                 "msgType" to msgType,
                                 "senderId" to senderId,
@@ -187,9 +241,16 @@ class SendMsgWorker(
                     ).getOrElse {
                         // Forwarder leaves the room to ensure it is removed in case state cannot be set.
                         client.api.rooms.leaveRoom(roomId)
+                        if(logging) db.logDao.insertError(
+                            MsgStatus.CANNOT_CREATE_CHILD_ROOM,
+                            it.message,
+                            msgType,
+                            senderId,
+                            payload?.joinToString(", ") ?: "Empty payload"
+                        )
                         return@withContext Result.failure(
                             workDataOf(
-                                "error" to "Error: Matrix client failed to set room parent-child relationship.",
+                                "error" to MsgStatus.CANNOT_CREATE_CHILD_ROOM,
                                 "errorMsg" to it,
                                 "msgType" to msgType,
                                 "senderId" to senderId,
@@ -209,12 +270,25 @@ class SendMsgWorker(
                 client.startSync()
                 delay(10000) //Temporary fix, TODO: Figure out how to stop the code until a message is confirmed to be sent
                 scope.cancel()
+                if(logging) db.logDao.insertSuccess(
+                    MsgStatus.MESSAGE_SENT,
+                    msgType,
+                    senderId,
+                    payload?.joinToString(", ") ?: "Empty payload"
+                )
                 return@withContext Result.success()
             }
             // Again, this should not execute, but oh well.
+            if(logging) db.logDao.insertError(
+                MsgStatus.UNRECOGNISED_MESSAGE_CLASS,
+                null,
+                msgType,
+                senderId,
+                payload?.joinToString(", ") ?: "Empty payload"
+            )
             return@withContext Result.failure(
                 workDataOf(
-                    "error" to context.getString(R.string.error_message_type_is_unrecognised),
+                    "error" to MsgStatus.UNRECOGNISED_MESSAGE_CLASS,
                     "msgType" to msgType,
                     "errorMsg" to null,
                     "senderId" to senderId,

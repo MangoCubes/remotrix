@@ -26,6 +26,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import ch.skew.remotrix.components.LabelledRadioButton
 import ch.skew.remotrix.components.PasswordField
 import ch.skew.remotrix.data.RemotrixSettings
 import ch.skew.remotrix.data.accountDB.AccountEvent
@@ -44,6 +45,7 @@ import net.folivo.trixnity.clientserverapi.model.rooms.DirectoryVisibility
 import net.folivo.trixnity.core.model.RoomId
 import net.folivo.trixnity.core.model.UserId
 import net.folivo.trixnity.core.model.events.Event
+import net.folivo.trixnity.core.model.events.m.room.CreateEventContent
 import net.folivo.trixnity.core.model.events.m.space.ChildEventContent
 import net.folivo.trixnity.core.model.events.m.space.ParentEventContent
 import okio.Path.Companion.toPath
@@ -58,6 +60,11 @@ enum class VerificationStep {
      * Status just after pressing button and waiting for login to go through
      */
     STARTED,
+
+    /**
+     * If no messaging space was selected during login, a space will be created for the user instead.
+     */
+    CREATING_MESSAGING_SPACE,
 
     /**
      * Using this account to join the messaging space
@@ -130,6 +137,7 @@ fun NewAccount(
             val settings = RemotrixSettings(context)
             val managerId = settings.getManagerId.collectAsState(initial = "")
             val managementSpace = settings.getManagementSpaceId.collectAsState(initial = "")
+            val autoMsgSpace = remember { mutableStateOf(true) }
             TextField(
                 modifier = Modifier.fillMaxWidth(),
                 value = username.value,
@@ -154,7 +162,15 @@ fun NewAccount(
                 singleLine = true,
                 enabled = enabled.value
             )
-            TextField(
+            Column() {
+                LabelledRadioButton(label = stringResource(R.string.auto), selected = autoMsgSpace.value) {
+                    autoMsgSpace.value = true
+                }
+                LabelledRadioButton(label = stringResource(R.string.manual), selected = !autoMsgSpace.value) {
+                    autoMsgSpace.value = false
+                }
+            }
+            if(!autoMsgSpace.value) TextField(
                 modifier = Modifier.fillMaxWidth(),
                 value = messageSpaceId.value,
                 onValueChange = { messageSpaceId.value = it },
@@ -177,7 +193,7 @@ fun NewAccount(
                         baseUrl.value,
                         managerId.value,
                         managementSpace.value,
-                        messageSpaceId.value,
+                        if (autoMsgSpace.value) null else messageSpaceId.value,
                         onAccountEventAsync,
                         {
                             errorMsg.value = it
@@ -188,7 +204,7 @@ fun NewAccount(
                         { step.value = it }
                     )
                 },
-                enabled = enabled.value
+                enabled = enabled.value && username.value.isNotEmpty() && password.value.isNotEmpty() && (autoMsgSpace.value || messageSpaceId.value.isNotEmpty())
             )
             if (errorMsg.value.isNotEmpty()) Text(errorMsg.value)
             Column {
@@ -198,6 +214,7 @@ fun NewAccount(
                 if(step.value === VerificationStep.CREATING_MANAGEMENT_ROOM)Text(stringResource(R.string.creating_management_room))
                 if(step.value === VerificationStep.APPENDING_ROOM_AS_CHILD)Text(stringResource(R.string.appending_management_room_as_child_room))
                 if(step.value === VerificationStep.INVITING_MANAGER)Text(stringResource(R.string.inviting_manager_account))
+                if(step.value === VerificationStep.CREATING_MESSAGING_SPACE)Text(stringResource(R.string.creating_messaging_space))
             }
         }
     }
@@ -210,7 +227,7 @@ fun onLoginClick(
     inputUrl: String,
     managerId: String,
     managementSpaceId: String?,
-    messagingSpace: String,
+    messagingSpaceInput: String?,
     addAccount: (AccountEventAsync) -> Deferred<Long>,
     abort: (String) -> Unit,
     onAccountEvent: (AccountEvent) -> Unit,
@@ -220,19 +237,23 @@ fun onLoginClick(
     val baseUrl: String = if (inputUrl === "") "https://matrix-client.matrix.org"
     else if (!inputUrl.startsWith("http")) "https://$inputUrl"
     else inputUrl
-    val localPart = Regex("@([a-z0-9_.-]+):").find(username.lowercase())?.value ?: username.lowercase()
+    val localPart =
+        Regex("@([a-z0-9_.-]+):").find(username.lowercase())?.value ?: username.lowercase()
     scope.launch {
         update(VerificationStep.STARTED)
-        val id = addAccount(AccountEventAsync.AddAccount(localPart, baseUrl, messagingSpace)).await()
+
+        val id = addAccount(AccountEventAsync.AddAccount(localPart, baseUrl)).await()
         val clientDir = context.filesDir.resolve("clients/${id}")
         clientDir.mkdirs()
         val repo = createRealmRepositoriesModule {
             this.directory(clientDir.toString())
         }
-        val client = MatrixClient.login(baseUrl = Url(baseUrl),
+        val client = MatrixClient.login(
+            baseUrl = Url(baseUrl),
             identifier = IdentifierType.User(username),
             password = password,
             repositoriesModule = repo,
+            deviceId = "Remotrix",
             mediaStore = OkioMediaStore(context.filesDir.resolve("clients/media").absolutePath.toPath()),
             scope = scope,
         ).getOrElse {
@@ -240,47 +261,73 @@ fun onLoginClick(
             abort(it.message ?: context.getString(R.string.generic_error))
             return@launch
         }
-        update(VerificationStep.JOINING_MESSAGING_SPACE)
-
-        val msgSpace = RoomId(messagingSpace)
         // The "via" part of m.space.child/parent event.
         val via = setOf(client.userId.domain)
-        val testRoom = client.api.rooms.createRoom(
-            visibility = DirectoryVisibility.PRIVATE,
-            name = "Test room",
-            initialState = listOf(
-                // Initial event for making this room child of the message room
-                Event.InitialStateEvent(
-                    content = ParentEventContent(true, via),
-                    stateKey = messagingSpace
+        val msgSpace: RoomId
+        if(messagingSpaceInput === null) {
+            update(VerificationStep.CREATING_MESSAGING_SPACE)
+            msgSpace = client.api.rooms.createRoom(
+                visibility = DirectoryVisibility.PRIVATE,
+                name = context.getString(R.string.sms_forwarder),
+                creationContent = CreateEventContent(
+                    type = CreateEventContent.RoomType.Space,
+                    creator = client.userId
                 )
+            ).getOrElse {
+                clientDir.deleteRecursively()
+                abort(it.message ?: context.getString(R.string.generic_error))
+                return@launch
+            }
+            client.api.rooms.inviteUser(msgSpace, UserId(managerId)).getOrElse {
+                client.api.rooms.leaveRoom(msgSpace)
+                clientDir.deleteRecursively()
+                abort(it.message ?: context.getString(R.string.generic_error))
+                return@launch
+            }
+        } else {
+            update(VerificationStep.JOINING_MESSAGING_SPACE)
+            msgSpace = RoomId(messagingSpaceInput)
+            val testRoom = client.api.rooms.createRoom(
+                visibility = DirectoryVisibility.PRIVATE,
+                name = "Test room",
+                initialState = listOf(
+                    // Initial event for making this room child of the message room
+                    Event.InitialStateEvent(
+                        content = ParentEventContent(true, via),
+                        stateKey = messagingSpaceInput
+                    )
+                )
+            ).getOrElse {
+                client.logout()
+                clientDir.deleteRecursively()
+                abort(
+                    context.getString(R.string.cannot_create_room_in_the_messaging_space) + (it.message
+                        ?: context.getString(R.string.generic_error))
+                )
+                return@launch
+            }
+            // This state ensures that the parent room recognises the child room as its child.
+            client.api.rooms.sendStateEvent(
+                msgSpace,
+                ChildEventContent(suggested = false, via = via),
+                testRoom.full
+            ).getOrElse {
+                // Forwarder leaves the room to ensure it is removed in case state cannot be set.
+                client.api.rooms.leaveRoom(testRoom)
+                client.logout()
+                clientDir.deleteRecursively()
+                abort(
+                    context.getString(R.string.cannot_create_child_room) + (it.message
+                        ?: context.getString(R.string.generic_error))
+                )
+                return@launch
+            }
+
+            client.api.rooms.sendStateEvent(
+                testRoom, ChildEventContent(), testRoom.full
             )
-        ).getOrElse {
-            client.logout()
-            clientDir.deleteRecursively()
-            abort(context.getString(R.string.cannot_create_room_in_the_messaging_space) + (it.message ?: context.getString(R.string.generic_error)))
-            return@launch
-        }
-        // This state ensures that the parent room recognises the child room as its child.
-        client.api.rooms.sendStateEvent(
-            msgSpace,
-            ChildEventContent(suggested = false, via = via),
-            testRoom.full
-        ).getOrElse {
-            // Forwarder leaves the room to ensure it is removed in case state cannot be set.
             client.api.rooms.leaveRoom(testRoom)
-            client.logout()
-            clientDir.deleteRecursively()
-            abort(context.getString(R.string.cannot_create_child_room) + (it.message ?: context.getString(R.string.generic_error)))
-            return@launch
         }
-
-        client.api.rooms.sendStateEvent(testRoom, ChildEventContent(
-
-        ), testRoom.full)
-        client.api.rooms.leaveRoom(testRoom)
-
-
         update(VerificationStep.CREATING_MANAGEMENT_ROOM)
         /**
          * Step 1: Room is created by the new account. It also claims to be child of the management space.
@@ -293,7 +340,7 @@ fun onLoginClick(
             visibility = DirectoryVisibility.PRIVATE,
             name = roomName,
             topic = context.getString(R.string.management_room_desc).format(client.userId),
-            initialState = if(managementSpaceId === null) null else listOf(
+            initialState = if (managementSpaceId === null) null else listOf(
                 Event.InitialStateEvent(
                     content = ParentEventContent(true, via),
                     stateKey = managementSpaceId
@@ -307,10 +354,14 @@ fun onLoginClick(
             return@launch
         }
         // If room is created under a certain space, it needs to be registered under parent room
-        if(managementSpaceId !== null){
+        if (managementSpaceId !== null) {
             update(VerificationStep.APPENDING_ROOM_AS_CHILD)
             client.api.rooms.joinRoom(RoomId(managementSpaceId))
-            client.api.rooms.sendStateEvent(RoomId(managementSpaceId), ChildEventContent(suggested = false, via = via), roomId.full).getOrElse {
+            client.api.rooms.sendStateEvent(
+                RoomId(managementSpaceId),
+                ChildEventContent(suggested = false, via = via),
+                roomId.full
+            ).getOrElse {
                 clientDir.deleteRecursively()
                 client.api.rooms.leaveRoom(roomId)
                 client.logout()
@@ -320,8 +371,12 @@ fun onLoginClick(
         }
         update(VerificationStep.INVITING_MANAGER)
         client.api.rooms.inviteUser(roomId, UserId(managerId))
-        Toast.makeText(context, context.getString(R.string.logged_in).format(client.userId), Toast.LENGTH_SHORT).show()
-        onAccountEvent(AccountEvent.ActivateAccount(id, client.userId.domain, roomId.full))
+        Toast.makeText(
+            context,
+            context.getString(R.string.logged_in).format(client.userId),
+            Toast.LENGTH_SHORT
+        ).show()
+        onAccountEvent(AccountEvent.ActivateAccount(id, client.userId.domain, roomId.full, msgSpace.full))
         onClickGoBack()
     }
 }

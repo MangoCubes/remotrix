@@ -1,4 +1,2 @@
 Implementation order:
-1. Start a work at OnSMS that allows a message can be processed in other files
-2. Test if message sending can work in the first place, by using no sending rules other than sending messages using all accounts in DB
 3. Implement a room ID - Receiver database
