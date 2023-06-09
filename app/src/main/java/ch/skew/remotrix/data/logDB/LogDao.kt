@@ -16,4 +16,7 @@ interface LogDao{
     suspend fun setSuccess(id: Long, status: MsgStatus)
     @Query("SELECT * FROM logs")
     fun getLogs(): Flow<List<LogData>>
+
+    @Query("DELETE FROM logs")
+    suspend fun deleteAll()
 }

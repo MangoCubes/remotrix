@@ -1,11 +1,13 @@
 package ch.skew.remotrix
 
+import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -25,6 +27,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import ch.skew.remotrix.classes.Account
 import ch.skew.remotrix.components.SelectAccountDialog
+import ch.skew.remotrix.data.RemotrixDB
 import ch.skew.remotrix.data.RemotrixSettings
 import kotlinx.coroutines.launch
 
@@ -81,6 +84,20 @@ fun Settings(
                 },
                 trailingContent = {
                     Switch(checked = logging, onCheckedChange = null)
+                }
+            )
+            ListItem(
+                headlineText = { Text(stringResource(R.string.delete_log)) },
+                supportingText = { Text(stringResource(R.string.delete_log_desc)) },
+                leadingContent = {
+                    Icon(
+                        Icons.Filled.DeleteForever,
+                        contentDescription = stringResource(R.string.delete_log)
+                    )
+                },
+                modifier = Modifier.clickable {
+                    Toast.makeText(context, context.getString(R.string.log_deleted), Toast.LENGTH_SHORT).show()
+                    scope.launch { RemotrixDB.getInstance(context).logDao.deleteAll() }
                 }
             )
         }

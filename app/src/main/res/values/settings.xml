@@ -4,4 +4,7 @@
     <string name="choose_default_account_desc">Choose which account the message should be sent with if it matches no rules in the list.</string>
     <string name="enable_logging">Enable Logging</string>
     <string name="enable_logging_desc">Log all message sending attempts, both successful and unsuccessful. Message content will also be saved.</string>
+    <string name="delete_log">Delete Log</string>
+    <string name="delete_log_desc">Delete all logs stored.</string>
+    <string name="log_deleted">Log deleted.</string>
 </resources>
