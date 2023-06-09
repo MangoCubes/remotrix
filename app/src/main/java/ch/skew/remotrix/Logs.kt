@@ -68,7 +68,7 @@ fun Logs(
                     .padding(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Hide successful sends")
+                Text(stringResource(R.string.hide_successful_sends))
                 Spacer(modifier = Modifier.padding(start = 8.dp))
                 Switch(
                     checked = hideSuccesses.value,
