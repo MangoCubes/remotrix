@@ -24,8 +24,8 @@ class AccountViewModel(
                 }
             }
         }
-
     }
+
     fun onEvent(event: AccountEvent){
         when(event){
             is AccountEvent.DeleteAccount -> {
