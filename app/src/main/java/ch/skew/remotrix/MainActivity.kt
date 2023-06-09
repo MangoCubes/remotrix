@@ -30,7 +30,6 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.room.Room
 import ch.skew.remotrix.classes.Account
 import ch.skew.remotrix.classes.Destination
 import ch.skew.remotrix.components.ListHeader
@@ -50,20 +49,12 @@ import kotlinx.coroutines.Deferred
 
 class MainActivity : ComponentActivity() {
 
-    private val db by lazy {
-        Room.databaseBuilder(
-            applicationContext,
-            RemotrixDB::class.java,
-            "accounts.db"
-        ).build()
-    }
-
     @Suppress("UNCHECKED_CAST")
     private val accountViewModel by viewModels<AccountViewModel>(
         factoryProducer = {
             object: ViewModelProvider.Factory {
                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                    return AccountViewModel(db.accountDao) as T
+                    return AccountViewModel(RemotrixDB.getInstance(applicationContext).accountDao) as T
                 }
             }
         }
@@ -73,7 +64,7 @@ class MainActivity : ComponentActivity() {
         factoryProducer = {
             object: ViewModelProvider.Factory {
                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                    return SendActionViewModel(db.sendActionDao) as T
+                    return SendActionViewModel(RemotrixDB.getInstance(applicationContext).sendActionDao) as T
                 }
             }
         }
@@ -83,7 +74,7 @@ class MainActivity : ComponentActivity() {
         factoryProducer = {
             object: ViewModelProvider.Factory {
                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                    return LogViewModel(db.logDao) as T
+                    return LogViewModel(RemotrixDB.getInstance(applicationContext).logDao) as T
                 }
             }
         }

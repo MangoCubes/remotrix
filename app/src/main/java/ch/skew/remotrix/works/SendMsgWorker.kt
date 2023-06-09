@@ -1,7 +1,6 @@
 package ch.skew.remotrix.works
 
 import android.content.Context
-import androidx.room.Room
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
@@ -49,10 +48,7 @@ class SendMsgWorker(
             val msg = MsgToSend.from(msgType, senderId, payload)
             // Message that does not have valid type code will be dropped and TODO: logged.
             val settings = RemotrixSettings(applicationContext)
-            val db = Room.databaseBuilder(
-                applicationContext,
-                RemotrixDB::class.java, "accounts.db"
-            ).build()
+            val db = RemotrixDB.getInstance(applicationContext)
             val currentLog = db.logDao.writeAhead(msgType, senderId, payload?.joinToString(", ") ?: "<Empty payload>")
             val logging = settings.getLogging.first()
             if(msg === null) {
@@ -71,8 +67,6 @@ class SendMsgWorker(
                     )
                 )
             }
-            // Database is loaded after this initial check
-
 
             // Matrix Account to send message with is chosen at this step.
             val sendAs = when (msg) {

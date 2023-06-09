@@ -1,6 +1,8 @@
 package ch.skew.remotrix.data
 
+import android.content.Context
 import androidx.room.Database
+import androidx.room.Room
 import androidx.room.RoomDatabase
 import ch.skew.remotrix.data.accountDB.AccountDao
 import ch.skew.remotrix.data.accountDB.AccountData
@@ -27,4 +29,19 @@ abstract class RemotrixDB: RoomDatabase(){
     abstract val sendActionDao: SendActionDao
     abstract val roomIdDao: RoomIdDao
     abstract val logDao: LogDao
+    companion object {
+
+        @Volatile
+        private var instance: RemotrixDB? = null
+
+        fun getInstance(context: Context): RemotrixDB {
+            return instance ?: synchronized(this) {
+                instance ?: buildDatabase(context).also { instance = it }
+            }
+        }
+
+        private fun buildDatabase(context: Context) =
+            Room.databaseBuilder(context, RemotrixDB::class.java, "accounts.db")
+                .build()
+    }
 }
