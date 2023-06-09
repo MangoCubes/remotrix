@@ -28,13 +28,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import ch.skew.remotrix.components.LabelledRadioButton
 import ch.skew.remotrix.components.PasswordField
+import ch.skew.remotrix.data.RemotrixDB
 import ch.skew.remotrix.data.RemotrixSettings
-import ch.skew.remotrix.data.accountDB.AccountEvent
-import ch.skew.remotrix.data.accountDB.AccountEventAsync
 import io.ktor.http.Url
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import net.folivo.trixnity.client.MatrixClient
 import net.folivo.trixnity.client.login
@@ -95,15 +92,12 @@ enum class VerificationStep {
 @Composable
 @Preview
 fun NewAccountPreview(){
-    val scope = rememberCoroutineScope()
-    NewAccount({}, {}, {scope.async {return@async 1}})
+    NewAccount {}
 }
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NewAccount(
-    onClickGoBack: () -> Unit,
-    onAccountEvent: (AccountEvent) -> Unit,
-    onAccountEventAsync: (AccountEventAsync) -> Deferred<Long>
+    onClickGoBack: () -> Unit
 ){
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -162,7 +156,7 @@ fun NewAccount(
                 singleLine = true,
                 enabled = enabled.value
             )
-            Column() {
+            Column {
                 LabelledRadioButton(label = stringResource(R.string.auto), selected = autoMsgSpace.value) {
                     autoMsgSpace.value = true
                 }
@@ -194,12 +188,10 @@ fun NewAccount(
                         managerId.value,
                         managementSpace.value,
                         if (autoMsgSpace.value) null else messageSpaceId.value,
-                        onAccountEventAsync,
                         {
                             errorMsg.value = it
                             enabled.value = true
                         },
-                        onAccountEvent,
                         onClickGoBack,
                         { step.value = it }
                     )
@@ -228,9 +220,7 @@ fun onLoginClick(
     managerId: String,
     managementSpaceId: String?,
     messagingSpaceInput: String?,
-    addAccount: (AccountEventAsync) -> Deferred<Long>,
     abort: (String) -> Unit,
-    onAccountEvent: (AccountEvent) -> Unit,
     onClickGoBack: () -> Unit,
     update: (VerificationStep) -> Unit
 ) {
@@ -241,8 +231,8 @@ fun onLoginClick(
         Regex("@([a-z0-9_.-]+):").find(username.lowercase())?.value ?: username.lowercase()
     scope.launch {
         update(VerificationStep.STARTED)
-
-        val id = addAccount(AccountEventAsync.AddAccount(localPart, baseUrl)).await()
+        val accountDao = RemotrixDB.getInstance(context).accountDao
+        val id = accountDao.insert(localPart, baseUrl)
         val clientDir = context.filesDir.resolve("clients/${id}")
         clientDir.mkdirs()
         val repo = createRealmRepositoriesModule {
@@ -287,6 +277,7 @@ fun onLoginClick(
         } else {
             update(VerificationStep.JOINING_MESSAGING_SPACE)
             msgSpace = RoomId(messagingSpaceInput)
+            client.api.rooms.joinRoom(msgSpace)
             val testRoom = client.api.rooms.createRoom(
                 visibility = DirectoryVisibility.PRIVATE,
                 name = "Test room",
@@ -376,7 +367,7 @@ fun onLoginClick(
             context.getString(R.string.logged_in).format(client.userId),
             Toast.LENGTH_SHORT
         ).show()
-        onAccountEvent(AccountEvent.ActivateAccount(id, client.userId.domain, roomId.full, msgSpace.full))
+        accountDao.activateAccount(id, client.userId.domain, roomId.full, msgSpace.full)
         onClickGoBack()
     }
 }

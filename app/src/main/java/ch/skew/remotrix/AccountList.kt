@@ -36,7 +36,7 @@ import androidx.work.WorkManager
 import ch.skew.remotrix.classes.Account
 import ch.skew.remotrix.components.DelAccountDialog
 import ch.skew.remotrix.components.ScreenHelper
-import ch.skew.remotrix.data.accountDB.AccountEvent
+import ch.skew.remotrix.data.RemotrixDB
 import ch.skew.remotrix.works.SendMsgWorker
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -53,14 +53,13 @@ import java.util.Locale
 @Composable
 @Preview
 fun AccountListPreview() {
-    AccountList(listOf(), {}, {}, {})
+    AccountList(listOf(), {}, {})
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AccountList(
     accounts: List<Account>,
-    onAccountEvent: (AccountEvent) -> Unit,
     onClickGoBack: () -> Unit,
     onClickNewAccount: () -> Unit
 ){
@@ -68,7 +67,7 @@ fun AccountList(
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     DelAccountDialog(close = { askDel.value = null }, confirm = {
-        deleteAccount(context, scope, askDel.value, onAccountEvent) { askDel.value = null }
+        deleteAccount(context, scope, askDel.value) { askDel.value = null }
     }, accountId = askDel.value?.userId)
     Scaffold(
         topBar = {
@@ -107,7 +106,6 @@ fun deleteAccount(
     context: Context,
     scope: CoroutineScope,
     account: Account?,
-    onAccountEvent: (AccountEvent) -> Unit,
     close: () -> Unit
 ) {
     if (account === null) return
@@ -135,7 +133,7 @@ fun deleteAccount(
         } catch (e: Throwable) {
             Toast.makeText(context, context.getString(R.string.cannot_logout_data_not_found), Toast.LENGTH_LONG).show()
         }
-        onAccountEvent(AccountEvent.DeleteAccount(account.id))
+        RemotrixDB.getInstance(context).accountDao.delete(account.id)
         close()
     }
 }

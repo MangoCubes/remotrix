@@ -35,16 +35,12 @@ import ch.skew.remotrix.classes.Destination
 import ch.skew.remotrix.components.ListHeader
 import ch.skew.remotrix.data.RemotrixDB
 import ch.skew.remotrix.data.RemotrixSettings
-import ch.skew.remotrix.data.accountDB.AccountEvent
-import ch.skew.remotrix.data.accountDB.AccountEventAsync
 import ch.skew.remotrix.data.accountDB.AccountViewModel
 import ch.skew.remotrix.data.logDB.LogData
 import ch.skew.remotrix.data.logDB.LogViewModel
 import ch.skew.remotrix.data.sendActionDB.SendAction
-import ch.skew.remotrix.data.sendActionDB.SendActionEvent
 import ch.skew.remotrix.data.sendActionDB.SendActionViewModel
 import ch.skew.remotrix.ui.theme.RemotrixTheme
-import kotlinx.coroutines.Deferred
 
 
 class MainActivity : ComponentActivity() {
@@ -86,10 +82,7 @@ class MainActivity : ComponentActivity() {
             val sendActions by sendActionViewModel.sendActions.collectAsState()
             val logs by logViewModel.logs.collectAsState()
             RemotrixApp(
-                accountViewModel::onEvent,
-                accountViewModel::onEventAsync,
                 Account.from(accounts),
-                sendActionViewModel::onEvent,
                 sendActions,
                 logs
             )
@@ -98,10 +91,7 @@ class MainActivity : ComponentActivity() {
 }
 @Composable
 fun RemotrixApp(
-    onAccountEvent: (AccountEvent) -> Unit,
-    onAccountEventAsync: (AccountEventAsync) -> Deferred<Long>,
     accounts: List<Account>,
-    onSendActionEvent: (SendActionEvent) -> Unit,
     sendActions: List<SendAction>,
     logs: List<LogData>
 ) {
@@ -128,16 +118,13 @@ fun RemotrixApp(
             composable(route = Destination.AccountList.route) {
                 AccountList(
                     accounts = accounts,
-                    onAccountEvent = onAccountEvent,
                     onClickGoBack = { navController.popBackStack() },
                     onClickNewAccount = { navController.navigate(Destination.NewAccount.route) },
                 )
             }
             composable(route = Destination.NewAccount.route) {
                 NewAccount(
-                    onClickGoBack = { navController.popBackStack() },
-                    onAccountEvent = onAccountEvent,
-                    onAccountEventAsync = onAccountEventAsync
+                    onClickGoBack = { navController.popBackStack() }
                 )
             }
             composable(route = Destination.Setup.route) {
@@ -160,7 +147,7 @@ fun RemotrixApp(
                     accounts = accounts,
                     logs = logs,
                     isEnabled = logging.value!!,
-                    goBack = { navController.popBackStack() },
+                    goBack = { navController.popBackStack() }
                 )
             }
         }
