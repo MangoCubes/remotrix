@@ -49,8 +49,8 @@ class SendMsgWorker(
             // Message that does not have valid type code will be dropped and TODO: logged.
             val settings = RemotrixSettings(applicationContext)
             val db = RemotrixDB.getInstance(applicationContext)
-            val currentLog = db.logDao.writeAhead(msgType, senderId, payload?.joinToString(", ") ?: "<Empty payload>")
             val logging = settings.getLogging.first()
+            val currentLog = if (logging) db.logDao.writeAhead(msgType, senderId, payload?.joinToString(", ") ?: "<Empty payload>") else -1
             if(msg === null) {
                 if(logging) db.logDao.setFailure(
                     currentLog,

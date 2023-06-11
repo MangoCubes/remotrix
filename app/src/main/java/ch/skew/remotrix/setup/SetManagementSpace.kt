@@ -118,6 +118,7 @@ fun confirmSpace(managementSpace: String, context: Context, scope: CoroutineScop
     }
     scope.launch {
         settings.saveManagementSpaceId(managementSpace)
+        settings.saveOpenedBefore()
         Toast.makeText(context, "Management space ID set.", Toast.LENGTH_SHORT).show()
         done()
     }
