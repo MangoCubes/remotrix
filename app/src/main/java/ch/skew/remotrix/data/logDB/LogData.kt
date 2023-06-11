@@ -5,6 +5,12 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 
 enum class MsgStatus{
+    /**
+     * This error indicates that message sending failed because message got stuck in the outbox when the task is over.
+     * This error is logged into the database first, and gets overwritten to one of the codes below if the message gets sent or if sending fails before time's up.
+     */
+    MESSAGE_SENDING_FAILED,
+
     MESSAGE_SENT,
 
     MESSAGE_DROPPED,
@@ -36,12 +42,12 @@ data class LogData(
     val timestamp: String,
     @ColumnInfo(name = "status")
     val status: MsgStatus,
-    @ColumnInfo(name = "errorMsg")
+    @ColumnInfo(name = "error_msg")
     val errorMsg: String?,
-    @ColumnInfo(name = "msgType")
+    @ColumnInfo(name = "msg_type")
     val msgType: Int,
-    @ColumnInfo(name = "senderId")
-    val senderId: Int,
+    @ColumnInfo(name = "forwarder_id")
+    val forwarderId: Int,
     @ColumnInfo(name = "payload")
     val payload: String
 )

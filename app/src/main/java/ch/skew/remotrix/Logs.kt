@@ -68,7 +68,7 @@ fun Logs(
                     .padding(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Hide successful sends")
+                Text(stringResource(R.string.hide_successful_sends))
                 Spacer(modifier = Modifier.padding(start = 8.dp))
                 Switch(
                     checked = hideSuccesses.value,
@@ -77,10 +77,17 @@ fun Logs(
             }
             LazyColumn {
                 items(logs) { log ->
-                    val accountUsed = accounts.find {it.id == log.senderId}
-                    val msg = if (accountUsed === null) stringResource(R.string.unknown_account_id).format(log.senderId)
-                    else stringResource(R.string.known_account_id).format(accountUsed.userId)
-                    Text("[${if(log.status === MsgStatus.MESSAGE_SENT || log.status === MsgStatus.MESSAGE_DROPPED) stringResource(R.string.success) else stringResource(R.string.failure)}] " + log.timestamp + ": " + msg)
+                    val success =
+                        log.status === MsgStatus.MESSAGE_SENT || log.status === MsgStatus.MESSAGE_DROPPED
+                    if (!(success && hideSuccesses.value)) {
+                        val accountUsed = accounts.find { it.id == log.forwarderId }
+                        val msg =
+                            if (accountUsed === null) stringResource(R.string.unknown_account_id).format(
+                                log.forwarderId
+                            )
+                            else stringResource(R.string.known_account_id).format(accountUsed.userId)
+                        Text("[${if (success) stringResource(R.string.success) else stringResource(R.string.failure)}] " + log.timestamp + ": " + msg)
+                    }
                 }
             }
         }

@@ -1,4 +1,4 @@
-package ch.skew.remotrix.data.sendActionDB
+package ch.skew.remotrix.data.forwardRuleDB
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
@@ -11,23 +11,23 @@ import ch.skew.remotrix.data.accountDB.AccountData
  * TODO: Make it bidirectional (Currently only supports SMS -> Matrix only)
  */
 @Entity(
-    tableName = "send_action",
+    tableName = "forward_rule",
     foreignKeys = [
         ForeignKey(
             entity = AccountData::class,
             parentColumns = arrayOf("id"),
-            childColumns = arrayOf("sender_id"),
+            childColumns = arrayOf("forwarder_id"),
             onDelete = ForeignKey.CASCADE
         )
     ]
 )
-data class SendAction(
+data class ForwardRule(
     /**
      * Account that will be used for sending messages via Matrix
      * Obviously will be foreign key
      */
-    @ColumnInfo(name = "sender_id", index = true)
-    val senderId: Int,
+    @ColumnInfo(name = "forwarder_id", index = true)
+    val forwarderId: Int,
     /**
      * Regex that gets testes against the phone number of the sender
      */

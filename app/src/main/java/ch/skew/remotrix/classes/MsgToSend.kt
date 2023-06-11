@@ -1,6 +1,6 @@
 package ch.skew.remotrix.classes
 
-import ch.skew.remotrix.data.sendActionDB.SendAction
+import ch.skew.remotrix.data.forwardRuleDB.ForwardRule
 import net.folivo.trixnity.core.model.RoomId
 
 /**
@@ -70,9 +70,9 @@ class SMSMsg(
      * Given a list of rules, this will calculate which Matrix sender should be used.
      * (Given a Matrix sender and phone number of this SMS message, a unique room will be selected.)
      */
-    fun getSenderId(rules: List<SendAction>): Int?{
+    fun getSenderId(rules: List<ForwardRule>): Int?{
         for(rule in rules){
-            if(matchRegex(rule.senderRegex, sender) && matchRegex(rule.bodyRegex, payload)) return rule.senderId
+            if(matchRegex(rule.senderRegex, sender) && matchRegex(rule.bodyRegex, payload)) return rule.forwarderId
         }
         return null
     }

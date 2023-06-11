@@ -29,51 +29,44 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
-import androidx.room.Room
 import ch.skew.remotrix.classes.Account
 import ch.skew.remotrix.classes.Destination
+import ch.skew.remotrix.classes.Setup
 import ch.skew.remotrix.components.ListHeader
 import ch.skew.remotrix.data.RemotrixDB
 import ch.skew.remotrix.data.RemotrixSettings
-import ch.skew.remotrix.data.accountDB.AccountEvent
-import ch.skew.remotrix.data.accountDB.AccountEventAsync
 import ch.skew.remotrix.data.accountDB.AccountViewModel
+import ch.skew.remotrix.data.forwardRuleDB.ForwardRule
+import ch.skew.remotrix.data.forwardRuleDB.ForwardRuleViewModel
 import ch.skew.remotrix.data.logDB.LogData
 import ch.skew.remotrix.data.logDB.LogViewModel
-import ch.skew.remotrix.data.sendActionDB.SendAction
-import ch.skew.remotrix.data.sendActionDB.SendActionEvent
-import ch.skew.remotrix.data.sendActionDB.SendActionViewModel
+import ch.skew.remotrix.setup.AdditionalInfo
+import ch.skew.remotrix.setup.SetManagementSpace
+import ch.skew.remotrix.setup.SetManagerAccount
+import ch.skew.remotrix.setup.Welcome
 import ch.skew.remotrix.ui.theme.RemotrixTheme
-import kotlinx.coroutines.Deferred
 
 
 class MainActivity : ComponentActivity() {
-
-    private val db by lazy {
-        Room.databaseBuilder(
-            applicationContext,
-            RemotrixDB::class.java,
-            "accounts.db"
-        ).build()
-    }
 
     @Suppress("UNCHECKED_CAST")
     private val accountViewModel by viewModels<AccountViewModel>(
         factoryProducer = {
             object: ViewModelProvider.Factory {
                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                    return AccountViewModel(db.accountDao) as T
+                    return AccountViewModel(RemotrixDB.getInstance(applicationContext).accountDao) as T
                 }
             }
         }
     )
     @Suppress("UNCHECKED_CAST")
-    private val sendActionViewModel by viewModels<SendActionViewModel>(
+    private val forwardRuleViewModel by viewModels<ForwardRuleViewModel>(
         factoryProducer = {
             object: ViewModelProvider.Factory {
                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                    return SendActionViewModel(db.sendActionDao) as T
+                    return ForwardRuleViewModel(RemotrixDB.getInstance(applicationContext).forwardRuleDao) as T
                 }
             }
         }
@@ -83,7 +76,7 @@ class MainActivity : ComponentActivity() {
         factoryProducer = {
             object: ViewModelProvider.Factory {
                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                    return LogViewModel(db.logDao) as T
+                    return LogViewModel(RemotrixDB.getInstance(applicationContext).logDao) as T
                 }
             }
         }
@@ -92,13 +85,10 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             val accounts by accountViewModel.accounts.collectAsState()
-            val sendActions by sendActionViewModel.sendActions.collectAsState()
+            val sendActions by forwardRuleViewModel.forwardRule.collectAsState()
             val logs by logViewModel.logs.collectAsState()
             RemotrixApp(
-                accountViewModel::onEvent,
-                accountViewModel::onEventAsync,
                 Account.from(accounts),
-                sendActionViewModel::onEvent,
                 sendActions,
                 logs
             )
@@ -107,11 +97,8 @@ class MainActivity : ComponentActivity() {
 }
 @Composable
 fun RemotrixApp(
-    onAccountEvent: (AccountEvent) -> Unit,
-    onAccountEventAsync: (AccountEventAsync) -> Deferred<Long>,
     accounts: List<Account>,
-    onSendActionEvent: (SendActionEvent) -> Unit,
-    sendActions: List<SendAction>,
+    forwardRules: List<ForwardRule>,
     logs: List<LogData>
 ) {
     val settings = RemotrixSettings(LocalContext.current)
@@ -137,24 +124,28 @@ fun RemotrixApp(
             composable(route = Destination.AccountList.route) {
                 AccountList(
                     accounts = accounts,
-                    onAccountEvent = onAccountEvent,
                     onClickGoBack = { navController.popBackStack() },
                     onClickNewAccount = { navController.navigate(Destination.NewAccount.route) },
                 )
             }
             composable(route = Destination.NewAccount.route) {
                 NewAccount(
-                    onClickGoBack = { navController.popBackStack() },
-                    onAccountEvent = onAccountEvent,
-                    onAccountEventAsync = onAccountEventAsync
+                    onClickGoBack = { navController.popBackStack() }
                 )
             }
-            composable(route = Destination.Setup.route) {
-                SetupScreen(
-                    done = { navController.navigate(Destination.Home.route) },
-                    goBack = { navController.popBackStack() },
-                    openedBefore = openedBefore.value!!
-                )
+            navigation(route = Destination.Setup.route, startDestination = Setup.Welcome.route) {
+                composable(Setup.Welcome.route){
+                    Welcome { navController.navigate(Setup.Manager.route) }
+                }
+                composable(Setup.Manager.route){
+                    SetManagerAccount { navController.navigate(Setup.ManagerSpace.route) }
+                }
+                composable(Setup.ManagerSpace.route){
+                    SetManagementSpace { navController.navigate(Setup.NextStep.route) }
+                }
+                composable(Setup.NextStep.route){
+                    AdditionalInfo { navController.navigate(Destination.Home.route) }
+                }
             }
             composable(route = Destination.Settings.route) {
                 Settings(
@@ -169,7 +160,7 @@ fun RemotrixApp(
                     accounts = accounts,
                     logs = logs,
                     isEnabled = logging.value!!,
-                    goBack = { navController.popBackStack() },
+                    goBack = { navController.popBackStack() }
                 )
             }
         }
@@ -182,7 +173,7 @@ fun HomeScreen(
     accounts: List<Account> = listOf(),
     navigate: (String) -> Unit = {},
     defaultSend: Int = -1,
-    sendActions: List<SendAction> = listOf()
+    forwardRules: List<ForwardRule> = listOf()
 ) {
     Scaffold(
         topBar = {
@@ -215,7 +206,7 @@ fun HomeScreen(
                 },
                 modifier = Modifier.clickable { navigate(Destination.AccountList.route) }
             )
-            val desc = stringResource(R.string.settings_desc) + if (sendActions.isEmpty() && defaultSend == -1) stringResource(R.string.settings_desc_warning) else ""
+            val desc = stringResource(R.string.settings_desc) + if (forwardRules.isEmpty() && defaultSend == -1) stringResource(R.string.settings_desc_warning) else ""
             ListItem(
                 headlineText = { Text(stringResource(R.string.settings)) },
                 supportingText = { Text(desc) },
