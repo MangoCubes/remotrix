@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="error_message_is_not_sent_because_its_type_code_is_not_recognised">Error: Message is not sent because its type code is not recognised.</string>
-    <string name="error_message_is_not_sent_as_the_forwarder_could_not_be_decided">Error: Message is not sent as the forwarder could not be decided.</string>
-    <string name="error_matrix_client_could_not_be_loaded">Error: Matrix client could not be loaded.</string>
-    <string name="error_matrix_client_failed_to_create_a_room">Error: Matrix client failed to create a room.</string>
-    <string name="error_message_type_is_unrecognised">Error: Message type is unrecognised.</string>
-</resources>
