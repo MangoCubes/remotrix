@@ -24,7 +24,6 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import ch.skew.remotrix.data.RemotrixSettings
 import kotlinx.coroutines.CoroutineScope
@@ -32,8 +31,9 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-@Preview
-fun SetManagementSpace(){
+fun SetManagementSpace(
+    nextPage: () -> Unit
+){
     Scaffold(
         topBar = {
             TopAppBar({
@@ -102,7 +102,7 @@ fun SetManagementSpace(){
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 10.dp),
-                onClick = {confirmSpace(managementSpace.value, context, scope, settings) {} }
+                onClick = {confirmSpace(managementSpace.value, context, scope, settings, nextPage) }
             ) {
                 Text("Continue")
             }

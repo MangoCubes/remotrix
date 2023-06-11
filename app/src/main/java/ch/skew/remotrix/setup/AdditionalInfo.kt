@@ -16,13 +16,13 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-@Preview
-fun AdditionalInfo(){
+fun AdditionalInfo(
+    nextPage: () -> Unit
+){
     Scaffold(
         topBar = {
             TopAppBar({
@@ -57,7 +57,7 @@ fun AdditionalInfo(){
             )
             Button(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp),
-                onClick = {}
+                onClick = nextPage
             ) {
                 Text("Done")
             }

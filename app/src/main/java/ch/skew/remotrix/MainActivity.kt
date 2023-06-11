@@ -29,9 +29,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import ch.skew.remotrix.classes.Account
 import ch.skew.remotrix.classes.Destination
+import ch.skew.remotrix.classes.Setup
 import ch.skew.remotrix.components.ListHeader
 import ch.skew.remotrix.data.RemotrixDB
 import ch.skew.remotrix.data.RemotrixSettings
@@ -40,6 +42,10 @@ import ch.skew.remotrix.data.forwardRuleDB.ForwardRule
 import ch.skew.remotrix.data.forwardRuleDB.ForwardRuleViewModel
 import ch.skew.remotrix.data.logDB.LogData
 import ch.skew.remotrix.data.logDB.LogViewModel
+import ch.skew.remotrix.setup.AdditionalInfo
+import ch.skew.remotrix.setup.SetManagementSpace
+import ch.skew.remotrix.setup.SetManagerAccount
+import ch.skew.remotrix.setup.Welcome
 import ch.skew.remotrix.ui.theme.RemotrixTheme
 
 
@@ -127,12 +133,19 @@ fun RemotrixApp(
                     onClickGoBack = { navController.popBackStack() }
                 )
             }
-            composable(route = Destination.Setup.route) {
-                SetupScreen(
-                    done = { navController.navigate(Destination.Home.route) },
-                    goBack = { navController.popBackStack() },
-                    openedBefore = openedBefore.value!!
-                )
+            navigation(route = Destination.Setup.route, startDestination = Setup.Welcome.route) {
+                composable(Setup.Welcome.route){
+                    Welcome { navController.navigate(Setup.Manager.route) }
+                }
+                composable(Setup.Manager.route){
+                    SetManagerAccount { navController.navigate(Setup.ManagerSpace.route) }
+                }
+                composable(Setup.ManagerSpace.route){
+                    SetManagementSpace { navController.navigate(Setup.NextStep.route) }
+                }
+                composable(Setup.NextStep.route){
+                    AdditionalInfo { navController.navigate(Destination.Home.route) }
+                }
             }
             composable(route = Destination.Settings.route) {
                 Settings(
