@@ -30,7 +30,7 @@
     <string name="welcome_1">Before we begin, some settings must be done. Note that while you can change them in the future, migration does not exist yet. As a result, it would be very tedious. Therefore, it is best to set these as if they cannot be changed later.</string>
     <string name="welcome_2">First off, please enter an account name in the form of \'@username:example.com. The account entered will be used as admin account, and bots will respond to commands from this account.</string>
     <string name="welcome_4">Management space is NOT mandatory, but recommended. For every bot account you add to this app, a management room, initially between the management user and the bot, will be created. If this is set, this room will be created under that space, which would make things rather tidy.</string>
-    <string name="welcome">Welcome</string>
+
     <string name="set_admin_account">Set Admin Account</string>
     <string name="example_account">\@username:example.com</string>
     <string name="existing_space_id">Existing space ID</string>
