@@ -8,3 +8,10 @@ enum class Destination(val route: String) {
     Settings("settings"),
     Logs("logs")
 }
+
+enum class Setup(val route: String) {
+    Welcome("welcome"),
+    Manager("manager"),
+    ManagerSpace("manager_space"),
+    NextStep("next_step")
+}

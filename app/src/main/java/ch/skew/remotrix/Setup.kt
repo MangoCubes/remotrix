@@ -2,6 +2,7 @@ package ch.skew.remotrix
 
 import android.content.Context
 import android.widget.Toast
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -34,13 +35,6 @@ fun SetupScreen(
     goBack: () -> Unit = {},
     openedBefore: Boolean = true
 ) {
-    val formPadding = Modifier
-        .fillMaxWidth()
-        .padding(
-            top = 10.dp,
-            start = 10.dp,
-            end = 10.dp
-        )
     val context = LocalContext.current
     val settings = RemotrixSettings(context)
     val existingManagerId = settings.getManagerId.collectAsState(initial = "")
@@ -56,7 +50,13 @@ fun SetupScreen(
             })
         }
     ) { padding ->
-        Column(modifier = Modifier.padding(padding)) {
+        Column(
+            modifier = Modifier
+                .padding(padding)
+                .padding(horizontal = 10.dp)
+                .fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
             ListItem(
                 headlineText = { Text(stringResource(R.string.welcome)) },
                 supportingText = {
@@ -75,13 +75,7 @@ fun SetupScreen(
                 label = { Text(stringResource(R.string.manager_id)) },
                 singleLine = true,
                 placeholder = { Text(if(existingManagerId.value === "") stringResource(R.string.example_account) else existingManagerId.value) },
-                modifier = formPadding
-            )
-            ListItem(
-                headlineText = { Text(stringResource(R.string.set_remotrix_spaces)) },
-                supportingText = {
-                    Text(stringResource(R.string.welcome_3))
-                }
+                modifier = Modifier.fillMaxWidth()
             )
             ListItem(
                 headlineText = { Text(stringResource(R.string.management_space)) },
@@ -95,16 +89,16 @@ fun SetupScreen(
                 label = { Text(stringResource(R.string.existing_space_id)) },
                 singleLine = true,
                 placeholder = { Text(if(existingManagementSpaceId.value === null) stringResource(R.string.sample_space_id) else existingManagementSpaceId.value!!) },
-                modifier = formPadding
+                modifier = Modifier.fillMaxWidth()
             )
             Button(
-                modifier = formPadding,
+                modifier = Modifier.fillMaxWidth(),
                 content = { Text(stringResource(R.string.confirm)) },
                 onClick = {onConfirm(currentManagerId.value, currentManagementSpaceId.value, context, scope, settings, done) }
             )
             if(openedBefore) {
                 Button(
-                    modifier = formPadding,
+                    modifier = Modifier.fillMaxWidth(),
                     content = { Text(stringResource(R.string.cancel)) },
                     onClick = goBack
                 )
