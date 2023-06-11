@@ -162,7 +162,10 @@ class SendMsgWorker(
                     text(msg.payload)
                 }
                 client.startSync()
-                delay(10000) //Temporary fix, TODO: Figure out how to stop the code until a message is confirmed to be sent
+                while(client.room.getOutbox().value.isNotEmpty()) {
+                    delay(1000) //Temporary fix, TODO: Figure out how to stop the code until a message is confirmed to be sent
+                }
+                client.stopSync()
                 scope.cancel()
                 if(logging) db.logDao.setSuccess(
                     currentLog,
@@ -243,11 +246,14 @@ class SendMsgWorker(
                     db.roomIdDao.insert(RoomIdData(msg.sender, sendAs, roomId.full))
                     client.api.rooms.inviteUser(roomId, UserId(managerId))
                 }
+                client.startSync()
                 client.room.sendMessage(roomId) {
                     text(msg.payload)
                 }
-                client.startSync()
-                delay(10000) //Temporary fix, TODO: Figure out how to stop the code until a message is confirmed to be sent
+                while(client.room.getOutbox().value.isNotEmpty()) {
+                    delay(1000) //Temporary fix, TODO: Figure out how to stop the code until a message is confirmed to be sent
+                }
+                client.stopSync()
                 scope.cancel()
                 if(logging) db.logDao.setSuccess(
                     currentLog,
