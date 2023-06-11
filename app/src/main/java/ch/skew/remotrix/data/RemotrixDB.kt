@@ -10,13 +10,13 @@ import ch.skew.remotrix.data.logDB.LogDao
 import ch.skew.remotrix.data.logDB.LogData
 import ch.skew.remotrix.data.roomIdDB.RoomIdDao
 import ch.skew.remotrix.data.roomIdDB.RoomIdData
-import ch.skew.remotrix.data.sendActionDB.SendAction
-import ch.skew.remotrix.data.sendActionDB.SendActionDao
+import ch.skew.remotrix.data.forwardRuleDB.ForwardRule
+import ch.skew.remotrix.data.forwardRuleDB.ForwardRuleDao
 
 @Database(
     entities = [
         AccountData::class,
-        SendAction::class,
+        ForwardRule::class,
         RoomIdData::class,
         LogData::class
     ],
@@ -26,7 +26,7 @@ import ch.skew.remotrix.data.sendActionDB.SendActionDao
 
 abstract class RemotrixDB: RoomDatabase(){
     abstract val accountDao: AccountDao
-    abstract val sendActionDao: SendActionDao
+    abstract val forwardRuleDao: ForwardRuleDao
     abstract val roomIdDao: RoomIdDao
     abstract val logDao: LogDao
     companion object {

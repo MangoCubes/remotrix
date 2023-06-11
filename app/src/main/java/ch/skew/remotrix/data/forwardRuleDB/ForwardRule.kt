@@ -1,4 +1,4 @@
-package ch.skew.remotrix.data.sendActionDB
+package ch.skew.remotrix.data.forwardRuleDB
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
@@ -21,7 +21,7 @@ import ch.skew.remotrix.data.accountDB.AccountData
         )
     ]
 )
-data class SendAction(
+data class ForwardRule(
     /**
      * Account that will be used for sending messages via Matrix
      * Obviously will be foreign key

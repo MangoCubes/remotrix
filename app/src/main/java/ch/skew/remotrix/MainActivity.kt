@@ -36,10 +36,10 @@ import ch.skew.remotrix.components.ListHeader
 import ch.skew.remotrix.data.RemotrixDB
 import ch.skew.remotrix.data.RemotrixSettings
 import ch.skew.remotrix.data.accountDB.AccountViewModel
+import ch.skew.remotrix.data.forwardRuleDB.ForwardRule
+import ch.skew.remotrix.data.forwardRuleDB.ForwardRuleViewModel
 import ch.skew.remotrix.data.logDB.LogData
 import ch.skew.remotrix.data.logDB.LogViewModel
-import ch.skew.remotrix.data.sendActionDB.SendAction
-import ch.skew.remotrix.data.sendActionDB.SendActionViewModel
 import ch.skew.remotrix.ui.theme.RemotrixTheme
 
 
@@ -56,11 +56,11 @@ class MainActivity : ComponentActivity() {
         }
     )
     @Suppress("UNCHECKED_CAST")
-    private val sendActionViewModel by viewModels<SendActionViewModel>(
+    private val forwardRuleViewModel by viewModels<ForwardRuleViewModel>(
         factoryProducer = {
             object: ViewModelProvider.Factory {
                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                    return SendActionViewModel(RemotrixDB.getInstance(applicationContext).sendActionDao) as T
+                    return ForwardRuleViewModel(RemotrixDB.getInstance(applicationContext).forwardRuleDao) as T
                 }
             }
         }
@@ -79,7 +79,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             val accounts by accountViewModel.accounts.collectAsState()
-            val sendActions by sendActionViewModel.sendActions.collectAsState()
+            val sendActions by forwardRuleViewModel.sendActions.collectAsState()
             val logs by logViewModel.logs.collectAsState()
             RemotrixApp(
                 Account.from(accounts),
@@ -92,7 +92,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun RemotrixApp(
     accounts: List<Account>,
-    sendActions: List<SendAction>,
+    forwardRules: List<ForwardRule>,
     logs: List<LogData>
 ) {
     val settings = RemotrixSettings(LocalContext.current)
@@ -160,7 +160,7 @@ fun HomeScreen(
     accounts: List<Account> = listOf(),
     navigate: (String) -> Unit = {},
     defaultSend: Int = -1,
-    sendActions: List<SendAction> = listOf()
+    forwardRules: List<ForwardRule> = listOf()
 ) {
     Scaffold(
         topBar = {
@@ -193,7 +193,7 @@ fun HomeScreen(
                 },
                 modifier = Modifier.clickable { navigate(Destination.AccountList.route) }
             )
-            val desc = stringResource(R.string.settings_desc) + if (sendActions.isEmpty() && defaultSend == -1) stringResource(R.string.settings_desc_warning) else ""
+            val desc = stringResource(R.string.settings_desc) + if (forwardRules.isEmpty() && defaultSend == -1) stringResource(R.string.settings_desc_warning) else ""
             ListItem(
                 headlineText = { Text(stringResource(R.string.settings)) },
                 supportingText = { Text(desc) },

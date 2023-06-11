@@ -83,7 +83,7 @@ class SendMsgWorker(
                         return@withContext Result.success()
                     }
                     // Forwarder rules are loaded here, and are immediately put through getSenderId to determine the forwarder
-                    val match = msg.getSenderId(db.sendActionDao.getAll())
+                    val match = msg.getSenderId(db.forwardRuleDao.getAll())
                     // If match is not found, default account is chosen.
                     if (match !== null) match else defaultAccount
                 }
