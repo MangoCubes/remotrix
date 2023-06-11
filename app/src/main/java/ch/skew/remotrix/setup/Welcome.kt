@@ -58,7 +58,7 @@ fun Welcome(){
                 }
             )
             Button(
-                modifier = Modifier.fillMaxWidth().padding(10.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp),
                 onClick = {}
             ) {
                 Text("Continue")
