@@ -8,5 +8,5 @@ import kotlinx.coroutines.flow.stateIn
 class ForwardRuleViewModel(
     private val dao: ForwardRuleDao
 ): ViewModel() {
-    val sendActions = dao.getAllAsFlow().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    val forwardRule = dao.getAllAsFlow().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 }

@@ -42,12 +42,12 @@ data class LogData(
     val timestamp: String,
     @ColumnInfo(name = "status")
     val status: MsgStatus,
-    @ColumnInfo(name = "errorMsg")
+    @ColumnInfo(name = "error_msg")
     val errorMsg: String?,
-    @ColumnInfo(name = "msgType")
+    @ColumnInfo(name = "msg_type")
     val msgType: Int,
-    @ColumnInfo(name = "senderId")
-    val senderId: Int,
+    @ColumnInfo(name = "forwarder_id")
+    val forwarderId: Int,
     @ColumnInfo(name = "payload")
     val payload: String
 )

@@ -80,10 +80,10 @@ fun Logs(
                     val success =
                         log.status === MsgStatus.MESSAGE_SENT || log.status === MsgStatus.MESSAGE_DROPPED
                     if (!(success && hideSuccesses.value)) {
-                        val accountUsed = accounts.find { it.id == log.senderId }
+                        val accountUsed = accounts.find { it.id == log.forwarderId }
                         val msg =
                             if (accountUsed === null) stringResource(R.string.unknown_account_id).format(
-                                log.senderId
+                                log.forwarderId
                             )
                             else stringResource(R.string.known_account_id).format(accountUsed.userId)
                         Text("[${if (success) stringResource(R.string.success) else stringResource(R.string.failure)}] " + log.timestamp + ": " + msg)

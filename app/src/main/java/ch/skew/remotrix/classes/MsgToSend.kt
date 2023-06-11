@@ -72,7 +72,7 @@ class SMSMsg(
      */
     fun getSenderId(rules: List<ForwardRule>): Int?{
         for(rule in rules){
-            if(matchRegex(rule.senderRegex, sender) && matchRegex(rule.bodyRegex, payload)) return rule.senderId
+            if(matchRegex(rule.senderRegex, sender) && matchRegex(rule.bodyRegex, payload)) return rule.forwarderId
         }
         return null
     }

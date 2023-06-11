@@ -1,7 +1,6 @@
 package ch.skew.remotrix.data.roomIdDB
 
 import androidx.room.Dao
-import androidx.room.Delete
 import androidx.room.Query
 import androidx.room.Upsert
 
@@ -9,8 +8,6 @@ import androidx.room.Upsert
 interface RoomIdDao{
     @Upsert
     suspend fun insert(roomIdData: RoomIdData)
-    @Delete
-    suspend fun delete(roomIdData: RoomIdData)
-    @Query("SELECT room_id FROM room_ids WHERE phone_number = :phoneNumber AND sender_id = :senderId")
-    fun getDestRoom(phoneNumber: String, senderId: Int): String?
+    @Query("SELECT room_id FROM room_ids WHERE phone_number = :phoneNumber AND forwarder_id = :forwarderId")
+    fun getDestRoom(phoneNumber: String, forwarderId: Int): String?
 }

@@ -7,12 +7,12 @@ import ch.skew.remotrix.data.accountDB.AccountData
 
 @Entity(
     tableName = "room_ids",
-    primaryKeys = ["phone_number", "sender_id"],
+    primaryKeys = ["phone_number", "forwarder_id"],
     foreignKeys = [
         ForeignKey(
             entity = AccountData::class,
             parentColumns = arrayOf("id"),
-            childColumns = arrayOf("sender_id"),
+            childColumns = arrayOf("forwarder_id"),
             onDelete = ForeignKey.CASCADE
         )
     ]
@@ -20,7 +20,7 @@ import ch.skew.remotrix.data.accountDB.AccountData
 data class RoomIdData(
     @ColumnInfo(name = "phone_number")
     val phoneNumber: String,
-    @ColumnInfo(name = "sender_id", index = true)
+    @ColumnInfo(name = "forwarder_id", index = true)
     val senderId: Int,
     @ColumnInfo(name = "room_id")
     val roomId: String

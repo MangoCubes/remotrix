@@ -79,7 +79,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             val accounts by accountViewModel.accounts.collectAsState()
-            val sendActions by forwardRuleViewModel.sendActions.collectAsState()
+            val sendActions by forwardRuleViewModel.forwardRule.collectAsState()
             val logs by logViewModel.logs.collectAsState()
             RemotrixApp(
                 Account.from(accounts),
