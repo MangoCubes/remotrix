@@ -308,7 +308,7 @@ fun onLoginClick(
                 client.logout()
                 clientDir.deleteRecursively()
                 abort(
-                    context.getString(R.string.cannot_create_child_room) + (it.message
+                    context.getString(R.string.child_room_creation_failed) + (it.message
                         ?: context.getString(R.string.generic_error))
                 )
                 return@launch
