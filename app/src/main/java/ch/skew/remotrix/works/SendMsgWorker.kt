@@ -27,6 +27,7 @@ import net.folivo.trixnity.client.store.repository.realm.createRealmRepositories
 import net.folivo.trixnity.core.model.RoomId
 import net.folivo.trixnity.core.model.UserId
 import net.folivo.trixnity.core.model.events.Event
+import net.folivo.trixnity.core.model.events.m.room.HistoryVisibilityEventContent
 import net.folivo.trixnity.core.model.events.m.room.JoinRulesEventContent
 import net.folivo.trixnity.core.model.events.m.space.ChildEventContent
 import net.folivo.trixnity.core.model.events.m.space.ParentEventContent
@@ -43,18 +44,19 @@ class SendMsgWorker(
         val result = withContext(Dispatchers.IO) {
             // Message is constructed from inputData
             val msgType = inputData.getInt("msgType", -1)
-            val senderId = inputData.getInt("senderId", 0)
+            val senderId = inputData.getInt("senderId", -1)
             val payload = inputData.getStringArray("payload")
             val msg = MsgToSend.from(msgType, senderId, payload)
             // Message that does not have valid type code will be dropped and TODO: logged.
             val settings = RemotrixSettings(applicationContext)
             val db = RemotrixDB.getInstance(applicationContext)
             val logging = settings.getLogging.first()
-            val currentLog = if (logging) db.logDao.writeAhead(msgType, senderId, payload?.joinToString(", ") ?: "<Empty payload>") else -1
+            val currentLog = if (logging) db.logDao.writeAhead(msgType,payload?.joinToString(", ") ?: "<Empty payload>") else -1
             if(msg === null) {
                 if(logging) db.logDao.setFailure(
                     currentLog,
                     MsgStatus.UNRECOGNISED_MESSAGE_CODE,
+                    null,
                     null
                 )
                 return@withContext Result.failure(
@@ -78,7 +80,8 @@ class SendMsgWorker(
                     if(defaultAccount == -1) {
                         if(logging) db.logDao.setSuccess(
                             currentLog,
-                            MsgStatus.MESSAGE_DROPPED
+                            MsgStatus.MESSAGE_DROPPED,
+                            null
                         )
                         return@withContext Result.success()
                     }
@@ -97,6 +100,7 @@ class SendMsgWorker(
                     if(logging) db.logDao.setFailure(
                         currentLog,
                         MsgStatus.NO_SUITABLE_FORWARDER,
+                        null,
                         null
                     )
                     // This shouldn't execute but still
@@ -126,7 +130,8 @@ class SendMsgWorker(
                 if(logging) db.logDao.setFailure(
                     currentLog,
                     MsgStatus.CANNOT_LOAD_MATRIX_CLIENT,
-                    it.message
+                    it.message,
+                    sendAs
                 )
                 return@withContext Result.failure(
                     workDataOf(
@@ -144,7 +149,8 @@ class SendMsgWorker(
                 if(logging) db.logDao.setFailure(
                     currentLog,
                     MsgStatus.CANNOT_LOAD_MATRIX_CLIENT,
-                    null
+                    null,
+                    sendAs
                 )
                 return@withContext Result.failure(
                     workDataOf(
@@ -169,7 +175,8 @@ class SendMsgWorker(
                 scope.cancel()
                 if(logging) db.logDao.setSuccess(
                     currentLog,
-                    MsgStatus.MESSAGE_SENT
+                    MsgStatus.MESSAGE_SENT,
+                    sendAs
                 )
                 return@withContext Result.success()
             } else if(msg is SMSMsg){
@@ -199,13 +206,19 @@ class SendMsgWorker(
                                     )
                                 ),
                                 stateKey = ""
+                            ),
+                            Event.InitialStateEvent(
+                                content = HistoryVisibilityEventContent(
+                                    HistoryVisibilityEventContent.HistoryVisibility.SHARED),
+                                stateKey = ""
                             )
                         )
                     ).getOrElse {
                         if(logging) db.logDao.setFailure(
                             currentLog,
                             MsgStatus.CANNOT_CREATE_ROOM,
-                            it.message
+                            it.message,
+                            sendAs
                         )
                         return@withContext Result.failure(
                             workDataOf(
@@ -228,7 +241,8 @@ class SendMsgWorker(
                         if(logging) db.logDao.setFailure(
                             currentLog,
                             MsgStatus.CANNOT_CREATE_CHILD_ROOM,
-                            it.message
+                            it.message,
+                            sendAs
                         )
                         return@withContext Result.failure(
                             workDataOf(
@@ -258,6 +272,7 @@ class SendMsgWorker(
                 if(logging) db.logDao.setSuccess(
                     currentLog,
                     MsgStatus.MESSAGE_SENT,
+                    sendAs
                 )
                 return@withContext Result.success()
             }
@@ -265,7 +280,8 @@ class SendMsgWorker(
             if(logging) db.logDao.setFailure(
                 currentLog,
                 MsgStatus.UNRECOGNISED_MESSAGE_CLASS,
-                null
+                null,
+                sendAs
             )
             return@withContext Result.failure(
                 workDataOf(

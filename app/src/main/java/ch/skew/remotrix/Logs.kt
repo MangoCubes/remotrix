@@ -75,18 +75,33 @@ fun Logs(
                     onCheckedChange = null
                 )
             }
-            LazyColumn {
+            LazyColumn(
+                modifier = Modifier.fillMaxWidth()
+            ) {
                 items(logs) { log ->
                     val success =
                         log.status === MsgStatus.MESSAGE_SENT || log.status === MsgStatus.MESSAGE_DROPPED
                     if (!(success && hideSuccesses.value)) {
-                        val accountUsed = accounts.find { it.id == log.forwarderId }
-                        val msg =
-                            if (accountUsed === null) stringResource(R.string.unknown_account_id).format(
+                        val msg = when(log.status){
+                            MsgStatus.MESSAGE_SENDING_FAILED -> stringResource(R.string.message_sending_failed)
+                            MsgStatus.MESSAGE_SENT -> stringResource(R.string.message_sent)
+                            MsgStatus.MESSAGE_DROPPED -> stringResource(R.string.message_dropped)
+                            MsgStatus.UNRECOGNISED_MESSAGE_CODE -> stringResource(R.string.unrecognised_message_code)
+                            MsgStatus.NO_SUITABLE_FORWARDER -> stringResource(R.string.no_suitable_forwarder)
+                            MsgStatus.CANNOT_LOAD_MATRIX_CLIENT -> stringResource(R.string.cannot_load_matrix_client)
+                            MsgStatus.CANNOT_CREATE_ROOM -> stringResource(R.string.cannot_create_room)
+                            MsgStatus.CANNOT_CREATE_CHILD_ROOM -> stringResource(R.string.cannot_create_child_room)
+                            MsgStatus.UNRECOGNISED_MESSAGE_CLASS -> stringResource(R.string.unrecognised_message_code)
+                        }
+                        val forwarderInfo = if (log.forwarderId === null) ""
+                        else {
+                            val accountUsed = accounts.find { it.id == log.forwarderId }
+                            if (accountUsed === null) "(Forwarder: Unknown (ID: %s))".format(
                                 log.forwarderId
                             )
-                            else stringResource(R.string.known_account_id).format(accountUsed.userId)
-                        Text("[${if (success) stringResource(R.string.success) else stringResource(R.string.failure)}] " + log.timestamp + ": " + msg)
+                            else "(Forwarder: %s)".format(accountUsed.userId)
+                        }
+                        Text("[${if (success) stringResource(R.string.success) else stringResource(R.string.failure)}] " + log.timestamp + ": " + msg + " " + forwarderInfo)
                     }
                 }
             }

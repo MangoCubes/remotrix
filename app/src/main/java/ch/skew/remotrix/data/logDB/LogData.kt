@@ -47,7 +47,7 @@ data class LogData(
     @ColumnInfo(name = "msg_type")
     val msgType: Int,
     @ColumnInfo(name = "forwarder_id")
-    val forwarderId: Int,
+    val forwarderId: Int?,
     @ColumnInfo(name = "payload")
     val payload: String
 )

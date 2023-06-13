@@ -11,6 +11,7 @@ enum class Destination(val route: String) {
 
 enum class Setup(val route: String) {
     Welcome("welcome"),
+    Permissions("permissions"),
     Manager("manager"),
     ManagerSpace("manager_space"),
     NextStep("next_step")

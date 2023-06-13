@@ -43,6 +43,7 @@ import ch.skew.remotrix.data.forwardRuleDB.ForwardRuleViewModel
 import ch.skew.remotrix.data.logDB.LogData
 import ch.skew.remotrix.data.logDB.LogViewModel
 import ch.skew.remotrix.setup.AdditionalInfo
+import ch.skew.remotrix.setup.AskPermissions
 import ch.skew.remotrix.setup.SetManagementSpace
 import ch.skew.remotrix.setup.SetManagerAccount
 import ch.skew.remotrix.setup.Welcome
@@ -116,7 +117,6 @@ fun RemotrixApp(
         ) {
             composable(route = Destination.Home.route) {
                 HomeScreen(
-                    accounts,
                     navigate = { navController.navigate(it) },
                     defaultSend = defaultSend.value!!
                 )
@@ -135,7 +135,10 @@ fun RemotrixApp(
             }
             navigation(route = Destination.Setup.route, startDestination = Setup.Welcome.route) {
                 composable(Setup.Welcome.route){
-                    Welcome { navController.navigate(Setup.Manager.route) }
+                    Welcome { navController.navigate(Setup.Permissions.route) }
+                }
+                composable(Setup.Permissions.route){
+                    AskPermissions { navController.navigate(Setup.Manager.route) }
                 }
                 composable(Setup.Manager.route){
                     SetManagerAccount { navController.navigate(Setup.ManagerSpace.route) }
@@ -170,7 +173,6 @@ fun RemotrixApp(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    accounts: List<Account> = listOf(),
     navigate: (String) -> Unit = {},
     defaultSend: Int = -1,
     forwardRules: List<ForwardRule> = listOf()

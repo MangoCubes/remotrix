@@ -7,13 +7,13 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface LogDao{
 
-    @Query("INSERT INTO logs (status, msg_type, forwarder_id, payload) VALUES (:defStatus, :msgType, :forwarderId, :payload)")
-    suspend fun writeAhead(msgType: Int, forwarderId: Int, payload: String, defStatus: MsgStatus = MsgStatus.MESSAGE_SENDING_FAILED): Long
+    @Query("INSERT INTO logs (status, msg_type, payload) VALUES (:defStatus, :msgType, :payload)")
+    suspend fun writeAhead(msgType: Int, payload: String, defStatus: MsgStatus = MsgStatus.MESSAGE_SENDING_FAILED): Long
 
-    @Query("UPDATE logs SET status = :status, error_msg = :errorMsg WHERE id = :id")
-    suspend fun setFailure(id: Long, status: MsgStatus, errorMsg: String?)
-    @Query("UPDATE logs SET status = :status WHERE id = :id")
-    suspend fun setSuccess(id: Long, status: MsgStatus)
+    @Query("UPDATE logs SET status = :status, error_msg = :errorMsg, forwarder_id = :forwarderId WHERE id = :id")
+    suspend fun setFailure(id: Long, status: MsgStatus, errorMsg: String?, forwarderId: Int?)
+    @Query("UPDATE logs SET status = :status, forwarder_id = :forwarderId WHERE id = :id")
+    suspend fun setSuccess(id: Long, status: MsgStatus, forwarderId: Int?)
     @Query("SELECT * FROM logs")
     fun getLogs(): Flow<List<LogData>>
 

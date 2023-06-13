@@ -48,7 +48,7 @@ android {
 }
 
 dependencies {
-    def nav_ver = "2.5.3"
+    def nav_ver = "2.6.0"
     def trix_ver = "3.6.1"
     def ktor_ver = "2.3.0"
     def room_ver = "2.5.1"

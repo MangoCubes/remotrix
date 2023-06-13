@@ -13,7 +13,7 @@
     <string name="cannot_create_management_room">Unable to create management room.</string>
     <string name="no_child_space_permission">%s has no permission to create child room in the management space. Please grant it first.</string>
     <string name="logged_in">Logged in as %s</string>
-    <string name="cannot_create_child_room">"Cannot create child room: "</string>
+    <string name="child_room_creation_failed">"Cannot create child room: "</string>
     <string name="cannot_create_room_in_the_messaging_space">"Cannot create room in the messaging space: "</string>
     <string name="auto">Automatically create messaging space</string>
     <string name="manual">Enter existing messaging space ID</string>
