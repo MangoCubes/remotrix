@@ -43,6 +43,7 @@ import net.folivo.trixnity.core.model.RoomId
 import net.folivo.trixnity.core.model.UserId
 import net.folivo.trixnity.core.model.events.Event
 import net.folivo.trixnity.core.model.events.m.room.CreateEventContent
+import net.folivo.trixnity.core.model.events.m.room.HistoryVisibilityEventContent
 import net.folivo.trixnity.core.model.events.m.space.ChildEventContent
 import net.folivo.trixnity.core.model.events.m.space.ParentEventContent
 import okio.Path.Companion.toPath
@@ -262,6 +263,12 @@ fun onLoginClick(
                 creationContent = CreateEventContent(
                     type = CreateEventContent.RoomType.Space,
                     creator = client.userId
+                ),
+                initialState = listOf(
+                    Event.InitialStateEvent(
+                        content = HistoryVisibilityEventContent(HistoryVisibilityEventContent.HistoryVisibility.SHARED),
+                        stateKey = ""
+                    )
                 )
             ).getOrElse {
                 clientDir.deleteRecursively()
@@ -286,6 +293,10 @@ fun onLoginClick(
                     Event.InitialStateEvent(
                         content = ParentEventContent(true, via),
                         stateKey = messagingSpaceInput
+                    ),
+                    Event.InitialStateEvent(
+                        content = HistoryVisibilityEventContent(HistoryVisibilityEventContent.HistoryVisibility.SHARED),
+                        stateKey = ""
                     )
                 )
             ).getOrElse {
@@ -327,16 +338,23 @@ fun onLoginClick(
          * Step 3-2: If it succeeds, an invitation is sent to manager.
          */
         val roomName = context.getString(R.string.management_room_name).format(client.userId)
+        val initState = mutableListOf<Event.InitialStateEvent<*>>(
+            Event.InitialStateEvent(
+                content = HistoryVisibilityEventContent(HistoryVisibilityEventContent.HistoryVisibility.SHARED),
+                stateKey = ""
+            )
+        )
+        if(managementSpaceId !== null) initState.add(
+            Event.InitialStateEvent(
+                content = ParentEventContent(true, via),
+                stateKey = managementSpaceId
+            )
+        )
         val roomId = client.api.rooms.createRoom(
             visibility = DirectoryVisibility.PRIVATE,
             name = roomName,
             topic = context.getString(R.string.management_room_desc).format(client.userId),
-            initialState = if (managementSpaceId === null) null else listOf(
-                Event.InitialStateEvent(
-                    content = ParentEventContent(true, via),
-                    stateKey = managementSpaceId
-                )
-            )
+            initialState = initState
         ).getOrElse {
             client.logout()
             // Assumes that room has not been created at all

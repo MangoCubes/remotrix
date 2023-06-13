@@ -27,6 +27,7 @@ import net.folivo.trixnity.client.store.repository.realm.createRealmRepositories
 import net.folivo.trixnity.core.model.RoomId
 import net.folivo.trixnity.core.model.UserId
 import net.folivo.trixnity.core.model.events.Event
+import net.folivo.trixnity.core.model.events.m.room.HistoryVisibilityEventContent
 import net.folivo.trixnity.core.model.events.m.room.JoinRulesEventContent
 import net.folivo.trixnity.core.model.events.m.space.ChildEventContent
 import net.folivo.trixnity.core.model.events.m.space.ParentEventContent
@@ -204,6 +205,11 @@ class SendMsgWorker(
                                         JoinRulesEventContent.AllowCondition(RoomId(msgSpace), JoinRulesEventContent.AllowCondition.AllowConditionType.RoomMembership)
                                     )
                                 ),
+                                stateKey = ""
+                            ),
+                            Event.InitialStateEvent(
+                                content = HistoryVisibilityEventContent(
+                                    HistoryVisibilityEventContent.HistoryVisibility.SHARED),
                                 stateKey = ""
                             )
                         )
