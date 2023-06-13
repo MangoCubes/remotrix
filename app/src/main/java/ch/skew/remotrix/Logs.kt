@@ -75,7 +75,9 @@ fun Logs(
                     onCheckedChange = null
                 )
             }
-            LazyColumn {
+            LazyColumn(
+                modifier = Modifier.fillMaxWidth()
+            ) {
                 items(logs) { log ->
                     val success =
                         log.status === MsgStatus.MESSAGE_SENT || log.status === MsgStatus.MESSAGE_DROPPED

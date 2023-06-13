@@ -116,7 +116,6 @@ fun RemotrixApp(
         ) {
             composable(route = Destination.Home.route) {
                 HomeScreen(
-                    accounts,
                     navigate = { navController.navigate(it) },
                     defaultSend = defaultSend.value!!
                 )
@@ -170,7 +169,6 @@ fun RemotrixApp(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    accounts: List<Account> = listOf(),
     navigate: (String) -> Unit = {},
     defaultSend: Int = -1,
     forwardRules: List<ForwardRule> = listOf()
