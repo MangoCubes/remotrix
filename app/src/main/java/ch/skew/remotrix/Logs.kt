@@ -96,12 +96,12 @@ fun Logs(
                         val forwarderInfo = if (log.forwarderId === null) ""
                         else {
                             val accountUsed = accounts.find { it.id == log.forwarderId }
-                            if (accountUsed === null) "Forwarder: Unknown (ID: %s)".format(
+                            if (accountUsed === null) "(Forwarder: Unknown (ID: %s))".format(
                                 log.forwarderId
                             )
-                            else "Forwarder: %s".format(accountUsed.userId)
+                            else "(Forwarder: %s)".format(accountUsed.userId)
                         }
-                        Text("[${if (success) stringResource(R.string.success) else stringResource(R.string.failure)}] " + log.timestamp + ": " + msg + "(" + forwarderInfo + ")")
+                        Text("[${if (success) stringResource(R.string.success) else stringResource(R.string.failure)}] " + log.timestamp + ": " + msg + " " + forwarderInfo)
                     }
                 }
             }
