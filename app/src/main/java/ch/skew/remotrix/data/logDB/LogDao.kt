@@ -14,7 +14,7 @@ interface LogDao{
     suspend fun setFailure(id: Long, status: MsgStatus, errorMsg: String?, forwarderId: Int?)
     @Query("UPDATE logs SET status = :status, forwarder_id = :forwarderId WHERE id = :id")
     suspend fun setSuccess(id: Long, status: MsgStatus, forwarderId: Int?)
-    @Query("SELECT * FROM logs")
+    @Query("SELECT * FROM logs ORDER BY timestamp DESC")
     fun getLogs(): Flow<List<LogData>>
 
     @Query("DELETE FROM logs")
