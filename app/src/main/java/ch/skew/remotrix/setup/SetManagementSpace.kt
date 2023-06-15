@@ -81,6 +81,15 @@ fun SetManagementSpace(
                             append(" is set or not, management rooms will still be created for each account on this app.")
                         }
                     )
+                    if (currentManagementSpace.value !== "") Text(
+                        buildAnnotatedString {
+                            append("You already have set a ")
+                            withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
+                                append("management space")
+                            }
+                            append(". Press continue to keep current settings.")
+                        }
+                    )
                 }
             )
             TextField(
@@ -102,7 +111,10 @@ fun SetManagementSpace(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 10.dp),
-                onClick = {confirmSpace(managementSpace.value, context, scope, settings, nextPage) }
+                onClick = {
+                    if (managementSpace.value === "" && currentManagementSpace.value !== "") nextPage()
+                    else confirmSpace(managementSpace.value, context, scope, settings, nextPage)
+                }
             ) {
                 Text("Continue")
             }
