@@ -15,7 +15,7 @@ class RemotrixSettings(
         val managerId = stringPreferencesKey("managerId")
         val managementSpaceId = stringPreferencesKey("managementSpaceId")
         val openedBefore = stringPreferencesKey("openedBefore")
-        val defaultSend = stringPreferencesKey("defaultSend")
+        val defaultForwarder = stringPreferencesKey("defaultForwarder")
         val logging = stringPreferencesKey("logging")
     }
 
@@ -31,8 +31,8 @@ class RemotrixSettings(
         preferences[openedBefore] == "1"
     }
 
-    val getDefaultSend: Flow<Int> = context.dataStore.data.map { preferences ->
-        preferences[defaultSend]?.toInt() ?: -1
+    val getDefaultForwarder: Flow<Int> = context.dataStore.data.map { preferences ->
+        preferences[defaultForwarder]?.toInt() ?: -1
     }
 
     val getLogging: Flow<Boolean> = context.dataStore.data.map { preferences ->
@@ -57,10 +57,10 @@ class RemotrixSettings(
         }
     }
 
-    suspend fun saveDefaultSend(id: Int?){
+    suspend fun saveDefaultForwarder(id: Int?){
         context.dataStore.edit { preferences ->
-             if(id === null) preferences.remove(defaultSend)
-             else preferences[defaultSend] = id.toString()
+             if(id === null) preferences.remove(defaultForwarder)
+             else preferences[defaultForwarder] = id.toString()
         }
     }
 

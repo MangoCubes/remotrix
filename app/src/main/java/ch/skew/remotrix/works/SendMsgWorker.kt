@@ -38,7 +38,7 @@ import okio.Path.Companion.toPath
  */
 class SendMsgWorker(
     private val context: Context,
-    private val workerParameters: WorkerParameters
+    workerParameters: WorkerParameters
 ): CoroutineWorker(context, workerParameters){
     override suspend fun doWork(): Result {
         val result = withContext(Dispatchers.IO) {
@@ -75,7 +75,7 @@ class SendMsgWorker(
                 // If SMSMsg class is found, the forwarder is a function of SMS sender and its body.
                 is SMSMsg -> {
                     // Default account is loaded up from the settings.
-                    val defaultAccount = settings.getDefaultSend.first()
+                    val defaultAccount = settings.getDefaultForwarder.first()
                     // Account ID of -1 is set to none.
                     if(defaultAccount == -1) {
                         if(logging) db.logDao.setSuccess(

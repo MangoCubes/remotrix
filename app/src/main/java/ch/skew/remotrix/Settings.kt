@@ -36,7 +36,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun Settings(
     accounts: List<Account> = listOf(),
-    defaultSend: Int = -1,
+    defaultForwarder: Int = -1,
     logging: Boolean = true,
     goBack: () -> Unit = {}
 ) {
@@ -107,13 +107,13 @@ fun Settings(
         close = { open.value = false },
         confirm = {
             scope.launch {
-                settings.saveDefaultSend(it)
+                settings.saveDefaultForwarder(it)
             }
             open.value = false
         },
         title = stringResource(R.string.choose_default_account),
         noneChosenDesc = stringResource(R.string.none_option),
         show = open.value,
-        defaultSelected = if(defaultSend == -1) null else defaultSend
+        defaultSelected = if(defaultForwarder == -1) null else defaultForwarder
     )
 }

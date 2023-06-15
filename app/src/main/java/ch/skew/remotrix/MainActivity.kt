@@ -90,7 +90,7 @@ fun RemotrixApp(
 ) {
     val settings = RemotrixSettings(LocalContext.current)
     val openedBefore = settings.getOpenedBefore.collectAsState(initial = null)
-    val defaultSend = settings.getDefaultSend.collectAsState(initial = null)
+    val defaultForwarder = settings.getDefaultForwarder.collectAsState(initial = null)
     val logging = settings.getLogging.collectAsState(initial = null)
     val navController = rememberNavController()
     RemotrixTheme {
@@ -104,13 +104,13 @@ fun RemotrixApp(
             composable(route = Destination.Home.route) {
                 HomeScreen(
                     navigate = { navController.navigate(it) },
-                    defaultSend = defaultSend.value!!
+                    defaultForwarder = defaultForwarder.value!!
                 )
             }
             composable(route = Destination.AccountList.route) {
                 AccountList(
                     accounts = accounts,
-                    defaultForwarder = defaultSend.value ?: -1,
+                    defaultForwarder = defaultForwarder.value ?: -1,
                     onClickGoBack = { navController.popBackStack() },
                     onClickNewAccount = { navController.navigate(Destination.NewAccount.route) },
                 )
@@ -140,7 +140,7 @@ fun RemotrixApp(
             composable(route = Destination.Settings.route) {
                 Settings(
                     accounts = accounts,
-                    defaultSend = defaultSend.value ?: -1,
+                    defaultForwarder = defaultForwarder.value ?: -1,
                     goBack = { navController.popBackStack() },
                     logging = logging.value ?: false
                 )
@@ -161,7 +161,7 @@ fun RemotrixApp(
 @Composable
 fun HomeScreen(
     navigate: (String) -> Unit = {},
-    defaultSend: Int = -1,
+    defaultForwarder: Int = -1,
     forwardRules: List<ForwardRule> = listOf()
 ) {
     Scaffold(
@@ -195,7 +195,7 @@ fun HomeScreen(
                 },
                 modifier = Modifier.clickable { navigate(Destination.AccountList.route) }
             )
-            val desc = stringResource(R.string.settings_desc) + if (forwardRules.isEmpty() && defaultSend == -1) stringResource(R.string.settings_desc_warning) else ""
+            val desc = stringResource(R.string.settings_desc) + if (forwardRules.isEmpty() && defaultForwarder == -1) stringResource(R.string.settings_desc_warning) else ""
             ListItem(
                 headlineText = { Text(stringResource(R.string.settings)) },
                 supportingText = { Text(desc) },
