@@ -39,7 +39,6 @@ import ch.skew.remotrix.data.RemotrixDB
 import ch.skew.remotrix.data.RemotrixSettings
 import ch.skew.remotrix.data.accountDB.AccountViewModel
 import ch.skew.remotrix.data.forwardRuleDB.ForwardRule
-import ch.skew.remotrix.data.forwardRuleDB.ForwardRuleViewModel
 import ch.skew.remotrix.data.logDB.LogData
 import ch.skew.remotrix.data.logDB.LogViewModel
 import ch.skew.remotrix.setup.AdditionalInfo
@@ -63,16 +62,6 @@ class MainActivity : ComponentActivity() {
         }
     )
     @Suppress("UNCHECKED_CAST")
-    private val forwardRuleViewModel by viewModels<ForwardRuleViewModel>(
-        factoryProducer = {
-            object: ViewModelProvider.Factory {
-                override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                    return ForwardRuleViewModel(RemotrixDB.getInstance(applicationContext).forwardRuleDao) as T
-                }
-            }
-        }
-    )
-    @Suppress("UNCHECKED_CAST")
     private val logViewModel by viewModels<LogViewModel>(
         factoryProducer = {
             object: ViewModelProvider.Factory {
@@ -86,11 +75,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             val accounts by accountViewModel.accounts.collectAsState()
-            val sendActions by forwardRuleViewModel.forwardRule.collectAsState()
             val logs by logViewModel.logs.collectAsState()
             RemotrixApp(
                 Account.from(accounts),
-                sendActions,
                 logs
             )
         }
@@ -99,7 +86,6 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun RemotrixApp(
     accounts: List<Account>,
-    forwardRules: List<ForwardRule>,
     logs: List<LogData>
 ) {
     val settings = RemotrixSettings(LocalContext.current)
@@ -108,7 +94,7 @@ fun RemotrixApp(
     val logging = settings.getLogging.collectAsState(initial = null)
     val navController = rememberNavController()
     RemotrixTheme {
-        if (openedBefore.value !== null && defaultSend.value !== null && logging.value !== null) NavHost(
+        if (openedBefore.value !== null) NavHost(
             navController = navController,
             startDestination =
                 if(!openedBefore.value!!) Destination.Setup.route
@@ -153,16 +139,16 @@ fun RemotrixApp(
             composable(route = Destination.Settings.route) {
                 Settings(
                     accounts = accounts,
-                    defaultSend = defaultSend.value!!,
+                    defaultSend = defaultSend.value ?: -1,
                     goBack = { navController.popBackStack() },
-                    logging = logging.value!!
+                    logging = logging.value ?: false
                 )
             }
             composable(route = Destination.Logs.route) {
                 Logs(
                     accounts = accounts,
                     logs = logs,
-                    isEnabled = logging.value!!,
+                    isEnabled = logging.value ?: false,
                     goBack = { navController.popBackStack() }
                 )
             }
