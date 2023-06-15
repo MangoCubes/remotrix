@@ -164,13 +164,16 @@ class SendMsgWorker(
             }
 
             if(msg is TestMsg){
-                client.room.sendMessage(msg.to) {
+                val tid = client.room.sendMessage(msg.to) {
                     text(msg.payload)
                 }
                 client.startSync()
-                while(client.room.getOutbox().value.isNotEmpty()) {
-                    delay(1000) //Temporary fix, TODO: Figure out how to stop the code until a message is confirmed to be sent
-                }
+                var outbox = client.room.getOutbox().first()
+                do {
+                    delay(1000)
+                    if(outbox.find { it.transactionId === tid } === null) break
+                    outbox = client.room.getOutbox().first()
+                } while (true)
                 client.stopSync()
                 scope.cancel()
                 if(logging) db.logDao.setSuccess(
@@ -260,13 +263,16 @@ class SendMsgWorker(
                     db.roomIdDao.insert(RoomIdData(msg.sender, sendAs, roomId.full))
                     client.api.rooms.inviteUser(roomId, UserId(managerId))
                 }
-                client.startSync()
-                client.room.sendMessage(roomId) {
+                val tid = client.room.sendMessage(roomId) {
                     text(msg.payload)
                 }
-                while(client.room.getOutbox().value.isNotEmpty()) {
-                    delay(1000) //Temporary fix, TODO: Figure out how to stop the code until a message is confirmed to be sent
-                }
+                client.startSync()
+                var outbox = client.room.getOutbox().first()
+                do {
+                    delay(1000)
+                    if(outbox.find { it.transactionId === tid } === null) break
+                    outbox = client.room.getOutbox().first()
+                } while (true)
                 client.stopSync()
                 scope.cancel()
                 if(logging) db.logDao.setSuccess(
