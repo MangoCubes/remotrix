@@ -110,6 +110,7 @@ fun RemotrixApp(
             composable(route = Destination.AccountList.route) {
                 AccountList(
                     accounts = accounts,
+                    defaultForwarder = defaultSend.value ?: -1,
                     onClickGoBack = { navController.popBackStack() },
                     onClickNewAccount = { navController.navigate(Destination.NewAccount.route) },
                 )

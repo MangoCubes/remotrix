@@ -168,11 +168,11 @@ class SendMsgWorker(
                     text(msg.payload)
                 }
                 client.startSync()
-                var outbox = client.room.getOutbox().first()
                 do {
                     delay(1000)
-                    if(outbox.find { it.transactionId === tid } === null) break
-                    outbox = client.room.getOutbox().first()
+                    val outbox = client.room.getOutbox().first()
+                    val message = outbox.find { it.transactionId === tid }
+                    if(message === null) break
                 } while (true)
                 client.stopSync()
                 scope.cancel()
@@ -267,11 +267,10 @@ class SendMsgWorker(
                     text(msg.payload)
                 }
                 client.startSync()
-                var outbox = client.room.getOutbox().first()
                 do {
                     delay(1000)
+                    val outbox = client.room.getOutbox().first()
                     if(outbox.find { it.transactionId === tid } === null) break
-                    outbox = client.room.getOutbox().first()
                 } while (true)
                 client.stopSync()
                 scope.cancel()
