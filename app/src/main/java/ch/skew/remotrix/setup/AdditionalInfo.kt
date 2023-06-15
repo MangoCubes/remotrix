@@ -11,12 +11,16 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import ch.skew.remotrix.data.RemotrixSettings
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -30,6 +34,8 @@ fun AdditionalInfo(
             })
         }
     ) { padding ->
+        val settings = RemotrixSettings(LocalContext.current)
+        val scope = rememberCoroutineScope()
         Column(
             modifier = Modifier
                 .padding(padding)
@@ -56,8 +62,13 @@ fun AdditionalInfo(
                 }
             )
             Button(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp),
-                onClick = nextPage
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 10.dp),
+                onClick = {
+                    scope.launch { settings.saveOpenedBefore() }
+                    nextPage()
+                }
             ) {
                 Text("Done")
             }

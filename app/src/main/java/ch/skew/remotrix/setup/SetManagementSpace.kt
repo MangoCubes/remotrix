@@ -112,13 +112,12 @@ fun SetManagementSpace(
 
 fun confirmSpace(managementSpace: String, context: Context, scope: CoroutineScope, settings: RemotrixSettings, done: () -> Unit){
     val spacePattern = Regex("![A-z]+:[A-z0-9\\.]+")
-    if(spacePattern.matchEntire(managementSpace) === null){
+    if(managementSpace !== "" && spacePattern.matchEntire(managementSpace) === null){
         Toast.makeText(context, "The space ID you have entered is invalid.", Toast.LENGTH_SHORT).show()
         return
     }
     scope.launch {
-        settings.saveManagementSpaceId(managementSpace)
-        settings.saveOpenedBefore()
+        settings.saveManagementSpaceId(if (managementSpace === "") null else managementSpace)
         Toast.makeText(context, "Management space ID set.", Toast.LENGTH_SHORT).show()
         done()
     }

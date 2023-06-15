@@ -147,7 +147,7 @@ fun RemotrixApp(
                     SetManagementSpace { navController.navigate(Setup.NextStep.route) }
                 }
                 composable(Setup.NextStep.route){
-                    AdditionalInfo { navController.navigate(Destination.Home.route) }
+                    AdditionalInfo {   }
                 }
             }
             composable(route = Destination.Settings.route) {
