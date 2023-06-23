@@ -1,6 +1,7 @@
 package ch.skew.remotrix.setup
 
 import android.Manifest
+import android.content.pm.PackageManager
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -25,6 +26,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 
 enum class CurrentlyGranting {
     SMS,
@@ -44,13 +46,17 @@ fun AskPermissions(
         }
     ) { padding ->
         val context = LocalContext.current
-        val allowNext = remember { mutableStateOf(false) }
+        val smsGranted = ContextCompat.checkSelfPermission(context, Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED
+        val allowNext = remember { mutableStateOf(smsGranted) }
+        val smsAlreadyGranted = remember { mutableStateOf(smsGranted) }
+        val contactAlreadyGranted = remember { mutableStateOf(ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED) }
         val currentlyGranting = remember { mutableStateOf<CurrentlyGranting?>(null) }
         val launcher = rememberLauncherForActivityResult(
             ActivityResultContracts.RequestPermission()
         ) { isGranted ->
             if (isGranted) {
                 if(currentlyGranting.value === CurrentlyGranting.CONTACT) {
+                    contactAlreadyGranted.value = true
                     Toast.makeText(
                         context,
                         "Contact permission granted.",
@@ -58,6 +64,7 @@ fun AskPermissions(
                     ).show()
                 } else if(currentlyGranting.value === CurrentlyGranting.SMS) {
                     allowNext.value = true
+                    smsAlreadyGranted.value = true
                     Toast.makeText(
                         context,
                         "SMS permission granted.",
@@ -103,12 +110,14 @@ fun AskPermissions(
                 }
             )
             Button(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 10.dp),
                 onClick = {
                     currentlyGranting.value = CurrentlyGranting.SMS
                     launcher.launch(Manifest.permission.RECEIVE_SMS)
                 },
-                enabled = !allowNext.value
+                enabled = !smsAlreadyGranted.value
             ) {
                 Text("Grant SMS access")
             }
@@ -119,17 +128,21 @@ fun AskPermissions(
                 }
             )
             Button(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 10.dp),
                 onClick = {
                     currentlyGranting.value = CurrentlyGranting.CONTACT
                     launcher.launch(Manifest.permission.READ_CONTACTS)
                 },
-                enabled = !allowNext.value
+                enabled = !contactAlreadyGranted.value
             ) {
                 Text("Grant contact access")
             }
             Button(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 10.dp),
                 onClick = nextPage,
                 enabled = allowNext.value
             ) {
