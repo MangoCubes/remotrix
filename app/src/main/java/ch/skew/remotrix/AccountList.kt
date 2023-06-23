@@ -100,7 +100,7 @@ fun AccountList(
                 .fillMaxSize()
         ) {
             if (accounts.isNotEmpty()) {
-                if (defaultForwarder === -1) {
+                if (defaultForwarder == -1) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
