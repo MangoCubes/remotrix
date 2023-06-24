@@ -1,6 +1,8 @@
 package ch.skew.remotrix.works
 
 import android.content.Context
+import android.net.Uri
+import android.provider.ContactsContract
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
@@ -12,6 +14,8 @@ import ch.skew.remotrix.data.RemotrixDB
 import ch.skew.remotrix.data.RemotrixSettings
 import ch.skew.remotrix.data.logDB.MsgStatus
 import ch.skew.remotrix.data.roomIdDB.RoomIdData
+import io.ktor.http.ContentType
+import io.ktor.utils.io.ByteReadChannel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
@@ -24,9 +28,11 @@ import net.folivo.trixnity.client.media.okio.OkioMediaStore
 import net.folivo.trixnity.client.room
 import net.folivo.trixnity.client.room.message.text
 import net.folivo.trixnity.client.store.repository.realm.createRealmRepositoriesModule
+import net.folivo.trixnity.clientserverapi.model.media.Media
 import net.folivo.trixnity.core.model.RoomId
 import net.folivo.trixnity.core.model.UserId
 import net.folivo.trixnity.core.model.events.Event
+import net.folivo.trixnity.core.model.events.m.room.AvatarEventContent
 import net.folivo.trixnity.core.model.events.m.room.HistoryVisibilityEventContent
 import net.folivo.trixnity.core.model.events.m.room.JoinRulesEventContent
 import net.folivo.trixnity.core.model.events.m.space.ChildEventContent
@@ -38,7 +44,7 @@ import okio.Path.Companion.toPath
  */
 class SendMsgWorker(
     private val context: Context,
-    private val workerParameters: WorkerParameters
+    workerParameters: WorkerParameters
 ): CoroutineWorker(context, workerParameters){
     override suspend fun doWork(): Result {
         val result = withContext(Dispatchers.IO) {
@@ -75,7 +81,7 @@ class SendMsgWorker(
                 // If SMSMsg class is found, the forwarder is a function of SMS sender and its body.
                 is SMSMsg -> {
                     // Default account is loaded up from the settings.
-                    val defaultAccount = settings.getDefaultSend.first()
+                    val defaultAccount = settings.getDefaultForwarder.first()
                     // Account ID of -1 is set to none.
                     if(defaultAccount == -1) {
                         if(logging) db.logDao.setSuccess(
@@ -164,13 +170,16 @@ class SendMsgWorker(
             }
 
             if(msg is TestMsg){
-                client.room.sendMessage(msg.to) {
+                val tid = client.room.sendMessage(msg.to) {
                     text(msg.payload)
                 }
                 client.startSync()
-                while(client.room.getOutbox().value.isNotEmpty()) {
-                    delay(1000) //Temporary fix, TODO: Figure out how to stop the code until a message is confirmed to be sent
-                }
+                do {
+                    delay(1000)
+                    val outbox = client.room.getOutbox().first()
+                    val message = outbox.find { it.transactionId === tid }
+                    if(message === null) break
+                } while (true)
                 client.stopSync()
                 scope.cancel()
                 if(logging) db.logDao.setSuccess(
@@ -184,35 +193,85 @@ class SendMsgWorker(
                 val sendTo = db.roomIdDao.getDestRoom(msg.sender, sendAs)
                 val managerId = settings.getManagerId.first()
                 val roomId: RoomId
+                var picUri: Uri? = null
                 // If an appropriate room does not exist for a given forwarder-SMS sender is not found, a new room is created.
                 if(sendTo === null) {
                     // The "via" part of m.space.child/parent event.
                     val via = setOf(client.userId.domain)
-                    roomId = client.api.rooms.createRoom(
-                        name = msg.sender,
-                        topic = context.getString(R.string.msg_room_desc).format(msg.sender),
-                        initialState = listOf(
-                            // Initial event for making this room child of the message room
-                            Event.InitialStateEvent(
-                                content = ParentEventContent(true, via),
-                                stateKey = msgSpace
+                    var roomName = msg.sender
+                    val senderNumber = msg.sender.filter { it.isDigit() }
+                    val contacts = context.contentResolver.query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, null, null, null, null)
+                    if (contacts !== null) {
+                        while (contacts.moveToNext()){
+                            val numberIndex = contacts.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER)
+                            if (numberIndex < 0) continue
+                            val current = contacts.getString(numberIndex).filter { it.isDigit() }
+                            if(current == senderNumber) {
+                                val nameIndex = contacts.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME)
+                                val pictureIndex = contacts.getColumnIndex(ContactsContract.CommonDataKinds.Phone.PHOTO_URI)
+                                picUri = Uri.parse(contacts.getString(pictureIndex))
+                                roomName = contacts.getString(nameIndex)
+                                break
+                            }
+                        }
+                        contacts.close()
+                    }
+                    val initialStates = mutableListOf(
+                        // Initial event for making this room child of the message room
+                        Event.InitialStateEvent(
+                            content = ParentEventContent(true, via),
+                            stateKey = msgSpace
+                        ),
+                        // Initial event for making this room restricted to the message room members
+                        Event.InitialStateEvent(
+                            content = JoinRulesEventContent(
+                                joinRule = JoinRulesEventContent.JoinRule.Restricted,
+                                allow = setOf(
+                                    JoinRulesEventContent.AllowCondition(RoomId(msgSpace), JoinRulesEventContent.AllowCondition.AllowConditionType.RoomMembership)
+                                )
                             ),
-                            // Initial event for making this room restricted to the message room members
-                            Event.InitialStateEvent(
-                                content = JoinRulesEventContent(
-                                    joinRule = JoinRulesEventContent.JoinRule.Restricted,
-                                    allow = setOf(
-                                        JoinRulesEventContent.AllowCondition(RoomId(msgSpace), JoinRulesEventContent.AllowCondition.AllowConditionType.RoomMembership)
-                                    )
-                                ),
-                                stateKey = ""
-                            ),
-                            Event.InitialStateEvent(
-                                content = HistoryVisibilityEventContent(
-                                    HistoryVisibilityEventContent.HistoryVisibility.SHARED),
-                                stateKey = ""
-                            )
+                            stateKey = ""
+                        ),
+                        // History is in SHARED mode, which allows the manager to view messages sent after invite to users is sent.
+                        Event.InitialStateEvent(
+                            content = HistoryVisibilityEventContent(
+                                HistoryVisibilityEventContent.HistoryVisibility.INVITED),
+                            stateKey = ""
                         )
+                    )
+                    if(picUri !== null){
+                        val stream = context.contentResolver.openInputStream(picUri)
+                        if(stream !== null){
+                            val length = stream.available()
+                            client.api.media.upload(
+                                Media(
+                                    ByteReadChannel(stream.readAllBytes()),
+                                    contentLength = length.toLong(),
+                                    filename = roomName,
+                                    contentType = ContentType("image", "jpeg")
+                                )
+                            ).fold(
+                                {
+                                    initialStates.add(
+                                        Event.InitialStateEvent(
+                                            content = AvatarEventContent(
+                                                it.contentUri
+                                            ),
+                                            stateKey = ""
+                                        )
+                                    )
+                                },
+                                {
+
+                                }
+                            )
+                            stream.close()
+                        }
+                    }
+                    roomId = client.api.rooms.createRoom(
+                        name = roomName,
+                        topic = context.getString(R.string.msg_room_desc).format(msg.sender),
+                        initialState = initialStates
                     ).getOrElse {
                         if(logging) db.logDao.setFailure(
                             currentLog,
@@ -260,13 +319,15 @@ class SendMsgWorker(
                     db.roomIdDao.insert(RoomIdData(msg.sender, sendAs, roomId.full))
                     client.api.rooms.inviteUser(roomId, UserId(managerId))
                 }
-                client.startSync()
-                client.room.sendMessage(roomId) {
+                val tid = client.room.sendMessage(roomId) {
                     text(msg.payload)
                 }
-                while(client.room.getOutbox().value.isNotEmpty()) {
-                    delay(1000) //Temporary fix, TODO: Figure out how to stop the code until a message is confirmed to be sent
-                }
+                client.startSync()
+                do {
+                    delay(1000)
+                    val outbox = client.room.getOutbox().first()
+                    if(outbox.find { it.transactionId === tid } === null) break
+                } while (true)
                 client.stopSync()
                 scope.cancel()
                 if(logging) db.logDao.setSuccess(

@@ -3,7 +3,9 @@ package ch.skew.remotrix
 import android.content.Context
 import android.widget.Toast
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
@@ -24,9 +26,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.work.Constraints
 import androidx.work.Data
 import androidx.work.NetworkType
@@ -53,13 +60,14 @@ import java.util.Locale
 @Composable
 @Preview
 fun AccountListPreview() {
-    AccountList(listOf(), {}, {})
+    AccountList(listOf(), -1, {}, {})
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AccountList(
     accounts: List<Account>,
+    defaultForwarder: Int,
     onClickGoBack: () -> Unit,
     onClickNewAccount: () -> Unit
 ){
@@ -92,6 +100,22 @@ fun AccountList(
                 .fillMaxSize()
         ) {
             if (accounts.isNotEmpty()) {
+                if (defaultForwarder == -1) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 10.dp)
+                    ) {
+                        Text(
+                            buildAnnotatedString {
+                                append("You have not set any default forwarder or rules in the settings. ")
+                                withStyle(style = SpanStyle(color = Color.Red)) {
+                                    append("If you do not set one, this app will not forward any messages!")
+                                }
+                            }
+                        )
+                    }
+                }
                 accounts.forEach {
                     SessionItem(it, context) { account -> askDel.value = account }
                 }

@@ -81,6 +81,15 @@ fun SetManagerAccount(
                             append(" here.")
                         }
                     )
+                    if (currentMgrId.value !== "") Text(
+                        buildAnnotatedString {
+                            append("You already have set a ")
+                            withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
+                                append("manager account")
+                            }
+                            append(". Press continue to keep current settings.")
+                        }
+                    )
                 }
             )
             TextField(
@@ -97,8 +106,11 @@ fun SetManagerAccount(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 10.dp),
-                enabled = mgrId.value !== "",
-                onClick = {confirm(mgrId.value, context, scope, settings, nextPage) }
+                enabled = currentMgrId.value !== "" || mgrId.value !== "",
+                onClick = {
+                    if (mgrId.value === "" && currentMgrId.value !== "") nextPage()
+                    else confirm(mgrId.value, context, scope, settings, nextPage)
+                }
             ) {
                 Text("Continue")
             }

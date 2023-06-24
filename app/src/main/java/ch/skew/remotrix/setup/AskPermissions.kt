@@ -1,6 +1,7 @@
 package ch.skew.remotrix.setup
 
 import android.Manifest
+import android.content.pm.PackageManager
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -25,7 +26,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 
+enum class CurrentlyGranting {
+    SMS,
+    CONTACT
+}
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 @Preview
@@ -40,17 +46,45 @@ fun AskPermissions(
         }
     ) { padding ->
         val context = LocalContext.current
-        val allowNext = remember { mutableStateOf(false) }
+        val smsGranted = ContextCompat.checkSelfPermission(context, Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED
+        val allowNext = remember { mutableStateOf(smsGranted) }
+        val smsAlreadyGranted = remember { mutableStateOf(smsGranted) }
+        val contactAlreadyGranted = remember { mutableStateOf(ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED) }
+        val currentlyGranting = remember { mutableStateOf<CurrentlyGranting?>(null) }
         val launcher = rememberLauncherForActivityResult(
             ActivityResultContracts.RequestPermission()
-        ) { isGranted: Boolean ->
-            if (isGranted) allowNext.value = true
-            else {
-                Toast.makeText(
-                    context,
-                    "SMS permission has not been granted.",
-                    Toast.LENGTH_SHORT
-                ).show()
+        ) { isGranted ->
+            if (isGranted) {
+                if(currentlyGranting.value === CurrentlyGranting.CONTACT) {
+                    contactAlreadyGranted.value = true
+                    Toast.makeText(
+                        context,
+                        "Contact permission granted.",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                } else if(currentlyGranting.value === CurrentlyGranting.SMS) {
+                    allowNext.value = true
+                    smsAlreadyGranted.value = true
+                    Toast.makeText(
+                        context,
+                        "SMS permission granted.",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            } else {
+                if(currentlyGranting.value === CurrentlyGranting.CONTACT) {
+                    Toast.makeText(
+                        context,
+                        "Contact permission denied.",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                } else if(currentlyGranting.value === CurrentlyGranting.SMS) {
+                    Toast.makeText(
+                        context,
+                        "SMS permission denied.",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
             }
         }
         Column(
@@ -76,14 +110,39 @@ fun AskPermissions(
                 }
             )
             Button(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp),
-                onClick = { launcher.launch(Manifest.permission.RECEIVE_SMS) },
-                enabled = !allowNext.value
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 10.dp),
+                onClick = {
+                    currentlyGranting.value = CurrentlyGranting.SMS
+                    launcher.launch(Manifest.permission.RECEIVE_SMS)
+                },
+                enabled = !smsAlreadyGranted.value
             ) {
                 Text("Grant SMS access")
             }
+            ListItem(
+                headlineText = { Text("Optional Permissions") },
+                supportingText = {
+                    Text("This app does not need contact access, but it is recommended. If granted, this app will read your contact to get the name of the sender, and it will be used for room names instead. You may skip this, but this will make all room names to show up as phone numbers only.")
+                }
+            )
             Button(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 10.dp),
+                onClick = {
+                    currentlyGranting.value = CurrentlyGranting.CONTACT
+                    launcher.launch(Manifest.permission.READ_CONTACTS)
+                },
+                enabled = !contactAlreadyGranted.value
+            ) {
+                Text("Grant contact access")
+            }
+            Button(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 10.dp),
                 onClick = nextPage,
                 enabled = allowNext.value
             ) {
