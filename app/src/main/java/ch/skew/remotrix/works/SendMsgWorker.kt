@@ -193,13 +193,15 @@ class SendMsgWorker(
                     // The "via" part of m.space.child/parent event.
                     val via = setOf(client.userId.domain)
                     var roomName = msg.sender
+                    val senderNumber = msg.sender.filter { it.isDigit() }
                     val contacts = context.contentResolver.query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, null, null, null, null)
                     if (contacts !== null) {
                         while (contacts.moveToNext()){
                             val nameIndex = contacts.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME)
                             val numberIndex = contacts.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER)
                             if (nameIndex < 0 || numberIndex < 0) continue
-                            if(contacts.getString(numberIndex) === msg.sender) {
+                            val current = contacts.getString(numberIndex).filter { it.isDigit() }
+                            if(current == senderNumber) {
                                 roomName = contacts.getString(nameIndex)
                                 break
                             }
