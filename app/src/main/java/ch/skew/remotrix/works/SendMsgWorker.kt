@@ -209,8 +209,15 @@ class SendMsgWorker(
                             if(current == senderNumber) {
                                 val nameIndex = contacts.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME)
                                 val pictureIndex = contacts.getColumnIndex(ContactsContract.CommonDataKinds.Phone.PHOTO_URI)
-                                picUri = Uri.parse(contacts.getString(pictureIndex))
-                                roomName = contacts.getString(nameIndex)
+                                if(pictureIndex >= 0) {
+                                    val uri = contacts.getString(pictureIndex)
+                                    if (uri !== null) picUri = Uri.parse(uri)
+                                }
+                                if(nameIndex >= 0){
+                                    val name = contacts.getString(nameIndex)
+                                    if (name !== null) roomName = name
+                                }
+
                                 break
                             }
                         }
@@ -245,7 +252,7 @@ class SendMsgWorker(
                             val length = stream.available()
                             client.api.media.upload(
                                 Media(
-                                    ByteReadChannel(stream.readAllBytes()),
+                                    ByteReadChannel(stream.readBytes()),
                                     contentLength = length.toLong(),
                                     filename = roomName,
                                     contentType = ContentType("image", "jpeg")
