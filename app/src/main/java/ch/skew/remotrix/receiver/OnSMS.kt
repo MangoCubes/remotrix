@@ -4,14 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.provider.Telephony
-import androidx.work.Constraints
-import androidx.work.Data
-import androidx.work.ExistingWorkPolicy
-import androidx.work.NetworkType
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.OutOfQuotaPolicy
-import androidx.work.WorkManager
-import ch.skew.remotrix.background.SendMsgWorker
+import ch.skew.remotrix.background.CommandService
 
 class OnSMS : BroadcastReceiver(){
     override fun onReceive(context: Context?, intent: Intent?) {
@@ -25,27 +18,13 @@ class OnSMS : BroadcastReceiver(){
             msgs.forEach {
                 msgList.add(it.messageBody)
             }
-            val work = OneTimeWorkRequestBuilder<SendMsgWorker>()
-                .setConstraints(
-                    Constraints.Builder()
-                        .setRequiredNetworkType(
-                            NetworkType.CONNECTED
-                        ).build()
-                )
-                .setInputData(
-                    Data.Builder()
-                        .putInt("msgType", 2)
-                        .putStringArray("payload", arrayOf(sender, msgList.joinToString("")))
-                        .build()
-                )
-                .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
-                .build()
-            val workManager = WorkManager.getInstance(context)
-            /**
-             * APPEND_OR_REPLACE has been chosen because sending multiple messages concurrently seems to have negative effect on the cryptography behind it.
-             * Therefore, while messages to multiple different rooms are sent without limit, multiple messages to single room will be sent in serial.
-             */
-            workManager.enqueueUniqueWork(sender, ExistingWorkPolicy.APPEND_OR_REPLACE, work)
+            Intent(context, CommandService::class.java)
+                .putExtra(CommandService.SENDER, sender)
+                .putExtra(CommandService.PAYLOAD, msgList.joinToString(""))
+                .apply {
+                    action = CommandService.SEND_MSG
+                    context.startService(this)
+                }
         }
     }
 }
