@@ -15,6 +15,7 @@ import net.folivo.trixnity.client.MatrixClient
 import net.folivo.trixnity.client.fromStore
 import net.folivo.trixnity.client.media.okio.OkioMediaStore
 import net.folivo.trixnity.client.store.repository.realm.createRealmRepositoriesModule
+import net.folivo.trixnity.core.model.RoomId
 import okio.Path.Companion.toPath
 
 class CommandService: Service() {
@@ -27,28 +28,42 @@ class CommandService: Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when(intent?.action) {
             START_ALL -> startAll()
-            SEND_MSG -> sendMsg()
-            SEND_TEST_MSG -> sendTestMsg()
+            SEND_MSG -> {
+                val sender = intent.getStringExtra(SENDER)
+                val payload = intent.getStringExtra(PAYLOAD)
+                if (sender === null || payload === null) {
+                    // TODO
+                } else {
+                    sendMsg(sender, payload)
+                }
+            }
+            SEND_TEST_MSG -> {
+                val id = intent.getIntExtra(FORWARDER_ID, -1)
+                val to = intent.getStringExtra(ROOM_ID)
+                val payload = intent.getStringExtra(PAYLOAD)
+                if (id == -1 || to === null || payload === null) {
+                    // TODO
+                } else {
+                    sendTestMsg(id, RoomId(to), payload)
+                }
+            }
             STOP_ALL -> stopAll()
         }
         return super.onStartCommand(intent, flags, startId)
     }
 
-    private fun sendTestMsg() {
+    private fun sendTestMsg(id: Int, to: RoomId, payload: String) {
         TODO("Not yet implemented")
     }
 
-    private fun sendMsg() {
+    private fun sendMsg(sender: String, payload: String) {
         TODO("Not yet implemented")
     }
 
     private fun stopAll() {
         stopForeground(STOP_FOREGROUND_REMOVE)
+        scope.cancel()
         stopSelf()
-    }
-
-    private fun stopClient() {
-        TODO("Not yet implemented")
     }
 
     private fun startAll() {
@@ -130,5 +145,10 @@ class CommandService: Service() {
         const val STOP_ALL = "STOP_ALL"
         const val SEND_MSG = "SEND_MSG"
         const val SEND_TEST_MSG = "SEND_TEST_MSG"
+
+        const val FORWARDER_ID = "FORWARDER_ID"
+        const val ROOM_ID = "ROOM_ID"
+        const val SENDER = "SENDER"
+        const val PAYLOAD = "PAYLOAD"
     }
 }
