@@ -1,5 +1,10 @@
 package ch.skew.remotrix
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.content.Context
+import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -31,6 +36,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
+import ch.skew.remotrix.background.CommandService
 import ch.skew.remotrix.classes.Account
 import ch.skew.remotrix.classes.Destination
 import ch.skew.remotrix.classes.Setup
@@ -73,6 +79,12 @@ class MainActivity : ComponentActivity() {
     )
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O){
+            val channel = NotificationChannel("command_listener", "Command Listener", NotificationManager.IMPORTANCE_LOW)
+            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(channel)
+        }
+
         setContent {
             val accounts by accountViewModel.accounts.collectAsState()
             val logs by logViewModel.logs.collectAsState()
@@ -171,6 +183,7 @@ fun HomeScreen(
             })
         }
     ) { padding ->
+        val context = LocalContext.current
         Column(modifier = Modifier.padding(padding)) {
             ListHeader(stringResource(R.string.setup))
             ListItem(
@@ -218,6 +231,15 @@ fun HomeScreen(
                     )
                 },
                 modifier = Modifier.clickable { navigate(Destination.Logs.route) }
+            )
+            ListItem(
+                headlineText = { Text("Test") },
+                modifier = Modifier.clickable { Intent(context, CommandService::class.java)
+                    .apply {
+                        action = CommandService.START_ALL
+                        context.startService(this)
+                    }
+                }
             )
         }
     }
