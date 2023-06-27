@@ -3,14 +3,26 @@ package ch.skew.remotrix.background
 import android.app.Service
 import android.content.Intent
 import android.os.IBinder
+import ch.skew.remotrix.classes.Account
+import ch.skew.remotrix.data.RemotrixDB
+import ch.skew.remotrix.data.RemotrixSettings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import net.folivo.trixnity.client.MatrixClient
+import net.folivo.trixnity.client.fromStore
+import net.folivo.trixnity.client.media.okio.OkioMediaStore
+import net.folivo.trixnity.client.store.repository.realm.createRealmRepositoriesModule
+import okio.Path.Companion.toPath
 
 class CommandService: Service() {
     private val scope = CoroutineScope(Dispatchers.IO)
-    private var clients: MutableList<MatrixClient> = mutableListOf()
+    // Null indicates that service has not been set up yet
+    private var clients: MutableMap<Int, MatrixClient>? = null
+    private val settings = RemotrixSettings(applicationContext)
+    private val db = RemotrixDB.getInstance(applicationContext)
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when(intent?.action) {
@@ -40,7 +52,25 @@ class CommandService: Service() {
     }
 
     private fun startAll() {
-
+        if(this.clients !== null) return
+        CoroutineScope(Dispatchers.IO).launch {
+            clients = mutableMapOf()
+            val accounts = Account.from(db.accountDao.getAllAccounts().first())
+            for(a in accounts){
+                val clientDir = applicationContext.filesDir.resolve("clients/${a.id}")
+                val repo = createRealmRepositoriesModule {
+                    this.directory(clientDir.toString())
+                }
+                val scope = CoroutineScope(Dispatchers.Default)
+                val media = OkioMediaStore(applicationContext.filesDir.resolve("clients/media").absolutePath.toPath())
+                val client = MatrixClient.fromStore(
+                    repositoriesModule = repo,
+                    mediaStore = media,
+                    scope = scope
+                ).getOrNull()
+                if (client !== null) clients?.put(a.id, client)
+            }
+        }
     }
 /*
     private fun addClient() {
