@@ -1,4 +1,4 @@
-package ch.skew.remotrix.works
+package ch.skew.remotrix.background
 
 import android.content.Context
 import android.net.Uri

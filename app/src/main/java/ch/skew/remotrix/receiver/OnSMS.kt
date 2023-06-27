@@ -11,7 +11,7 @@ import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.OutOfQuotaPolicy
 import androidx.work.WorkManager
-import ch.skew.remotrix.works.SendMsgWorker
+import ch.skew.remotrix.background.SendMsgWorker
 
 class OnSMS : BroadcastReceiver(){
     override fun onReceive(context: Context?, intent: Intent?) {

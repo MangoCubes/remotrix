@@ -44,7 +44,7 @@ import ch.skew.remotrix.classes.Account
 import ch.skew.remotrix.components.DelAccountDialog
 import ch.skew.remotrix.components.ScreenHelper
 import ch.skew.remotrix.data.RemotrixDB
-import ch.skew.remotrix.works.SendMsgWorker
+import ch.skew.remotrix.background.SendMsgWorker
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import net.folivo.trixnity.client.MatrixClient
