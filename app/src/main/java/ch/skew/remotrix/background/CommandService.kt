@@ -9,11 +9,14 @@ import ch.skew.remotrix.data.RemotrixSettings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import net.folivo.trixnity.client.MatrixClient
 import net.folivo.trixnity.client.fromStore
 import net.folivo.trixnity.client.media.okio.OkioMediaStore
+import net.folivo.trixnity.client.room
+import net.folivo.trixnity.client.room.message.text
 import net.folivo.trixnity.client.store.repository.realm.createRealmRepositoriesModule
 import net.folivo.trixnity.core.model.RoomId
 import okio.Path.Companion.toPath
@@ -22,12 +25,23 @@ class CommandService: Service() {
     private val scope = CoroutineScope(Dispatchers.IO)
     // Null indicates that service has not been set up yet
     private var clients: MutableMap<Int, MatrixClient>? = null
-    private val settings = RemotrixSettings(applicationContext)
-    private val db = RemotrixDB.getInstance(applicationContext)
+    private lateinit var settings: RemotrixSettings
+    private lateinit var db: RemotrixDB
+
+    override fun onCreate() {
+        super.onCreate()
+        this.settings = RemotrixSettings(applicationContext)
+        this.db = RemotrixDB.getInstance(applicationContext)
+    }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        println("Starting")
         when(intent?.action) {
-            START_ALL -> startAll()
+            START_ALL -> {
+                CoroutineScope(Dispatchers.IO).launch {
+                    startAll()
+                }
+            }
             SEND_MSG -> {
                 val sender = intent.getStringExtra(SENDER)
                 val payload = intent.getStringExtra(PAYLOAD)
@@ -44,7 +58,9 @@ class CommandService: Service() {
                 if (id == -1 || to === null || payload === null) {
                     // TODO
                 } else {
-                    sendTestMsg(id, RoomId(to), payload)
+                    CoroutineScope(Dispatchers.IO).launch {
+                        sendTestMsg(id, RoomId(to), payload)
+                    }
                 }
             }
             STOP_ALL -> stopAll()
@@ -52,8 +68,25 @@ class CommandService: Service() {
         return super.onStartCommand(intent, flags, startId)
     }
 
-    private fun sendTestMsg(id: Int, to: RoomId, payload: String) {
-        TODO("Not yet implemented")
+    private suspend fun sendTestMsg(id: Int, to: RoomId, payload: String) {
+        if(clients === null) {
+            startAll()
+        }
+        val client = clients?.get(id)
+        if(client === null) {
+            // TODO
+            return
+        }
+        val tid = client.room.sendMessage(to) {
+            text(payload)
+        }
+        do {
+            delay(5000)
+            val outbox = client.room.getOutbox().first()
+            val message = outbox.find { it.transactionId === tid }
+            if(message === null) break
+        } while (true)
+        // TODO: Add logging
     }
 
     private fun sendMsg(sender: String, payload: String) {
@@ -66,26 +99,29 @@ class CommandService: Service() {
         stopSelf()
     }
 
-    private fun startAll() {
+    private suspend fun startAll() {
+        println("Loading accounts")
         if(this.clients !== null) return
-        CoroutineScope(Dispatchers.IO).launch {
-            clients = mutableMapOf()
-            val accounts = Account.from(db.accountDao.getAllAccounts().first())
-            for(a in accounts){
-                val clientDir = applicationContext.filesDir.resolve("clients/${a.id}")
-                val repo = createRealmRepositoriesModule {
-                    this.directory(clientDir.toString())
-                }
-                val scope = CoroutineScope(Dispatchers.Default)
-                val media = OkioMediaStore(applicationContext.filesDir.resolve("clients/media").absolutePath.toPath())
-                val client = MatrixClient.fromStore(
-                    repositoriesModule = repo,
-                    mediaStore = media,
-                    scope = scope
-                ).getOrNull()
-                if (client !== null) clients?.put(a.id, client)
+        clients = mutableMapOf()
+        val accounts = Account.from(db.accountDao.getAllAccounts().first())
+        for(a in accounts){
+            val clientDir = applicationContext.filesDir.resolve("clients/${a.id}")
+            val repo = createRealmRepositoriesModule {
+                this.directory(clientDir.toString())
+            }
+            val scope = CoroutineScope(Dispatchers.Default)
+            val media = OkioMediaStore(applicationContext.filesDir.resolve("clients/media").absolutePath.toPath())
+            val client = MatrixClient.fromStore(
+                repositoriesModule = repo,
+                mediaStore = media,
+                scope = scope
+            ).getOrNull()
+            if (client !== null) {
+                client.startSync()
+                clients?.put(a.id, client)
             }
         }
+        println("${this.clients?.size} accounts loaded.")
     }
 /*
     private fun addClient() {
