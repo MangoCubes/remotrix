@@ -25,6 +25,7 @@ import net.folivo.trixnity.client.MatrixClient
 import net.folivo.trixnity.client.fromStore
 import net.folivo.trixnity.client.media.okio.OkioMediaStore
 import net.folivo.trixnity.client.room
+import net.folivo.trixnity.client.room.message.reply
 import net.folivo.trixnity.client.room.message.text
 import net.folivo.trixnity.client.store.repository.realm.createRealmRepositoriesModule
 import net.folivo.trixnity.clientserverapi.model.media.Media
@@ -34,6 +35,7 @@ import net.folivo.trixnity.core.model.events.Event
 import net.folivo.trixnity.core.model.events.m.room.AvatarEventContent
 import net.folivo.trixnity.core.model.events.m.room.HistoryVisibilityEventContent
 import net.folivo.trixnity.core.model.events.m.room.JoinRulesEventContent
+import net.folivo.trixnity.core.model.events.m.room.RoomMessageEventContent
 import net.folivo.trixnity.core.model.events.m.space.ChildEventContent
 import net.folivo.trixnity.core.model.events.m.space.ParentEventContent
 import okio.Path.Companion.toPath
@@ -41,7 +43,7 @@ import okio.Path.Companion.toPath
 class CommandService: Service() {
     private val scope = CoroutineScope(Dispatchers.IO)
     // Null indicates that service has not been set up yet
-    private var clients: MutableMap<Int, MatrixClient>? = null
+    private var clients: MutableMap<Int, Pair<MatrixClient, Account>>? = null
     private lateinit var settings: RemotrixSettings
     private lateinit var db: RemotrixDB
 
@@ -92,7 +94,7 @@ class CommandService: Service() {
         if(clients === null) {
             startAll()
         }
-        val client = clients?.get(id)
+        val client = clients?.get(id)?.first
         val currentLog = if (log) db.logDao.writeAhead(1, payload) else -1
         if(client === null) {
             if (currentLog != -1L) db.logDao.setFailure(
@@ -139,7 +141,7 @@ class CommandService: Service() {
         }
         // If match is not found, default account is chosen.
         val sendAs = if (match !== null) match else defaultAccount
-        val client = clients?.get(sendAs)
+        val client = clients?.get(sendAs)?.first
         if(client === null) {
             if (currentLog != -1L) db.logDao.setFailure(
                 currentLog,
@@ -312,7 +314,27 @@ class CommandService: Service() {
             ).getOrNull()
             if (client !== null) {
                 client.startSync()
-                clients?.put(a.id, client)
+                clients?.put(a.id, Pair(client, a))
+            }
+        }
+        CoroutineScope(Dispatchers.IO).launch {
+            clients?.forEach {
+                val client = it.value.first
+                client.room.getTimelineEventsFromNowOn().collect { timelineEvent ->
+                    val content = timelineEvent.content?.getOrNull()
+                    if (content is RoomMessageEventContent.TextMessageEventContent) {
+                        val body = content.body
+                        val answer = when {
+                            body.lowercase().startsWith("ping") ->
+                                "pong to ${content.body.removePrefix("ping").trimStart()}"
+                            else -> null
+                        }
+                        if (answer != null) client.room.sendMessage(timelineEvent.roomId) {
+                            text(answer)
+                            reply(timelineEvent)
+                        }
+                    }
+                }
             }
         }
     }

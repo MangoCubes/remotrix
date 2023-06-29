@@ -86,12 +86,10 @@ fun Logs(
                             MsgStatus.MESSAGE_SENDING_FAILED -> stringResource(R.string.message_sending_failed)
                             MsgStatus.MESSAGE_SENT -> stringResource(R.string.message_sent)
                             MsgStatus.MESSAGE_DROPPED -> stringResource(R.string.message_dropped)
-                            MsgStatus.UNRECOGNISED_MESSAGE_CODE -> stringResource(R.string.unrecognised_message_code)
                             MsgStatus.NO_SUITABLE_FORWARDER -> stringResource(R.string.no_suitable_forwarder)
                             MsgStatus.CANNOT_LOAD_MATRIX_CLIENT -> stringResource(R.string.cannot_load_matrix_client)
                             MsgStatus.CANNOT_CREATE_ROOM -> stringResource(R.string.cannot_create_room)
                             MsgStatus.CANNOT_CREATE_CHILD_ROOM -> stringResource(R.string.cannot_create_child_room)
-                            MsgStatus.UNRECOGNISED_MESSAGE_CLASS -> stringResource(R.string.unrecognised_message_code)
                         }
                         val forwarderInfo = if (log.forwarderId === null) ""
                         else {

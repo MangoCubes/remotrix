@@ -15,24 +15,16 @@ enum class MsgStatus{
 
     MESSAGE_DROPPED,
 
-    UNRECOGNISED_MESSAGE_CODE,
-
-
     NO_SUITABLE_FORWARDER,
 
-
     CANNOT_LOAD_MATRIX_CLIENT,
-
 
     CANNOT_CREATE_ROOM,
 
     /**
      * This error differs from MsgStatus.CANNOT_CREATE_ROOM in the sense that while the client managed to create a room, it failed to make it child of the messaging space.
      */
-    CANNOT_CREATE_CHILD_ROOM,
-
-    UNRECOGNISED_MESSAGE_CLASS
-
+    CANNOT_CREATE_CHILD_ROOM
 }
 @Entity(tableName = "logs")
 data class LogData(
