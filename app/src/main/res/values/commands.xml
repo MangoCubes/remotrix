@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="unknown_command">Unknown command. Enter /help for more details.</string>
+    <string name="pong">Pong!</string>
+</resources>

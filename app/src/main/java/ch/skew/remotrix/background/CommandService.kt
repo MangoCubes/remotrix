@@ -7,6 +7,7 @@ import android.os.IBinder
 import android.provider.ContactsContract
 import ch.skew.remotrix.R
 import ch.skew.remotrix.classes.Account
+import ch.skew.remotrix.classes.CommandAction
 import ch.skew.remotrix.classes.SMSMsg
 import ch.skew.remotrix.data.RemotrixDB
 import ch.skew.remotrix.data.RemotrixSettings
@@ -27,6 +28,8 @@ import net.folivo.trixnity.client.media.okio.OkioMediaStore
 import net.folivo.trixnity.client.room
 import net.folivo.trixnity.client.room.message.reply
 import net.folivo.trixnity.client.room.message.text
+import net.folivo.trixnity.client.store.TimelineEvent
+import net.folivo.trixnity.client.store.isEncrypted
 import net.folivo.trixnity.client.store.repository.realm.createRealmRepositoriesModule
 import net.folivo.trixnity.clientserverapi.model.media.Media
 import net.folivo.trixnity.core.model.RoomId
@@ -315,29 +318,49 @@ class CommandService: Service() {
             if (client !== null) {
                 client.startSync()
                 clients?.put(a.id, Pair(client, a))
+                client.room.sendMessage(RoomId(a.managementRoom)) {
+                    text("${client.userId} is ready to accept commands.")
+                }
             }
         }
         CoroutineScope(Dispatchers.IO).launch {
             clients?.forEach {
                 val client = it.value.first
-                client.room.getTimelineEventsFromNowOn().collect { timelineEvent ->
-                    val content = timelineEvent.content?.getOrNull()
-                    if (content is RoomMessageEventContent.TextMessageEventContent) {
-                        val body = content.body
-                        val answer = when {
-                            body.lowercase().startsWith("ping") ->
-                                "pong to ${content.body.removePrefix("ping").trimStart()}"
-                            else -> null
-                        }
-                        if (answer != null) client.room.sendMessage(timelineEvent.roomId) {
-                            text(answer)
-                            reply(timelineEvent)
+                client.room.getTimelineEventsFromNowOn().collect { ev ->
+                    val content = ev.content?.getOrNull()
+                    val isSender = ev.event.sender.full == client.userId.full
+                    if (content is RoomMessageEventContent.TextMessageEventContent && ev.isEncrypted && !isSender) {
+                        val reply = handleMessage(content.body, ev)
+                        client.room.sendMessage(ev.roomId) {
+                            when(reply) {
+                                is CommandAction.Reaction -> {
+                                    // TODO: Use reaction to let user know message has been sent successfully
+                                }
+                                is CommandAction.Reply -> {
+                                    text(reply.msg)
+                                    reply(ev)
+                                }
+                            }
                         }
                     }
                 }
             }
         }
     }
+
+    private fun handleMessage(body: String, event: TimelineEvent): CommandAction {
+        if(body.startsWith("!")){
+            val args = body.split(' ')
+            if(args[0] == "!say") {
+                return CommandAction.Reaction("✅")
+            } else {
+                return if(args[0] == "!ping") CommandAction.Reply(getString(R.string.pong))
+                else CommandAction.Reply(getString(R.string.unknown_command))
+            }
+        }
+        return CommandAction.Reaction("✅")
+    }
+
     override fun onDestroy() {
         scope.cancel()
         super.onDestroy()
