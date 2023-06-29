@@ -330,7 +330,7 @@ class CommandService: Service() {
                     val content = ev.content?.getOrNull()
                     val isSender = ev.event.sender.full == client.userId.full
                     if (content is RoomMessageEventContent.TextMessageEventContent && ev.isEncrypted && !isSender) {
-                        val reply = handleMessage(content.body, ev)
+                        val reply = handleMessage(client, content.body, ev)
                         client.room.sendMessage(ev.roomId) {
                             when(reply) {
                                 is CommandAction.Reaction -> {
@@ -348,11 +348,25 @@ class CommandService: Service() {
         }
     }
 
-    private fun handleMessage(body: String, event: TimelineEvent): CommandAction {
+    private suspend fun handleMessage(client: MatrixClient, body: String, event: TimelineEvent): CommandAction {
         if(body.startsWith("!")){
             val args = body.split(' ')
             if(args[0] == "!say") {
                 return CommandAction.Reaction("✅")
+            } else if(args[0] == "!close") {
+                client.api.rooms.getMembers(event.roomId).fold(
+                    {
+                        it.forEach { user ->
+                            if(user.stateKey != client.userId.full)
+                                client.api.rooms.kickUser(event.roomId, UserId(user.stateKey))
+                        }
+                        client.api.rooms.leaveRoom(event.roomId)
+                        client.api.rooms.forgetRoom(event.roomId)
+                    },
+                    {
+                        return CommandAction.Reply(getString(R.string.kick_error))
+                    }
+                )
             } else {
                 return if(args[0] == "!ping") CommandAction.Reply(getString(R.string.pong))
                 else CommandAction.Reply(getString(R.string.unknown_command))

@@ -2,4 +2,5 @@
 <resources>
     <string name="unknown_command">Unknown command. Enter /help for more details.</string>
     <string name="pong">Pong!</string>
+    <string name="kick_error">Error: Cannot get all users to kick.</string>
 </resources>
