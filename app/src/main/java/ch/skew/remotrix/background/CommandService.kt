@@ -10,6 +10,7 @@ import ch.skew.remotrix.classes.Account
 import ch.skew.remotrix.classes.SMSMsg
 import ch.skew.remotrix.data.RemotrixDB
 import ch.skew.remotrix.data.RemotrixSettings
+import ch.skew.remotrix.data.logDB.MsgStatus
 import ch.skew.remotrix.data.roomIdDB.RoomIdData
 import io.ktor.http.ContentType
 import io.ktor.utils.io.ByteReadChannel
@@ -64,7 +65,8 @@ class CommandService: Service() {
                     // TODO
                 } else {
                     CoroutineScope(Dispatchers.IO).launch {
-                        sendMsg(SMSMsg(sender, payload))
+                        val log = settings.getLogging.first()
+                        sendMsg(SMSMsg(sender, payload), log)
                     }
                 }
             }
@@ -76,7 +78,8 @@ class CommandService: Service() {
                     // TODO
                 } else {
                     CoroutineScope(Dispatchers.IO).launch {
-                        sendTestMsg(id, RoomId(to), payload)
+                        val log = settings.getLogging.first()
+                        sendTestMsg(id, RoomId(to), payload, log)
                     }
                 }
             }
@@ -85,13 +88,19 @@ class CommandService: Service() {
         return super.onStartCommand(intent, flags, startId)
     }
 
-    private suspend fun sendTestMsg(id: Int, to: RoomId, payload: String) {
+    private suspend fun sendTestMsg(id: Int, to: RoomId, payload: String, log: Boolean) {
         if(clients === null) {
             startAll()
         }
         val client = clients?.get(id)
+        val currentLog = if (log) db.logDao.writeAhead(1, payload) else -1
         if(client === null) {
-            // TODO
+            if (currentLog != -1L) db.logDao.setFailure(
+                currentLog,
+                MsgStatus.NO_SUITABLE_FORWARDER,
+                null,
+                null
+            )
             return
         }
         val tid = client.room.sendMessage(to) {
@@ -103,27 +112,41 @@ class CommandService: Service() {
             val message = outbox.find { it.transactionId === tid }
             if(message === null) break
         } while (true)
-        // TODO: Add logging
+        if (currentLog != -1L) db.logDao.setSuccess(
+            currentLog,
+            MsgStatus.MESSAGE_SENT,
+            id
+        )
     }
 
-    private suspend fun sendMsg(msg: SMSMsg) {
+    private suspend fun sendMsg(msg: SMSMsg, log: Boolean) {
         if(clients === null) {
             startAll()
         }
+        val currentLog = if (log) db.logDao.writeAhead(2, msg.payload) else -1
         // Default account is loaded up from the settings.
         val defaultAccount = settings.getDefaultForwarder.first()
-        // Account ID of -1 is set to none.
-        if(defaultAccount == -1) {
-            // TODO: Logging (success)
-            return
-        }
         // Forwarder rules are loaded here, and are immediately put through getSenderId to determine the forwarder
         val match = msg.getSenderId(db.forwardRuleDao.getAll())
+        // Account ID of -1 is set to none.
+        if(defaultAccount == -1 && match === null) {
+            if(currentLog != -1L) db.logDao.setSuccess(
+                currentLog,
+                MsgStatus.MESSAGE_DROPPED,
+                null
+            )
+            return
+        }
         // If match is not found, default account is chosen.
         val sendAs = if (match !== null) match else defaultAccount
         val client = clients?.get(sendAs)
         if(client === null) {
-            // TODO
+            if (currentLog != -1L) db.logDao.setFailure(
+                currentLog,
+                MsgStatus.NO_SUITABLE_FORWARDER,
+                null,
+                null
+            )
             return
         }
         val msgSpace = db.accountDao.getMessageSpace(sendAs)
@@ -154,7 +177,6 @@ class CommandService: Service() {
                             val name = contacts.getString(nameIndex)
                             if (name !== null) roomName = name
                         }
-
                         break
                     }
                 }
@@ -221,7 +243,12 @@ class CommandService: Service() {
                 topic = applicationContext.getString(R.string.msg_room_desc).format(msg.sender),
                 initialState = initialStates
             ).getOrElse {
-                // TODO: MsgStatus.CANNOT_CREATE_ROOM
+                if(currentLog != -1L) db.logDao.setFailure(
+                    currentLog,
+                    MsgStatus.CANNOT_CREATE_ROOM,
+                    it.message,
+                    sendAs
+                )
                 return
             }
             // This state ensures that the parent room recognises the child room as its child.
@@ -232,7 +259,12 @@ class CommandService: Service() {
             ).getOrElse {
                 // Forwarder leaves the room to ensure it is removed in case state cannot be set.
                 client.api.rooms.leaveRoom(roomId)
-                // TODO: MsgStatus.CANNOT_CREATE_CHILD_ROOM,
+                if(currentLog != -1L) db.logDao.setFailure(
+                    currentLog,
+                    MsgStatus.CANNOT_CREATE_CHILD_ROOM,
+                    it.message,
+                    sendAs
+                )
                 return
             }
         } else roomId = RoomId(sendTo)
@@ -249,7 +281,11 @@ class CommandService: Service() {
             val outbox = client.room.getOutbox().first()
             if(outbox.find { it.transactionId === tid } === null) break
         } while (true)
-        // TODO: MsgStatus.MESSAGE_SENT
+        if(currentLog != -1L) db.logDao.setSuccess(
+            currentLog,
+            MsgStatus.MESSAGE_SENT,
+            sendAs
+        )
     }
 
     private fun stopAll() {
@@ -280,50 +316,6 @@ class CommandService: Service() {
             }
         }
     }
-/*
-    private fun addClient() {
-        val notification = NotificationCompat.Builder(this, "command_listener")
-            .setContentTitle("Listening to Matrix chat...")
-            .setContentText("${this.clients.size} bots active")
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setOngoing(true)
-        CoroutineScope(Dispatchers.IO).launch {
-            launch {
-                client.room.getAll().flatten().collect { rooms ->
-                    rooms.filter { it.membership == Membership.INVITE }.forEach {
-                        client.api.rooms.joinRoom(it.roomId).getOrNull()
-                    }
-                }
-            }
-            launch {
-                client.room.getTimelineEventsFromNowOn().collect {timelineEvent ->
-                    val content = timelineEvent.content?.getOrNull()
-                    if (content is RoomMessageEventContent.TextMessageEventContent) {
-
-                        val body = content.body
-                        println(body)
-                        val answer = when {
-                            body.lowercase().startsWith("ping") ->
-                                "pong to ${content.body.removePrefix("ping").trimStart()}"
-
-                            else -> null
-                        }
-                        if (answer != null) client.room.sendMessage(timelineEvent.roomId) {
-                            text(answer)
-                            reply(timelineEvent)
-                        }
-                    }
-                }
-            }
-        }
-        if(clients.isEmpty()) {
-            startForeground(1, notification.build())
-        } else {
-            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            notificationManager.notify(1, notification.build())
-        }
-    }
-*/
     override fun onDestroy() {
         scope.cancel()
         super.onDestroy()
