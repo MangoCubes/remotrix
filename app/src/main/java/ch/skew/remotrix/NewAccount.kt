@@ -244,7 +244,6 @@ fun onLoginClick(
             identifier = IdentifierType.User(username),
             password = password,
             repositoriesModule = repo,
-            deviceId = "Remotrix",
             mediaStore = OkioMediaStore(context.filesDir.resolve("clients/media").absolutePath.toPath()),
             scope = scope,
         ).getOrElse {

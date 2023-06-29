@@ -278,6 +278,10 @@ class CommandService: Service() {
             db.roomIdDao.insert(RoomIdData(msg.sender, sendAs, roomId.full))
             client.api.rooms.inviteUser(roomId, UserId(managerId))
         }
+        client.room.sendMessage(roomId) {
+            text(getString(R.string.startup_1).format(client.userId.full, client.deviceId))
+            text(getString(R.string.startup_2).format(msg.sender))
+        }
         val tid = client.room.sendMessage(roomId) {
             text(msg.payload)
         }
@@ -317,7 +321,6 @@ class CommandService: Service() {
             ).getOrNull()
             if (client !== null) {
                 clients?.put(a.id, Pair(client, a))
-
             }
         }
         CoroutineScope(Dispatchers.IO).launch {
@@ -326,11 +329,10 @@ class CommandService: Service() {
                 client.startSync()
 
                 client.room.sendMessage(RoomId(it.value.second.managementRoom)) {
-                    text("${client.userId} is ready to accept commands.")
+                    text(getString(R.string.ready_to_accept_commands).format(client.userId.full))
                 }
-                client.room.getTimelineEventsFromNowOn().collect { ev ->
+                client.room.getTimelineEventsFromNowOn(syncResponseBufferSize = 20).collect { ev ->
                     if(ev.event.sender.full == client.userId.full) return@collect
-                    client.api.rooms.inviteUser(ev.roomId, UserId("@pcwork:skew.ch"))
                     val content = ev.content?.getOrNull()
                     if (content is RoomMessageEventContent.TextMessageEventContent && ev.isEncrypted) {
                         val reply = handleMessage(it.value, content.body, ev)
@@ -371,6 +373,7 @@ class CommandService: Service() {
                             }
                         }
                         client.api.rooms.leaveRoom(event.roomId)
+                        db.roomIdDao.delRoomById(event.roomId.full)
                         client.api.rooms.forgetRoom(event.roomId)
                     },
                     {
