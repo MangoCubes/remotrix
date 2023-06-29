@@ -316,24 +316,28 @@ class CommandService: Service() {
                 scope = scope
             ).getOrNull()
             if (client !== null) {
-                client.startSync()
                 clients?.put(a.id, Pair(client, a))
-                client.room.sendMessage(RoomId(a.managementRoom)) {
-                    text("${client.userId} is ready to accept commands.")
-                }
+
             }
         }
         CoroutineScope(Dispatchers.IO).launch {
             clients?.forEach {
                 val client = it.value.first
+                client.startSync()
+
+                client.room.sendMessage(RoomId(it.value.second.managementRoom)) {
+                    text("${client.userId} is ready to accept commands.")
+                }
                 client.room.getTimelineEventsFromNowOn().collect { ev ->
+                    if(ev.event.sender.full == client.userId.full) return@collect
+                    client.api.rooms.inviteUser(ev.roomId, UserId("@pcwork:skew.ch"))
                     val content = ev.content?.getOrNull()
-                    val isSender = ev.event.sender.full == client.userId.full
-                    if (content is RoomMessageEventContent.TextMessageEventContent && ev.isEncrypted && !isSender) {
-                        val reply = handleMessage(client, content.body, ev)
+                    if (content is RoomMessageEventContent.TextMessageEventContent && ev.isEncrypted) {
+                        val reply = handleMessage(it.value, content.body, ev)
                         client.room.sendMessage(ev.roomId) {
                             when(reply) {
                                 is CommandAction.Reaction -> {
+                                    text(reply.reaction)
                                     // TODO: Use reaction to let user know message has been sent successfully
                                 }
                                 is CommandAction.Reply -> {
@@ -348,17 +352,23 @@ class CommandService: Service() {
         }
     }
 
-    private suspend fun handleMessage(client: MatrixClient, body: String, event: TimelineEvent): CommandAction {
+    private suspend fun handleMessage(account: Pair<MatrixClient, Account>, body: String, event: TimelineEvent): CommandAction {
         if(body.startsWith("!")){
             val args = body.split(' ')
             if(args[0] == "!say") {
                 return CommandAction.Reaction("✅")
             } else if(args[0] == "!close") {
+                if (event.roomId.full == account.second.managementRoom)
+                    return CommandAction.Reply(getString(R.string.cannot_delete_management_room))
+                val client = account.first
                 client.api.rooms.getMembers(event.roomId).fold(
                     {
                         it.forEach { user ->
-                            if(user.stateKey != client.userId.full)
-                                client.api.rooms.kickUser(event.roomId, UserId(user.stateKey))
+                            if(user.stateKey != client.userId.full){
+                                client.api.rooms.kickUser(event.roomId, UserId(user.stateKey)).onFailure {
+                                    return CommandAction.Reply(getString(R.string.error_cannot_kick_user).format(user.stateKey))
+                                }
+                            }
                         }
                         client.api.rooms.leaveRoom(event.roomId)
                         client.api.rooms.forgetRoom(event.roomId)

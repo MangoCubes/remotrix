@@ -3,4 +3,6 @@
     <string name="unknown_command">Unknown command. Enter /help for more details.</string>
     <string name="pong">Pong!</string>
     <string name="kick_error">Error: Cannot get all users to kick.</string>
+    <string name="cannot_delete_management_room">You cannot delete management rooms. You can delete this by removing this account from Remotrix app.</string>
+    <string name="error_cannot_kick_user">Error: Cannot kick user %s.</string>
 </resources>
