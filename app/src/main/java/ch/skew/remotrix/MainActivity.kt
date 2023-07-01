@@ -1,5 +1,10 @@
 package ch.skew.remotrix
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.content.Context
+import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -31,6 +36,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
+import ch.skew.remotrix.background.CommandService
 import ch.skew.remotrix.classes.Account
 import ch.skew.remotrix.classes.Destination
 import ch.skew.remotrix.classes.Setup
@@ -73,6 +79,17 @@ class MainActivity : ComponentActivity() {
     )
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Intent(applicationContext, CommandService::class.java)
+            .apply {
+                action = CommandService.START_ALL
+                applicationContext.startService(this)
+            }
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O){
+            val channel = NotificationChannel("command_listener", "Command Listener", NotificationManager.IMPORTANCE_LOW)
+            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(channel)
+        }
+
         setContent {
             val accounts by accountViewModel.accounts.collectAsState()
             val logs by logViewModel.logs.collectAsState()
@@ -92,6 +109,7 @@ fun RemotrixApp(
     val openedBefore = settings.getOpenedBefore.collectAsState(initial = null)
     val defaultForwarder = settings.getDefaultForwarder.collectAsState(initial = null)
     val logging = settings.getLogging.collectAsState(initial = null)
+    val enableOnBootMessage = settings.getEnableOnBootMessage.collectAsState(initial = null)
     val navController = rememberNavController()
     RemotrixTheme {
         if (openedBefore.value !== null) NavHost(
@@ -142,7 +160,8 @@ fun RemotrixApp(
                     accounts = accounts,
                     defaultForwarder = defaultForwarder.value ?: -1,
                     goBack = { navController.popBackStack() },
-                    logging = logging.value ?: false
+                    logging = logging.value ?: false,
+                    enableOnBootMessage = enableOnBootMessage.value ?: true
                 )
             }
             composable(route = Destination.Logs.route) {

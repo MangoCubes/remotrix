@@ -8,6 +8,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.DeleteForever
+import androidx.compose.material.icons.filled.Start
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -38,6 +39,7 @@ fun Settings(
     accounts: List<Account> = listOf(),
     defaultForwarder: Int = -1,
     logging: Boolean = true,
+    enableOnBootMessage: Boolean = true,
     goBack: () -> Unit = {}
 ) {
     val open = remember { mutableStateOf(false) }
@@ -67,6 +69,24 @@ fun Settings(
                     )
                 },
                 modifier = Modifier.clickable { open.value = true }
+            )
+            ListItem(
+                headlineText = { Text(stringResource(R.string.enable_service_ready_message)) },
+                supportingText = { Text(stringResource(R.string.enable_service_ready_message_desc)) },
+                leadingContent = {
+                    Icon(
+                        Icons.Filled.Start,
+                        contentDescription = stringResource(R.string.enable_service_ready_message)
+                    )
+                },
+                modifier = Modifier.clickable {
+                    scope.launch {
+                        settings.saveEnableOnBootMessage(!enableOnBootMessage)
+                    }
+                },
+                trailingContent = {
+                    Switch(checked = enableOnBootMessage, onCheckedChange = null)
+                }
             )
             ListItem(
                 headlineText = { Text(stringResource(R.string.enable_logging)) },

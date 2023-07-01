@@ -51,7 +51,7 @@ dependencies {
     def nav_ver = "2.6.0"
     def trix_ver = "3.6.1"
     def ktor_ver = "2.3.0"
-    def room_ver = "2.5.1"
+    def room_ver = "2.5.2"
 
     implementation "androidx.navigation:navigation-compose:$nav_ver" // 62653
     implementation 'androidx.core:core-ktx:1.10.1' // Cannot compile

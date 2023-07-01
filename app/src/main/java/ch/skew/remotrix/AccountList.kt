@@ -1,6 +1,7 @@
 package ch.skew.remotrix
 
 import android.content.Context
+import android.content.Intent
 import android.widget.Toast
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -34,17 +35,11 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.work.Constraints
-import androidx.work.Data
-import androidx.work.NetworkType
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.OutOfQuotaPolicy
-import androidx.work.WorkManager
+import ch.skew.remotrix.background.CommandService
 import ch.skew.remotrix.classes.Account
 import ch.skew.remotrix.components.DelAccountDialog
 import ch.skew.remotrix.components.ScreenHelper
 import ch.skew.remotrix.data.RemotrixDB
-import ch.skew.remotrix.works.SendMsgWorker
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import net.folivo.trixnity.client.MatrixClient
@@ -209,23 +204,13 @@ fun SessionItem(
 fun sendTestMessage(context: Context, account: Account){
     val formatter = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
     val current = formatter.format(Calendar.getInstance().time)
-    val work = OneTimeWorkRequestBuilder<SendMsgWorker>()
-        .setConstraints(
-            Constraints.Builder()
-                .setRequiredNetworkType(
-                    NetworkType.CONNECTED
-                ).build()
-        )
-        .setInputData(
-            Data.Builder()
-                .putInt("senderId", account.id)
-                .putInt("msgType", 1)
-                .putStringArray("payload", arrayOf(account.managementRoom, context.getString(R.string.test_msg).format(current)))
-                .build()
-        )
-        .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
-        .build()
+    Intent(context, CommandService::class.java)
+        .putExtra(CommandService.FORWARDER_ID, account.id)
+        .putExtra(CommandService.ROOM_ID, account.managementRoom)
+        .putExtra(CommandService.PAYLOAD, context.getString(R.string.test_msg).format(current))
+        .apply {
+            action = CommandService.SEND_TEST_MSG
+            context.startService(this)
+        }
     Toast.makeText(context, context.getString(R.string.test_msg_sent).format(current), Toast.LENGTH_LONG).show()
-    val workManager = WorkManager.getInstance(context)
-    workManager.enqueue(work)
 }
