@@ -354,6 +354,7 @@ class CommandService: Service() {
                     val content = ev.content?.getOrNull()
                     if (content is RoomMessageEventContent.TextMessageEventContent && ev.isEncrypted) {
                         val reply = handleMessage(it.value, content.body, ev)
+                        if(reply === null) return@collect
                         client.room.sendMessage(ev.roomId) {
                             when(reply) {
                                 is CommandAction.Reaction -> {
@@ -364,7 +365,6 @@ class CommandService: Service() {
                                     text(reply.msg)
                                     reply(ev)
                                 }
-                                else -> {}
                             }
                         }
                     }
