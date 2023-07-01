@@ -411,10 +411,9 @@ class CommandService: Service() {
                         return CommandAction.Reply(getString(R.string.kick_error))
                     }
                 )
-            } else {
-                return if(args[0] == "!ping") CommandAction.Reply(getString(R.string.pong))
-                else CommandAction.Reply(getString(R.string.unknown_command))
-            }
+            } else if(args[0] == "!ping") return CommandAction.Reply(getString(R.string.pong))
+            else if (args[0] == "!help") return CommandAction.Reply(getString(R.string.command_help_output))
+            else return CommandAction.Reply(getString(R.string.unknown_command))
         }
         return null//CommandAction.Reaction("✅")
     }
