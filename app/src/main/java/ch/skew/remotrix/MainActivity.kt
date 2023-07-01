@@ -79,6 +79,11 @@ class MainActivity : ComponentActivity() {
     )
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Intent(applicationContext, CommandService::class.java)
+            .apply {
+                action = CommandService.START_ALL
+                applicationContext.startService(this)
+            }
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O){
             val channel = NotificationChannel("command_listener", "Command Listener", NotificationManager.IMPORTANCE_LOW)
             val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -185,7 +190,6 @@ fun HomeScreen(
             })
         }
     ) { padding ->
-        val context = LocalContext.current
         Column(modifier = Modifier.padding(padding)) {
             ListHeader(stringResource(R.string.setup))
             ListItem(
@@ -233,15 +237,6 @@ fun HomeScreen(
                     )
                 },
                 modifier = Modifier.clickable { navigate(Destination.Logs.route) }
-            )
-            ListItem(
-                headlineText = { Text("Test") },
-                modifier = Modifier.clickable { Intent(context, CommandService::class.java)
-                    .apply {
-                        action = CommandService.START_ALL
-                        context.startService(this)
-                    }
-                }
             )
         }
     }
