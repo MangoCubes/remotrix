@@ -116,6 +116,15 @@ class CommandService: Service() {
             val outbox = client.room.getOutbox().first()
             val message = outbox.find { it.transactionId === tid }
             if(message === null) break
+            else if(message.reachedMaxRetryCount) {
+                client.room.abortSendMessage(tid)
+                if (currentLog != -1L) db.logDao.setFailure(
+                    currentLog,
+                    MsgStatus.MESSAGE_MAX_ATTEMPTS_REACHED,
+                    null,
+                    id
+                )
+            }
         } while (true)
         if (currentLog != -1L) db.logDao.setSuccess(
             currentLog,
@@ -286,9 +295,19 @@ class CommandService: Service() {
             text(msg.payload)
         }
         do {
-            delay(3000)
+            delay(5000)
             val outbox = client.room.getOutbox().first()
-            if(outbox.find { it.transactionId === tid } === null) break
+            val message = outbox.find { it.transactionId === tid }
+            if (message === null) break
+            else if(message.reachedMaxRetryCount) {
+                client.room.abortSendMessage(tid)
+                if (currentLog != -1L) db.logDao.setFailure(
+                    currentLog,
+                    MsgStatus.MESSAGE_MAX_ATTEMPTS_REACHED,
+                    null,
+                    sendAs
+                )
+            }
         } while (true)
         if(currentLog != -1L) db.logDao.setSuccess(
             currentLog,
@@ -327,11 +346,10 @@ class CommandService: Service() {
             clients?.forEach {
                 val client = it.value.first
                 client.startSync()
-
                 client.room.sendMessage(RoomId(it.value.second.managementRoom)) {
                     text(getString(R.string.ready_to_accept_commands).format(client.userId.full))
                 }
-                client.room.getTimelineEventsFromNowOn(syncResponseBufferSize = 20).collect { ev ->
+                client.room.getTimelineEventsFromNowOn().collect { ev ->
                     if(ev.event.sender.full == client.userId.full) return@collect
                     val content = ev.content?.getOrNull()
                     if (content is RoomMessageEventContent.TextMessageEventContent && ev.isEncrypted) {
@@ -346,6 +364,7 @@ class CommandService: Service() {
                                     text(reply.msg)
                                     reply(ev)
                                 }
+                                else -> {}
                             }
                         }
                     }
@@ -354,11 +373,11 @@ class CommandService: Service() {
         }
     }
 
-    private suspend fun handleMessage(account: Pair<MatrixClient, Account>, body: String, event: TimelineEvent): CommandAction {
+    private suspend fun handleMessage(account: Pair<MatrixClient, Account>, body: String, event: TimelineEvent): CommandAction? {
         if(body.startsWith("!")){
             val args = body.split(' ')
             if(args[0] == "!say") {
-                return CommandAction.Reaction("✅")
+                return null//CommandAction.Reaction("✅")
             } else if(args[0] == "!close") {
                 if (event.roomId.full == account.second.managementRoom)
                     return CommandAction.Reply(getString(R.string.cannot_delete_management_room))
@@ -385,7 +404,7 @@ class CommandService: Service() {
                 else CommandAction.Reply(getString(R.string.unknown_command))
             }
         }
-        return CommandAction.Reaction("✅")
+        return null//CommandAction.Reaction("✅")
     }
 
     override fun onDestroy() {

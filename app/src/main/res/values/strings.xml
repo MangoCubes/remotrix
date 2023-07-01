@@ -47,6 +47,4 @@
     <string name="view_logs">View Logs</string>
     <string name="view_logs_desc">View logs of the messages. Note that you must enable it in options prior.</string>
     <string name="creating_messaging_space">Creating messaging space…</string>
-    <string name="startup_2">Any non-command messages sent into this room will be sent to %s.</string>
-    <string name="startup_1">This room has been created by %s on device %s.</string>
 </resources>

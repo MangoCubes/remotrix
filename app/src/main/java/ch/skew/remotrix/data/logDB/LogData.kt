@@ -11,6 +11,8 @@ enum class MsgStatus{
      */
     MESSAGE_SENDING_FAILED,
 
+    MESSAGE_MAX_ATTEMPTS_REACHED,
+
     MESSAGE_SENT,
 
     MESSAGE_DROPPED,

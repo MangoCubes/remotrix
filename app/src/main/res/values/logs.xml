@@ -13,4 +13,5 @@
     <string name="cannot_load_matrix_client">Message not sent because loading Matrix client failed.</string>
     <string name="cannot_create_room">Message not sent because room for that sender could not be created.</string>
     <string name="cannot_create_child_room">Message not sent because Matrix client cannot create child room.</string>
+    <string name="message_max_attempts_reached">Maximum message sending attempts reached; Message has been dropped.</string>
 </resources>

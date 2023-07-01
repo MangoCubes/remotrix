@@ -90,6 +90,7 @@ fun Logs(
                             MsgStatus.CANNOT_LOAD_MATRIX_CLIENT -> stringResource(R.string.cannot_load_matrix_client)
                             MsgStatus.CANNOT_CREATE_ROOM -> stringResource(R.string.cannot_create_room)
                             MsgStatus.CANNOT_CREATE_CHILD_ROOM -> stringResource(R.string.cannot_create_child_room)
+                            MsgStatus.MESSAGE_MAX_ATTEMPTS_REACHED -> stringResource(R.string.message_max_attempts_reached)
                         }
                         val forwarderInfo = if (log.forwarderId === null) ""
                         else {
