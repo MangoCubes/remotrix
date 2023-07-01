@@ -104,6 +104,7 @@ fun RemotrixApp(
     val openedBefore = settings.getOpenedBefore.collectAsState(initial = null)
     val defaultForwarder = settings.getDefaultForwarder.collectAsState(initial = null)
     val logging = settings.getLogging.collectAsState(initial = null)
+    val enableOnBootMessage = settings.getEnableOnBootMessage.collectAsState(initial = null)
     val navController = rememberNavController()
     RemotrixTheme {
         if (openedBefore.value !== null) NavHost(
@@ -154,7 +155,8 @@ fun RemotrixApp(
                     accounts = accounts,
                     defaultForwarder = defaultForwarder.value ?: -1,
                     goBack = { navController.popBackStack() },
-                    logging = logging.value ?: false
+                    logging = logging.value ?: false,
+                    enableOnBootMessage = enableOnBootMessage.value ?: true
                 )
             }
             composable(route = Destination.Logs.route) {

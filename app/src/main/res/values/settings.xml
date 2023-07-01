@@ -7,4 +7,6 @@
     <string name="delete_log">Delete Log</string>
     <string name="delete_log_desc">Delete all logs stored.</string>
     <string name="log_deleted">Log deleted.</string>
+    <string name="enable_service_ready_message">Enable service ready message</string>
+    <string name="enable_service_ready_message_desc">When your device is ready to receive commands (eg. when booting is complete), you will receive a message indicating this via management room.</string>
 </resources>

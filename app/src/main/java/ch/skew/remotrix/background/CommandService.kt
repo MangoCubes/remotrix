@@ -347,8 +347,10 @@ class CommandService: Service() {
             clients?.forEach {
                 val client = it.value.first
                 client.startSync()
-                client.room.sendMessage(RoomId(it.value.second.managementRoom)) {
-                    text(getString(R.string.ready_to_accept_commands).format(client.userId.full))
+                if (settings.getEnableOnBootMessage.first()){
+                    client.room.sendMessage(RoomId(it.value.second.managementRoom)) {
+                        text(getString(R.string.ready_to_accept_commands).format(client.userId.full))
+                    }
                 }
                 client.room.getTimelineEventsFromNowOn().collect { ev ->
                     if(ev.event.sender.full == client.userId.full) return@collect
