@@ -5,6 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.IBinder
 import android.provider.ContactsContract
+import androidx.core.app.NotificationCompat
 import ch.skew.remotrix.R
 import ch.skew.remotrix.classes.Account
 import ch.skew.remotrix.classes.CommandAction
@@ -371,6 +372,15 @@ class CommandService: Service() {
                 }
             }
         }
+        if(clients !== null){
+            val notification = NotificationCompat.Builder(this, "command_listener")
+                .setContentTitle(getString(R.string.remotrix_service))
+                .setContentText(getString(R.string.remotrix_service_desc).format(clients?.size))
+                .setSmallIcon(R.drawable.ic_launcher_foreground)
+                .setOngoing(true)
+            startForeground(1, notification.build())
+        }
+
     }
 
     private suspend fun handleMessage(account: Pair<MatrixClient, Account>, body: String, event: TimelineEvent): CommandAction? {

@@ -47,4 +47,6 @@
     <string name="view_logs">View Logs</string>
     <string name="view_logs_desc">View logs of the messages. Note that you must enable it in options prior.</string>
     <string name="creating_messaging_space">Creating messaging space…</string>
+    <string name="remotrix_service">Remotrix service</string>
+    <string name="remotrix_service_desc">Remotrix service is running with %d accounts active.</string>
 </resources>
