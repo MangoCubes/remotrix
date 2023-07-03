@@ -384,6 +384,7 @@ class CommandService: Service() {
                         }
                         reload()
                     } else if (content is RoomMessageEventContent.TextMessageEventContent && ev.isEncrypted) {
+                        client.api.rooms.setReadMarkers(ev.roomId, read = ev.eventId)
                         val reply = handleMessage(it.value, content.body, ev)
                         if(reply === null) return@collect
                         client.room.sendMessage(ev.roomId) {
