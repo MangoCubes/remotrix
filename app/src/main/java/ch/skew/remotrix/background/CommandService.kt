@@ -61,13 +61,11 @@ class CommandService: Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when(intent?.action) {
             RELOAD -> {
-                println("Service reloading...")
                 CoroutineScope(Dispatchers.IO).launch {
                     reload()
                 }
             }
             START_ALL -> {
-                println("Service starting...")
                 CoroutineScope(Dispatchers.IO).launch {
                     startAll()
                 }
@@ -342,7 +340,15 @@ class CommandService: Service() {
     }
 
     private suspend fun startAll() {
-        if(this.clients !== null) return
+        if (clients !== null) {
+            if (this.settings.getDebugAlivePing.first()){
+                clients?.forEach {
+                    it.value.first.room.sendMessage(RoomId(it.value.second.managementRoom)) {
+                        text(getString(R.string.service_check_ok))
+                    }
+                }
+            }
+        }
         else load()
     }
     private suspend fun load() {

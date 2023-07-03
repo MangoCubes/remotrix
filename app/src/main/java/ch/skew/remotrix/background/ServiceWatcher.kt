@@ -15,7 +15,6 @@ class ServiceWatcher(
                 action = CommandService.START_ALL
                 context.startService(this)
             }
-        println("Triggering service...")
         return Result.success()
     }
 }
