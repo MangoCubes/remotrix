@@ -59,7 +59,14 @@ class CommandService: Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when(intent?.action) {
+            RELOAD -> {
+                println("Service reloading...")
+                CoroutineScope(Dispatchers.IO).launch {
+                    reload()
+                }
+            }
             START_ALL -> {
+                println("Service starting...")
                 CoroutineScope(Dispatchers.IO).launch {
                     startAll()
                 }
@@ -325,6 +332,9 @@ class CommandService: Service() {
 
     private suspend fun startAll() {
         if(this.clients !== null) return
+        else reload()
+    }
+    private suspend fun reload() {
         clients = mutableMapOf()
         val accounts = Account.from(db.accountDao.getAllAccounts().first())
         for(a in accounts){
@@ -432,6 +442,7 @@ class CommandService: Service() {
         const val STOP_ALL = "STOP_ALL"
         const val SEND_MSG = "SEND_MSG"
         const val SEND_TEST_MSG = "SEND_TEST_MSG"
+        const val RELOAD = "RELOAD"
 
         const val FORWARDER_ID = "FORWARDER_ID"
         const val ROOM_ID = "ROOM_ID"

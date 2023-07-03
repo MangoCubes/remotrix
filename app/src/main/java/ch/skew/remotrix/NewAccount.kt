@@ -1,6 +1,7 @@
 package ch.skew.remotrix
 
 import android.content.Context
+import android.content.Intent
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -26,6 +27,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import ch.skew.remotrix.background.CommandService
 import ch.skew.remotrix.components.LabelledRadioButton
 import ch.skew.remotrix.components.PasswordField
 import ch.skew.remotrix.data.RemotrixDB
@@ -385,6 +387,11 @@ fun onLoginClick(
             Toast.LENGTH_SHORT
         ).show()
         accountDao.activateAccount(id, client.userId.domain, roomId.full, msgSpace.full)
+        Intent(context, CommandService::class.java)
+            .apply {
+                action = CommandService.RELOAD
+                context.startService(this)
+            }
         onClickGoBack()
     }
 }
