@@ -9,6 +9,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
@@ -47,6 +48,7 @@ import ch.skew.remotrix.data.accountDB.AccountViewModel
 import ch.skew.remotrix.data.forwardRuleDB.ForwardRule
 import ch.skew.remotrix.data.logDB.LogData
 import ch.skew.remotrix.data.logDB.LogViewModel
+import ch.skew.remotrix.settings.Settings
 import ch.skew.remotrix.setup.AdditionalInfo
 import ch.skew.remotrix.setup.AskPermissions
 import ch.skew.remotrix.setup.SetManagementSpace
@@ -77,6 +79,7 @@ class MainActivity : ComponentActivity() {
             }
         }
     )
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Intent(applicationContext, CommandService::class.java)
@@ -100,6 +103,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
+@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
 fun RemotrixApp(
     accounts: List<Account>,

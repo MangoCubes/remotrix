@@ -16,3 +16,7 @@ enum class Setup(val route: String) {
     ManagerSpace("manager_space"),
     NextStep("next_step")
 }
+
+enum class Settings(val route: String) {
+    Debug("debug")
+}

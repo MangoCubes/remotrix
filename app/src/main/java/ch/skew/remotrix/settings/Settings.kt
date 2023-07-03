@@ -1,4 +1,4 @@
-package ch.skew.remotrix
+package ch.skew.remotrix.settings
 
 import android.widget.Toast
 import androidx.compose.foundation.clickable
@@ -26,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import ch.skew.remotrix.R
 import ch.skew.remotrix.classes.Account
 import ch.skew.remotrix.components.SelectAccountDialog
 import ch.skew.remotrix.data.RemotrixDB

@@ -9,4 +9,7 @@
     <string name="log_deleted">Log deleted.</string>
     <string name="enable_service_ready_message">Enable service ready message</string>
     <string name="enable_service_ready_message_desc">When your device is ready to receive commands (eg. when booting is complete), you will receive a message indicating this via management room.</string>
+    <string name="debug_settings">Debug Settings</string>
+    <string name="receive_message_on_service_check">Receive message on service check</string>
+    <string name="receive_message_on_service_check_desc">If set, forwarders will send a message whenever the app checks if the service is running.</string>
 </resources>
