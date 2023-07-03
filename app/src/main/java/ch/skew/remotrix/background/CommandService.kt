@@ -106,7 +106,9 @@ class CommandService: Service() {
         clients?.forEach { c ->
             c.value.first.stopSync()
         }
+        clients = null
         scope.cancel()
+        delay(10000)
         scope = CoroutineScope(Dispatchers.IO)
         load()
     }
@@ -373,8 +375,8 @@ class CommandService: Service() {
                     }
                 }
 
+
                 client.room.getTimelineEventsFromNowOn(decryptionTimeout = 10.seconds).collect { ev ->
-                    println("${ev.event.sender.full} | ${client.userId.full} | ${ev.roomId.full} | ${it.value.second.managementRoom}")
                     if(ev.event.sender.full == client.userId.full || ev.roomId.full != it.value.second.managementRoom) return@collect
                     val content = ev.content?.getOrNull()
                     if(content === null) {
@@ -440,6 +442,9 @@ class CommandService: Service() {
                 )
             } else if(args[0] == "!ping") return CommandAction.Reply(getString(R.string.pong))
             else if (args[0] == "!help") return CommandAction.Reply(getString(R.string.command_help_output))
+            else if (args[0] == "!reload") {
+                if (clients !== null) reload()
+            }
             else return CommandAction.Reply(getString(R.string.unknown_command))
         }
         return null//CommandAction.Reaction("✅")
