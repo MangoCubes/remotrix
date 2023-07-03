@@ -146,6 +146,11 @@ fun deleteAccount(
                 matrixClient.api.rooms.leaveRoom(RoomId(account.managementRoom))
                 matrixClient.api.rooms.leaveRoom(RoomId(account.messageSpace))
                 matrixClient.logout()
+                Intent(context, CommandService::class.java)
+                    .apply {
+                        action = CommandService.RELOAD
+                        context.startService(this)
+                    }
                 Toast.makeText(context, context.getString(R.string.logout_successful), Toast.LENGTH_SHORT).show()
             }
             context.filesDir.resolve("clients").resolve("${account.userId}.mv.db").delete()
