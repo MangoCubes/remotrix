@@ -7,6 +7,6 @@
     <string name="error_cannot_kick_user">Error: Cannot kick user %s.</string>
     <string name="ready_to_accept_commands">%s is ready to accept commands. (You can disable this message in the settings)</string>
     <string name="startup_1">This room has been created by %s on device %s. Any non-command messages sent into this room will be sent to %s.</string>
-    <string name="command_help_output">These are the currently available commands:\n\t!close: Close a room in a messaging space. Useful if you received an OTP SMS.\n\t!ping: Check if your phone service is running.</string>
+    <string name="command_help_output">These are the currently available commands:\n\t!close: Close a room in a messaging space. Useful if you received an OTP SMS.\n\t!ping: Check if your phone service is running.\n\t!reload: Reloads Matrix clients on your phone.</string>
     <string name="failed_to_decrypt">Client failed to decrypt message. Client will reload; please try again.</string>
 </resources>

@@ -373,10 +373,8 @@ class CommandService: Service() {
                         text(getString(R.string.ready_to_accept_commands).format(client.userId.full))
                     }
                 }
-
-
                 client.room.getTimelineEventsFromNowOn(decryptionTimeout = 10.seconds).collect { ev ->
-                    if(ev.event.sender.full == client.userId.full || ev.roomId.full != it.value.second.managementRoom) return@collect
+                    if(ev.event.sender.full == client.userId.full) return@collect
                     val content = ev.content?.getOrNull()
                     if(content === null) {
                         client.room.sendMessage(RoomId(it.value.second.managementRoom)) {
