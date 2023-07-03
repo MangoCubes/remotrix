@@ -365,9 +365,11 @@ class CommandService: Service() {
                 clients?.put(a.id, Pair(client, a))
             }
         }
+
         CoroutineScope(Dispatchers.IO).launch {
             clients?.forEach {
                 val client = it.value.first
+                while(!client.initialSyncDone.first()) delay(1000)
                 if (settings.getEnableOnBootMessage.first()){
                     client.room.sendMessage(RoomId(it.value.second.managementRoom)) {
                         text(getString(R.string.ready_to_accept_commands).format(client.userId.full))
