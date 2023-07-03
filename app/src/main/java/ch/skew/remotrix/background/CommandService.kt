@@ -381,7 +381,7 @@ class CommandService: Service() {
                         client.room.sendMessage(RoomId(it.value.second.managementRoom)) {
                             text(getString(R.string.failed_to_decrypt))
                         }
-//                        reload()
+                        reload()
                     } else if (content is RoomMessageEventContent.TextMessageEventContent && ev.isEncrypted) {
                         val reply = handleMessage(it.value, content.body, ev)
                         if(reply === null) return@collect
