@@ -43,9 +43,10 @@ import net.folivo.trixnity.core.model.events.m.room.RoomMessageEventContent
 import net.folivo.trixnity.core.model.events.m.space.ChildEventContent
 import net.folivo.trixnity.core.model.events.m.space.ParentEventContent
 import okio.Path.Companion.toPath
+import kotlin.time.Duration.Companion.seconds
 
 class CommandService: Service() {
-    private val scope = CoroutineScope(Dispatchers.IO)
+    private var scope = CoroutineScope(Dispatchers.IO)
     // Null indicates that service has not been set up yet
     private var clients: MutableMap<Int, Pair<MatrixClient, Account>>? = null
     private lateinit var settings: RemotrixSettings
@@ -99,6 +100,15 @@ class CommandService: Service() {
             STOP_ALL -> stopAll()
         }
         return super.onStartCommand(intent, flags, startId)
+    }
+
+    private suspend fun reload() {
+        clients?.forEach { c ->
+            c.value.first.stopSync()
+        }
+        scope.cancel()
+        scope = CoroutineScope(Dispatchers.IO)
+        load()
     }
 
     private suspend fun sendTestMsg(id: Int, to: RoomId, payload: String, log: Boolean) {
@@ -332,9 +342,9 @@ class CommandService: Service() {
 
     private suspend fun startAll() {
         if(this.clients !== null) return
-        else reload()
+        else load()
     }
-    private suspend fun reload() {
+    private suspend fun load() {
         clients = mutableMapOf()
         val accounts = Account.from(db.accountDao.getAllAccounts().first())
         for(a in accounts){
@@ -350,22 +360,29 @@ class CommandService: Service() {
                 scope = scope
             ).getOrNull()
             if (client !== null) {
+                client.startSync()
                 clients?.put(a.id, Pair(client, a))
             }
         }
         CoroutineScope(Dispatchers.IO).launch {
             clients?.forEach {
                 val client = it.value.first
-                client.startSync()
                 if (settings.getEnableOnBootMessage.first()){
                     client.room.sendMessage(RoomId(it.value.second.managementRoom)) {
                         text(getString(R.string.ready_to_accept_commands).format(client.userId.full))
                     }
                 }
-                client.room.getTimelineEventsFromNowOn().collect { ev ->
-                    if(ev.event.sender.full == client.userId.full) return@collect
+
+                client.room.getTimelineEventsFromNowOn(decryptionTimeout = 10.seconds).collect { ev ->
+                    println("${ev.event.sender.full} | ${client.userId.full} | ${ev.roomId.full} | ${it.value.second.managementRoom}")
+                    if(ev.event.sender.full == client.userId.full || ev.roomId.full != it.value.second.managementRoom) return@collect
                     val content = ev.content?.getOrNull()
-                    if (content is RoomMessageEventContent.TextMessageEventContent && ev.isEncrypted) {
+                    if(content === null) {
+                        client.room.sendMessage(RoomId(it.value.second.managementRoom)) {
+                            text(getString(R.string.failed_to_decrypt))
+                        }
+//                        reload()
+                    } else if (content is RoomMessageEventContent.TextMessageEventContent && ev.isEncrypted) {
                         val reply = handleMessage(it.value, content.body, ev)
                         if(reply === null) return@collect
                         client.room.sendMessage(ev.roomId) {
