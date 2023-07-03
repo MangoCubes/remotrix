@@ -155,7 +155,7 @@ class CommandService: Service() {
 
     private suspend fun sendMsg(msg: SMSMsg, log: Boolean) {
         if(clients === null) {
-            startAll()
+            load()
         }
         val currentLog = if (log) db.logDao.writeAhead(2, msg.payload) else -1
         // Default account is loaded up from the settings.
