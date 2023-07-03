@@ -304,12 +304,11 @@ class CommandService: Service() {
         } else roomId = RoomId(sendTo)
         // If this was null, it means that this entry was not present in the database. It is entered here.
         if (sendTo === null) {
+            client.room.sendMessage(roomId) {
+                text(getString(R.string.startup_1).format(client.userId.full, client.deviceId, msg.sender))
+            }
             db.roomIdDao.insert(RoomIdData(msg.sender, sendAs, roomId.full))
             client.api.rooms.inviteUser(roomId, UserId(managerId))
-        }
-        client.room.sendMessage(roomId) {
-            text(getString(R.string.startup_1).format(client.userId.full, client.deviceId))
-            text(getString(R.string.startup_2).format(msg.sender))
         }
         val tid = client.room.sendMessage(roomId) {
             text(msg.payload)
