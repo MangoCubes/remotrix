@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.Start
 import androidx.compose.material.icons.filled.Storage
@@ -41,7 +42,8 @@ fun Settings(
     defaultForwarder: Int = -1,
     logging: Boolean = true,
     enableOnBootMessage: Boolean = true,
-    goBack: () -> Unit = {}
+    goBack: () -> Unit = {},
+    debugMenu: () -> Unit = {}
 ) {
     val open = remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
@@ -120,6 +122,17 @@ fun Settings(
                     Toast.makeText(context, context.getString(R.string.log_deleted), Toast.LENGTH_SHORT).show()
                     scope.launch { RemotrixDB.getInstance(context).logDao.deleteAll() }
                 }
+            )
+            ListItem(
+                headlineText = { Text(stringResource(R.string.debug_menu)) },
+                supportingText = { Text(stringResource(R.string.debug_menu_desc)) },
+                leadingContent = {
+                    Icon(
+                        Icons.Filled.BugReport,
+                        contentDescription = stringResource(R.string.debug_menu)
+                    )
+                },
+                modifier = Modifier.clickable { debugMenu() }
             )
         }
     }

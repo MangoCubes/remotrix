@@ -40,6 +40,7 @@ import androidx.navigation.compose.rememberNavController
 import ch.skew.remotrix.background.CommandService
 import ch.skew.remotrix.classes.Account
 import ch.skew.remotrix.classes.Destination
+import ch.skew.remotrix.classes.SettingsDest
 import ch.skew.remotrix.classes.Setup
 import ch.skew.remotrix.components.ListHeader
 import ch.skew.remotrix.data.RemotrixDB
@@ -48,6 +49,7 @@ import ch.skew.remotrix.data.accountDB.AccountViewModel
 import ch.skew.remotrix.data.forwardRuleDB.ForwardRule
 import ch.skew.remotrix.data.logDB.LogData
 import ch.skew.remotrix.data.logDB.LogViewModel
+import ch.skew.remotrix.settings.DebugSettings
 import ch.skew.remotrix.settings.Settings
 import ch.skew.remotrix.setup.AdditionalInfo
 import ch.skew.remotrix.setup.AskPermissions
@@ -112,8 +114,9 @@ fun RemotrixApp(
     val settings = RemotrixSettings(LocalContext.current)
     val openedBefore = settings.getOpenedBefore.collectAsState(initial = null)
     val defaultForwarder = settings.getDefaultForwarder.collectAsState(initial = null)
-    val logging = settings.getLogging.collectAsState(initial = null)
     val enableOnBootMessage = settings.getEnableOnBootMessage.collectAsState(initial = null)
+    val logging = settings.getLogging.collectAsState(initial = null)
+    val debugAlivePing = settings.getDebugAlivePing.collectAsState(initial = null)
     val navController = rememberNavController()
     RemotrixTheme {
         if (openedBefore.value !== null) NavHost(
@@ -159,14 +162,23 @@ fun RemotrixApp(
                     AdditionalInfo { navController.navigate(Destination.Home.route) }
                 }
             }
-            composable(route = Destination.Settings.route) {
-                Settings(
-                    accounts = accounts,
-                    defaultForwarder = defaultForwarder.value ?: -1,
-                    goBack = { navController.popBackStack() },
-                    logging = logging.value ?: false,
-                    enableOnBootMessage = enableOnBootMessage.value ?: true
-                )
+            navigation(route = Destination.Settings.route, startDestination = SettingsDest.Default.route) {
+                composable(route = SettingsDest.Default.route) {
+                    Settings(
+                        accounts,
+                        defaultForwarder.value ?: -1,
+                        logging.value ?: false,
+                        enableOnBootMessage.value ?: true,
+                        { navController.popBackStack() },
+                        { navController.navigate(SettingsDest.Debug.route) }
+                    )
+                }
+                composable(route = SettingsDest.Debug.route) {
+                    DebugSettings(
+                        { navController.popBackStack() },
+                        debugAlivePing.value ?: false
+                    )
+                }
             }
             composable(route = Destination.Logs.route) {
                 Logs(

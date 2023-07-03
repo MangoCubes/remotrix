@@ -17,6 +17,7 @@ enum class Setup(val route: String) {
     NextStep("next_step")
 }
 
-enum class Settings(val route: String) {
+enum class SettingsDest(val route: String) {
+    Default("default"),
     Debug("debug")
 }

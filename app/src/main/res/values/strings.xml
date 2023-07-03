@@ -49,4 +49,5 @@
     <string name="creating_messaging_space">Creating messaging space…</string>
     <string name="remotrix_service">Remotrix service</string>
     <string name="remotrix_service_desc">Remotrix service is running with %d accounts active.</string>
+    <string name="debug_menu_desc">For more verbose output for debugging</string>
 </resources>
