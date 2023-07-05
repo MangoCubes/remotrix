@@ -30,6 +30,7 @@ import net.folivo.trixnity.client.media.okio.OkioMediaStore
 import net.folivo.trixnity.client.room
 import net.folivo.trixnity.client.room.message.reply
 import net.folivo.trixnity.client.room.message.text
+import net.folivo.trixnity.client.room.message.thread
 import net.folivo.trixnity.client.store.TimelineEvent
 import net.folivo.trixnity.client.store.isEncrypted
 import net.folivo.trixnity.client.store.repository.realm.createRealmRepositoriesModule
@@ -394,11 +395,12 @@ class CommandService: Service() {
                         client.api.rooms.setReadMarkers(ev.roomId, read = ev.eventId)
                         val reply = handleMessage(it.value, content.body, ev)
                         if(reply === null) return@collect
+
                         client.room.sendMessage(ev.roomId) {
                             when(reply) {
-                                is CommandAction.Reaction -> {
-                                    text(reply.reaction)
-                                    // TODO: Use reaction to let user know message has been sent successfully
+                                is CommandAction.Thread -> {
+                                    text(reply.msg)
+                                    thread(ev)
                                 }
                                 is CommandAction.Reply -> {
                                     text(reply.msg)
@@ -457,7 +459,13 @@ class CommandService: Service() {
             }
             else return CommandAction.Reply(getString(R.string.unknown_command))
         }
-        this.sendSMS(account.second.id, event.roomId, body)
+        if(event.roomId.full != account.second.managementRoom) {
+            return CommandAction.Thread(
+                if (this.sendSMS(account.second.id, event.roomId, body))
+                    getString(R.string.message_sent_successfully)
+                else getString(R.string.error_message_sending_failed)
+            )
+        }
         return null
     }
 

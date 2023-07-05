@@ -103,9 +103,9 @@ fun AccountList(
                     ) {
                         Text(
                             buildAnnotatedString {
-                                append("You have not set any default forwarder or rules in the settings. ")
+                                append(stringResource(R.string.no_default_forwarder_1))
                                 withStyle(style = SpanStyle(color = Color.Red)) {
-                                    append("If you do not set one, this app will not forward any messages!")
+                                    append(stringResource(R.string.no_default_forwarder_2))
                                 }
                             }
                         )
