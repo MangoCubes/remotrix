@@ -38,7 +38,8 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.ContextCompat.startActivity
 
 enum class CurrentlyGranting {
-    SMS,
+    SMS_READ,
+    SMS_SEND,
     CONTACT,
     NOTIFICATION
 }
@@ -58,13 +59,15 @@ fun AskPermissions(
         }
     ) { padding ->
         val context = LocalContext.current
-        val smsGranted = ContextCompat.checkSelfPermission(context, Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED
+        val smsReadGranted = ContextCompat.checkSelfPermission(context, Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED
         val packageName = context.packageName
         val pm = context.getSystemService(POWER_SERVICE) as PowerManager
         val batteryGranted = pm.isIgnoringBatteryOptimizations(packageName)
+        val smsSendGranted = ContextCompat.checkSelfPermission(context, Manifest.permission.SEND_SMS) == PackageManager.PERMISSION_GRANTED
         val notificationGranted = ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
         val contactGranted = ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED
-        val smsAlreadyGranted = remember { mutableStateOf(smsGranted) }
+        val smsReadAlreadyGranted = remember { mutableStateOf(smsReadGranted) }
+        val smsSendAlreadyGranted = remember { mutableStateOf(smsSendGranted) }
         val notificationAlreadyGranted = remember { mutableStateOf(notificationGranted) }
         val contactAlreadyGranted = remember { mutableStateOf(contactGranted) }
         val currentlyGranting = remember { mutableStateOf<CurrentlyGranting?>(null) }
@@ -73,11 +76,20 @@ fun AskPermissions(
         ) { isGranted ->
             if (isGranted) {
                 when (currentlyGranting.value) {
-                    CurrentlyGranting.SMS -> {
-                        smsAlreadyGranted.value = true
+                    CurrentlyGranting.SMS_READ -> {
+                        smsReadAlreadyGranted.value = true
                         Toast.makeText(
                             context,
-                            "SMS permission granted.",
+                            "SMS reading permission granted.",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+
+                    CurrentlyGranting.SMS_SEND -> {
+                        smsSendAlreadyGranted.value = true
+                        Toast.makeText(
+                            context,
+                            "SMS sending permission granted.",
                             Toast.LENGTH_SHORT
                         ).show()
                     }
@@ -104,10 +116,18 @@ fun AskPermissions(
                 }
             } else {
                 when (currentlyGranting.value) {
-                    CurrentlyGranting.SMS -> {
+                    CurrentlyGranting.SMS_READ -> {
                         Toast.makeText(
                             context,
-                            "SMS permission denied.",
+                            "SMS reading permission denied.",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+
+                    CurrentlyGranting.SMS_SEND -> {
+                        Toast.makeText(
+                            context,
+                            "SMS sending permission denied.",
                             Toast.LENGTH_SHORT
                         ).show()
                     }
@@ -167,12 +187,24 @@ fun AskPermissions(
                     .fillMaxWidth()
                     .padding(horizontal = 10.dp),
                 onClick = {
-                    currentlyGranting.value = CurrentlyGranting.SMS
+                    currentlyGranting.value = CurrentlyGranting.SMS_READ
                     launcher.launch(Manifest.permission.RECEIVE_SMS)
                 },
-                enabled = !smsAlreadyGranted.value
+                enabled = !smsReadAlreadyGranted.value
             ) {
-                Text("Grant SMS access")
+                Text("Grant SMS read permission")
+            }
+            Button(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 10.dp),
+                onClick = {
+                    currentlyGranting.value = CurrentlyGranting.SMS_SEND
+                    launcher.launch(Manifest.permission.SEND_SMS)
+                },
+                enabled = !smsSendAlreadyGranted.value
+            ) {
+                Text("Grant SMS sending permission")
             }
             Button(
                 modifier = Modifier
@@ -240,7 +272,7 @@ fun AskPermissions(
                     .fillMaxWidth()
                     .padding(horizontal = 10.dp),
                 onClick = nextPage,
-                enabled = smsAlreadyGranted.value
+                enabled = smsReadAlreadyGranted.value && smsSendAlreadyGranted.value
             ) {
                 Text("Done")
             }
