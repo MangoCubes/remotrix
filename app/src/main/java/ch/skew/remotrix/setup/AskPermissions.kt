@@ -1,8 +1,14 @@
 package ch.skew.remotrix.setup
 
 import android.Manifest
+import android.annotation.SuppressLint
+import android.content.Context.POWER_SERVICE
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
+import android.os.PowerManager
+import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -29,12 +35,14 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.core.content.ContextCompat.startActivity
 
 enum class CurrentlyGranting {
     SMS,
     CONTACT,
     NOTIFICATION
 }
+@SuppressLint("BatteryLife")
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -51,9 +59,11 @@ fun AskPermissions(
     ) { padding ->
         val context = LocalContext.current
         val smsGranted = ContextCompat.checkSelfPermission(context, Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED
+        val packageName = context.packageName
+        val pm = context.getSystemService(POWER_SERVICE) as PowerManager
+        val batteryGranted = pm.isIgnoringBatteryOptimizations(packageName)
         val notificationGranted = ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
         val contactGranted = ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED
-        val allowNext = remember { mutableStateOf(smsGranted) }
         val smsAlreadyGranted = remember { mutableStateOf(smsGranted) }
         val notificationAlreadyGranted = remember { mutableStateOf(notificationGranted) }
         val contactAlreadyGranted = remember { mutableStateOf(contactGranted) }
@@ -64,7 +74,6 @@ fun AskPermissions(
             if (isGranted) {
                 when (currentlyGranting.value) {
                     CurrentlyGranting.SMS -> {
-                        allowNext.value = true
                         smsAlreadyGranted.value = true
                         Toast.makeText(
                             context,
@@ -91,6 +100,7 @@ fun AskPermissions(
                         ).show()
                     }
                     null -> {}
+
                 }
             } else {
                 when (currentlyGranting.value) {
@@ -137,10 +147,19 @@ fun AskPermissions(
                                 append("SMS access")
                             }
 
+                            append(" for both sending and receiving. This is obviously needed because this app is supposed to forward incoming SMS via Matrix and send back using SMS.")
+                        }
+                    )
+                    Text(
+                        buildAnnotatedString {
+                            append("This app also needs to ")
+                            withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
+                                append("bypass battery optimisation")
+                            }
                             append(".")
                         }
                     )
-                    Text("This is obviously needed because this app is supposed to forward incoming SMS via Matrix.")
+                    Text("App needs to listen to messages sent into Matrix chatroom to act upon them.")
                 }
             )
             Button(
@@ -154,6 +173,20 @@ fun AskPermissions(
                 enabled = !smsAlreadyGranted.value
             ) {
                 Text("Grant SMS access")
+            }
+            Button(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 10.dp),
+                onClick = {
+                    val intent = Intent()
+                    intent.action = Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
+                    intent.data = Uri.parse("package:$packageName")
+                    startActivity(context, intent, null)
+                },
+                enabled = !batteryGranted
+            ) {
+                Text("Bypass battery optimisation")
             }
             ListItem(
                 headlineText = { Text("Optional Permissions") },
@@ -207,7 +240,7 @@ fun AskPermissions(
                     .fillMaxWidth()
                     .padding(horizontal = 10.dp),
                 onClick = nextPage,
-                enabled = allowNext.value
+                enabled = smsAlreadyGranted.value
             ) {
                 Text("Done")
             }
