@@ -153,6 +153,122 @@ class CommandService: Service() {
         )
     }
 
+    private suspend fun createRoom(client: MatrixClient, account: Account, sender: String, currentLog: Long): RoomId? {
+        // The "via" part of m.space.child/parent event.
+        var picUri: Uri? = null
+        val via = setOf(client.userId.domain)
+        var roomName = sender
+        val senderNumber = sender.filter { it.isDigit() }
+        val contacts = applicationContext.contentResolver.query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, null, null, null, null)
+        if (contacts !== null) {
+            while (contacts.moveToNext()){
+                val numberIndex = contacts.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER)
+                if (numberIndex < 0) continue
+                val current = contacts.getString(numberIndex).filter { it.isDigit() }
+                if(current == senderNumber) {
+                    val nameIndex = contacts.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME)
+                    val pictureIndex = contacts.getColumnIndex(ContactsContract.CommonDataKinds.Phone.PHOTO_URI)
+                    if(pictureIndex >= 0) {
+                        val uri = contacts.getString(pictureIndex)
+                        if (uri !== null) picUri = Uri.parse(uri)
+                    }
+                    if(nameIndex >= 0){
+                        val name = contacts.getString(nameIndex)
+                        if (name !== null) roomName = name
+                    }
+                    break
+                }
+            }
+            contacts.close()
+        }
+        val initialStates = mutableListOf(
+            // Initial event for making this room child of the message room
+            Event.InitialStateEvent(
+                content = ParentEventContent(true, via),
+                stateKey = account.messageSpace
+            ),
+            // Initial event for making this room restricted to the message room members
+            Event.InitialStateEvent(
+                content = JoinRulesEventContent(
+                    joinRule = JoinRulesEventContent.JoinRule.Restricted,
+                    allow = setOf(
+                        JoinRulesEventContent.AllowCondition(RoomId(account.messageSpace), JoinRulesEventContent.AllowCondition.AllowConditionType.RoomMembership)
+                    )
+                ),
+                stateKey = ""
+            ),
+            // History is in SHARED mode, which allows the manager to view messages sent after invite to users is sent.
+            Event.InitialStateEvent(
+                content = HistoryVisibilityEventContent(
+                    HistoryVisibilityEventContent.HistoryVisibility.INVITED),
+                stateKey = ""
+            )
+        )
+        if(picUri !== null){
+            val stream = applicationContext.contentResolver.openInputStream(picUri)
+            if(stream !== null){
+                val length = withContext(Dispatchers.IO) {
+                    stream.available()
+                }
+                client.api.media.upload(
+                    Media(
+                        ByteReadChannel(stream.readBytes()),
+                        contentLength = length.toLong(),
+                        filename = roomName,
+                        contentType = ContentType("image", "jpeg")
+                    )
+                ).fold(
+                    {
+                        initialStates.add(
+                            Event.InitialStateEvent(
+                                content = AvatarEventContent(
+                                    it.contentUri
+                                ),
+                                stateKey = ""
+                            )
+                        )
+                    },
+                    {
+
+                    }
+                )
+                withContext(Dispatchers.IO) {
+                    stream.close()
+                }
+            }
+        }
+        val roomId = client.api.rooms.createRoom(
+            name = roomName,
+            topic = applicationContext.getString(R.string.msg_room_desc).format(sender),
+            initialState = initialStates
+        ).getOrElse {
+            if(currentLog != -1L) db.logDao.setFailure(
+                currentLog,
+                MsgStatus.CANNOT_CREATE_ROOM,
+                it.message,
+                account.id
+            )
+            return null
+        }
+        // This state ensures that the parent room recognises the child room as its child.
+        client.api.rooms.sendStateEvent(
+            RoomId(account.messageSpace),
+            ChildEventContent(suggested = false, via = via),
+            roomId.full
+        ).getOrElse {
+            // Forwarder leaves the room to ensure it is removed in case state cannot be set.
+            client.api.rooms.leaveRoom(roomId)
+            if(currentLog != -1L) db.logDao.setFailure(
+                currentLog,
+                MsgStatus.CANNOT_CREATE_CHILD_ROOM,
+                it.message,
+                account.id
+            )
+            return null
+        }
+        return roomId
+    }
+
     private suspend fun sendMsg(msg: SMSMsg, log: Boolean) {
         if(clients === null) {
             load()
@@ -173,8 +289,8 @@ class CommandService: Service() {
         }
         // If match is not found, default account is chosen.
         val sendAs = if (match !== null) match else defaultAccount
-        val client = clients?.get(sendAs)?.first
-        if(client === null) {
+        val pair = clients?.get(sendAs)
+        if(pair === null) {
             if (currentLog != -1L) db.logDao.setFailure(
                 currentLog,
                 MsgStatus.NO_SUITABLE_FORWARDER,
@@ -183,125 +299,12 @@ class CommandService: Service() {
             )
             return
         }
-        val msgSpace = db.accountDao.getMessageSpace(sendAs)
+        val client = pair.first
         val sendTo = db.roomIdDao.getDestRoom(msg.sender, sendAs)
         val managerId = settings.getManagerId.first()
-        val roomId: RoomId
-        var picUri: Uri? = null
         // If an appropriate room does not exist for a given forwarder-SMS sender is not found, a new room is created.
-        if(sendTo === null) {
-            // The "via" part of m.space.child/parent event.
-            val via = setOf(client.userId.domain)
-            var roomName = msg.sender
-            val senderNumber = msg.sender.filter { it.isDigit() }
-            val contacts = applicationContext.contentResolver.query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, null, null, null, null)
-            if (contacts !== null) {
-                while (contacts.moveToNext()){
-                    val numberIndex = contacts.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER)
-                    if (numberIndex < 0) continue
-                    val current = contacts.getString(numberIndex).filter { it.isDigit() }
-                    if(current == senderNumber) {
-                        val nameIndex = contacts.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME)
-                        val pictureIndex = contacts.getColumnIndex(ContactsContract.CommonDataKinds.Phone.PHOTO_URI)
-                        if(pictureIndex >= 0) {
-                            val uri = contacts.getString(pictureIndex)
-                            if (uri !== null) picUri = Uri.parse(uri)
-                        }
-                        if(nameIndex >= 0){
-                            val name = contacts.getString(nameIndex)
-                            if (name !== null) roomName = name
-                        }
-                        break
-                    }
-                }
-                contacts.close()
-            }
-            val initialStates = mutableListOf(
-                // Initial event for making this room child of the message room
-                Event.InitialStateEvent(
-                    content = ParentEventContent(true, via),
-                    stateKey = msgSpace
-                ),
-                // Initial event for making this room restricted to the message room members
-                Event.InitialStateEvent(
-                    content = JoinRulesEventContent(
-                        joinRule = JoinRulesEventContent.JoinRule.Restricted,
-                        allow = setOf(
-                            JoinRulesEventContent.AllowCondition(RoomId(msgSpace), JoinRulesEventContent.AllowCondition.AllowConditionType.RoomMembership)
-                        )
-                    ),
-                    stateKey = ""
-                ),
-                // History is in SHARED mode, which allows the manager to view messages sent after invite to users is sent.
-                Event.InitialStateEvent(
-                    content = HistoryVisibilityEventContent(
-                        HistoryVisibilityEventContent.HistoryVisibility.INVITED),
-                    stateKey = ""
-                )
-            )
-            if(picUri !== null){
-                val stream = applicationContext.contentResolver.openInputStream(picUri)
-                if(stream !== null){
-                    val length = withContext(Dispatchers.IO) {
-                        stream.available()
-                    }
-                    client.api.media.upload(
-                        Media(
-                            ByteReadChannel(stream.readBytes()),
-                            contentLength = length.toLong(),
-                            filename = roomName,
-                            contentType = ContentType("image", "jpeg")
-                        )
-                    ).fold(
-                        {
-                            initialStates.add(
-                                Event.InitialStateEvent(
-                                    content = AvatarEventContent(
-                                        it.contentUri
-                                    ),
-                                    stateKey = ""
-                                )
-                            )
-                        },
-                        {
-
-                        }
-                    )
-                    withContext(Dispatchers.IO) {
-                        stream.close()
-                    }
-                }
-            }
-            roomId = client.api.rooms.createRoom(
-                name = roomName,
-                topic = applicationContext.getString(R.string.msg_room_desc).format(msg.sender),
-                initialState = initialStates
-            ).getOrElse {
-                if(currentLog != -1L) db.logDao.setFailure(
-                    currentLog,
-                    MsgStatus.CANNOT_CREATE_ROOM,
-                    it.message,
-                    sendAs
-                )
-                return
-            }
-            // This state ensures that the parent room recognises the child room as its child.
-            client.api.rooms.sendStateEvent(
-                RoomId(msgSpace),
-                ChildEventContent(suggested = false, via = via),
-                roomId.full
-            ).getOrElse {
-                // Forwarder leaves the room to ensure it is removed in case state cannot be set.
-                client.api.rooms.leaveRoom(roomId)
-                if(currentLog != -1L) db.logDao.setFailure(
-                    currentLog,
-                    MsgStatus.CANNOT_CREATE_CHILD_ROOM,
-                    it.message,
-                    sendAs
-                )
-                return
-            }
-        } else roomId = RoomId(sendTo)
+        val roomId = if (sendTo === null) this.createRoom(client, pair.second, msg.sender, currentLog) else RoomId(sendTo)
+        if(roomId === null) return
         // If this was null, it means that this entry was not present in the database. It is entered here.
         if (sendTo === null) {
             client.room.sendMessage(roomId) {
@@ -456,8 +459,7 @@ class CommandService: Service() {
             else if (args[0] == "!help") return CommandAction.Reply(getString(R.string.command_help_output))
             else if (args[0] == "!reload") {
                 if (clients !== null) reload()
-            }
-            else return CommandAction.Reply(getString(R.string.unknown_command))
+            } else return CommandAction.Reply(getString(R.string.unknown_command))
         }
         if(event.roomId.full != account.second.managementRoom) {
             return CommandAction.Thread(
