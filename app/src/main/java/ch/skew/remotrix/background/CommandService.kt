@@ -430,6 +430,7 @@ class CommandService: Service() {
     }
 
     private suspend fun handleMessage(account: Pair<MatrixClient, Account>, body: String, event: TimelineEvent): CommandAction? {
+        val client = account.first
         if(body.startsWith("!")){
             val args = body.split(' ')
             if(args[0] == "!say") {
@@ -440,7 +441,6 @@ class CommandService: Service() {
             } else if(args[0] == "!close") {
                 if (event.roomId.full == account.second.managementRoom)
                     return CommandAction.Reply(getString(R.string.cannot_delete_management_room))
-                val client = account.first
                 client.api.rooms.getMembers(event.roomId).fold(
                     {
                         it.forEach { user ->
@@ -462,6 +462,24 @@ class CommandService: Service() {
             else if (args[0] == "!help") return CommandAction.Reply(getString(R.string.command_help_output))
             else if (args[0] == "!reload") {
                 if (clients !== null) reload()
+            } else if(args[0] == "!new") {
+                if(args.size == 1) return CommandAction.Reply(getString(R.string.error_sms_receiver_not_specified))
+                //TODO: Sanitise input so that only numbers are accepted
+                //TODO: Fix duplicate room
+                this.createRoom(client, account.second, args[1]).fold(
+                    {
+                        val managerId = settings.getManagerId.first()
+                        client.room.sendMessage(it) {
+                            text(getString(R.string.startup_1).format(client.userId.full, client.deviceId, args[1]))
+                        }
+                        db.roomIdDao.insert(RoomIdData(args[1], account.second.id, it.full))
+                        client.api.rooms.inviteUser(it, UserId(managerId))
+                    },
+                    {
+                        return CommandAction.Reply(getString(R.string.error_cannot_create_messaging_room))
+                    }
+                )
+
             } else return CommandAction.Reply(getString(R.string.unknown_command))
         }
         if(event.roomId.full != account.second.managementRoom) {
