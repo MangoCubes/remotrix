@@ -5,6 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.IBinder
 import android.provider.ContactsContract
+import android.telephony.SmsManager
 import androidx.core.app.NotificationCompat
 import ch.skew.remotrix.R
 import ch.skew.remotrix.classes.Account
@@ -424,7 +425,8 @@ class CommandService: Service() {
         if(body.startsWith("!")){
             val args = body.split(' ')
             if(args[0] == "!say") {
-                return null//CommandAction.Reaction("✅")
+                this.sendSMS(account.second.id, event.roomId, body.drop(5))
+                return null
             } else if(args[0] == "!close") {
                 if (event.roomId.full == account.second.managementRoom)
                     return CommandAction.Reply(getString(R.string.cannot_delete_management_room))
@@ -453,7 +455,18 @@ class CommandService: Service() {
             }
             else return CommandAction.Reply(getString(R.string.unknown_command))
         }
-        return null//CommandAction.Reaction("✅")
+        this.sendSMS(account.second.id, event.roomId, body)
+        return null
+    }
+
+    private suspend fun sendSMS(sender: Int, roomId: RoomId, payload: String) {
+        val to = this.db.roomIdDao.getPhoneNumber(roomId.full, sender)
+        if(to === null) {
+            //TODO
+        } else {
+            val sms = applicationContext.getSystemService(SmsManager::class.java)
+            sms.sendTextMessage(to, null, payload, null, null)
+        }
     }
 
     override fun onDestroy() {
