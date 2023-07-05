@@ -10,6 +10,7 @@ import androidx.core.app.NotificationCompat
 import ch.skew.remotrix.R
 import ch.skew.remotrix.classes.Account
 import ch.skew.remotrix.classes.CommandAction
+import ch.skew.remotrix.classes.RoomCreationError
 import ch.skew.remotrix.classes.SMSMsg
 import ch.skew.remotrix.data.RemotrixDB
 import ch.skew.remotrix.data.RemotrixSettings
@@ -153,7 +154,7 @@ class CommandService: Service() {
         )
     }
 
-    private suspend fun createRoom(client: MatrixClient, account: Account, sender: String, currentLog: Long): RoomId? {
+    private suspend fun createRoom(client: MatrixClient, account: Account, sender: String): Result<RoomId> {
         // The "via" part of m.space.child/parent event.
         var picUri: Uri? = null
         val via = setOf(client.userId.domain)
@@ -242,13 +243,7 @@ class CommandService: Service() {
             topic = applicationContext.getString(R.string.msg_room_desc).format(sender),
             initialState = initialStates
         ).getOrElse {
-            if(currentLog != -1L) db.logDao.setFailure(
-                currentLog,
-                MsgStatus.CANNOT_CREATE_ROOM,
-                it.message,
-                account.id
-            )
-            return null
+            return Result.failure(RoomCreationError(it, MsgStatus.CANNOT_CREATE_ROOM))
         }
         // This state ensures that the parent room recognises the child room as its child.
         client.api.rooms.sendStateEvent(
@@ -258,15 +253,9 @@ class CommandService: Service() {
         ).getOrElse {
             // Forwarder leaves the room to ensure it is removed in case state cannot be set.
             client.api.rooms.leaveRoom(roomId)
-            if(currentLog != -1L) db.logDao.setFailure(
-                currentLog,
-                MsgStatus.CANNOT_CREATE_CHILD_ROOM,
-                it.message,
-                account.id
-            )
-            return null
+            return Result.failure(RoomCreationError(it, MsgStatus.CANNOT_CREATE_CHILD_ROOM))
         }
-        return roomId
+        return Result.success(roomId)
     }
 
     private suspend fun sendMsg(msg: SMSMsg, log: Boolean) {
@@ -303,8 +292,22 @@ class CommandService: Service() {
         val sendTo = db.roomIdDao.getDestRoom(msg.sender, sendAs)
         val managerId = settings.getManagerId.first()
         // If an appropriate room does not exist for a given forwarder-SMS sender is not found, a new room is created.
-        val roomId = if (sendTo === null) this.createRoom(client, pair.second, msg.sender, currentLog) else RoomId(sendTo)
-        if(roomId === null) return
+        val roomId = if (sendTo === null) {
+            this.createRoom(client, pair.second, msg.sender).fold(
+                {
+                    it
+                },
+                {
+                    if (currentLog != -1L) db.logDao.setFailure(
+                        currentLog,
+                        if (it is RoomCreationError) it.error else MsgStatus.CANNOT_CREATE_ROOM,
+                        null,
+                        null
+                    )
+                    return
+                }
+            )
+        } else RoomId(sendTo)
         // If this was null, it means that this entry was not present in the database. It is entered here.
         if (sendTo === null) {
             client.room.sendMessage(roomId) {
