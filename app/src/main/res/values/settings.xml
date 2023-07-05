@@ -13,4 +13,7 @@
     <string name="receive_message_on_service_check">Receive message on service check</string>
     <string name="receive_message_on_service_check_desc">If set, forwarders will send a message whenever the app checks if the service is running.</string>
     <string name="debug_menu">Debug Menu</string>
+    <string name="debug">Debug</string>
+    <string name="accounts">Accounts</string>
+    <string name="logging">Logging</string>
 </resources>

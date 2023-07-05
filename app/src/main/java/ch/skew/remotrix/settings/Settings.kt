@@ -29,6 +29,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import ch.skew.remotrix.R
 import ch.skew.remotrix.classes.Account
+import ch.skew.remotrix.components.ListHeader
 import ch.skew.remotrix.components.SelectAccountDialog
 import ch.skew.remotrix.data.RemotrixDB
 import ch.skew.remotrix.data.RemotrixSettings
@@ -62,6 +63,7 @@ fun Settings(
 
     ) { padding ->
         Column(modifier = Modifier.padding(padding)) {
+            ListHeader(stringResource(R.string.accounts))
             ListItem(
                 headlineText = { Text(stringResource(R.string.choose_default_account)) },
                 supportingText = { Text(stringResource(R.string.choose_default_account_desc)) },
@@ -91,6 +93,7 @@ fun Settings(
                     Switch(checked = enableOnBootMessage, onCheckedChange = null)
                 }
             )
+            ListHeader(stringResource(R.string.logging))
             ListItem(
                 headlineText = { Text(stringResource(R.string.enable_logging)) },
                 supportingText = { Text(stringResource(R.string.enable_logging_desc)) },
@@ -123,6 +126,7 @@ fun Settings(
                     scope.launch { RemotrixDB.getInstance(context).logDao.deleteAll() }
                 }
             )
+            ListHeader(stringResource(R.string.debug))
             ListItem(
                 headlineText = { Text(stringResource(R.string.debug_menu)) },
                 supportingText = { Text(stringResource(R.string.debug_menu_desc)) },
