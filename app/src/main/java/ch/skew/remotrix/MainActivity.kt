@@ -28,8 +28,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -129,7 +133,7 @@ fun RemotrixApp(
             composable(route = Destination.Home.route) {
                 HomeScreen(
                     navigate = { navController.navigate(it) },
-                    defaultForwarder = defaultForwarder.value!!
+                    defaultForwarderSet = accounts.find { it.id == defaultForwarder.value } !== null
                 )
             }
             composable(route = Destination.AccountList.route) {
@@ -196,7 +200,7 @@ fun RemotrixApp(
 @Composable
 fun HomeScreen(
     navigate: (String) -> Unit = {},
-    defaultForwarder: Int = -1,
+    defaultForwarderSet: Boolean = false,
     forwardRules: List<ForwardRule> = listOf()
 ) {
     Scaffold(
@@ -230,10 +234,18 @@ fun HomeScreen(
                 },
                 modifier = Modifier.clickable { navigate(Destination.AccountList.route) }
             )
-            val desc = stringResource(R.string.settings_desc) + if (forwardRules.isEmpty() && defaultForwarder == -1) stringResource(R.string.settings_desc_warning) else ""
             ListItem(
                 headlineText = { Text(stringResource(R.string.settings)) },
-                supportingText = { Text(desc) },
+                supportingText = { Text(
+                    buildAnnotatedString {
+                        append(stringResource(R.string.settings_desc))
+                        if (forwardRules.isEmpty() && !defaultForwarderSet) {
+                            withStyle(style = SpanStyle(color = Color.Red)) {
+                                append(stringResource(R.string.settings_desc_warning))
+                            }
+                        }
+                    }
+                ) },
                 leadingContent = {
                     Icon(
                         Icons.Filled.Settings,
