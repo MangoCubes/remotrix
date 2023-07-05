@@ -425,8 +425,10 @@ class CommandService: Service() {
         if(body.startsWith("!")){
             val args = body.split(' ')
             if(args[0] == "!say") {
-                this.sendSMS(account.second.id, event.roomId, body.drop(5))
-                return null
+                if(event.roomId.full == account.second.managementRoom) return CommandAction.Reply(getString(R.string.error_sending_in_management_room))
+                if(args.size == 1) return CommandAction.Reply(getString(R.string.error_reply_not_specified))
+                val res = this.sendSMS(account.second.id, event.roomId, args.drop(1).joinToString(" "))
+                return CommandAction.Reply(if (res) getString(R.string.message_sent_successfully) else getString(R.string.error_message_sending_failed))
             } else if(args[0] == "!close") {
                 if (event.roomId.full == account.second.managementRoom)
                     return CommandAction.Reply(getString(R.string.cannot_delete_management_room))
@@ -459,13 +461,15 @@ class CommandService: Service() {
         return null
     }
 
-    private suspend fun sendSMS(sender: Int, roomId: RoomId, payload: String) {
+    private suspend fun sendSMS(sender: Int, roomId: RoomId, payload: String): Boolean {
         val to = this.db.roomIdDao.getPhoneNumber(roomId.full, sender)
         if(to === null) {
             //TODO
+            return false
         } else {
             val sms = applicationContext.getSystemService(SmsManager::class.java)
             sms.sendTextMessage(to, null, payload, null, null)
+            return true
         }
     }
 
