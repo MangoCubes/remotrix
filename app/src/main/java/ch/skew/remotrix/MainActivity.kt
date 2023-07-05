@@ -3,7 +3,6 @@ package ch.skew.remotrix
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
-import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -41,7 +40,12 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
-import ch.skew.remotrix.background.CommandService
+import androidx.work.Constraints
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
+import ch.skew.remotrix.background.ServiceWatcher
 import ch.skew.remotrix.classes.Account
 import ch.skew.remotrix.classes.Destination
 import ch.skew.remotrix.classes.SettingsDest
@@ -61,6 +65,7 @@ import ch.skew.remotrix.setup.SetManagementSpace
 import ch.skew.remotrix.setup.SetManagerAccount
 import ch.skew.remotrix.setup.Welcome
 import ch.skew.remotrix.ui.theme.RemotrixTheme
+import java.time.Duration
 
 
 class MainActivity : ComponentActivity() {
@@ -88,11 +93,16 @@ class MainActivity : ComponentActivity() {
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Intent(applicationContext, CommandService::class.java)
-            .apply {
-                action = CommandService.START_ALL
-                applicationContext.startService(this)
-            }
+        val work = PeriodicWorkRequestBuilder<ServiceWatcher>(Duration.ofHours(1))
+            .setConstraints(
+                Constraints.Builder()
+                    .setRequiredNetworkType(
+                        NetworkType.CONNECTED
+                    ).build()
+            )
+            .build()
+        val workManager = WorkManager.getInstance(applicationContext)
+        workManager.enqueueUniquePeriodicWork("service_watcher", ExistingPeriodicWorkPolicy.CANCEL_AND_REENQUEUE, work)
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O){
             val channel = NotificationChannel("command_listener", "Command Listener", NotificationManager.IMPORTANCE_LOW)
             val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
