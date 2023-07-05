@@ -67,7 +67,7 @@ fun SelectAccountDialog(
                 Text(title)
             },
             text = {
-                Column() {
+                Column {
                     accounts.forEach {
                         @Suppress("IMPLICIT_BOXING_IN_IDENTITY_EQUALS")
                         LabelledRadioButton(it.fullName(), chosen.value !== null && it.id === chosen.value) {

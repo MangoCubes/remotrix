@@ -103,9 +103,9 @@ fun AccountList(
                     ) {
                         Text(
                             buildAnnotatedString {
-                                append("You have not set any default forwarder or rules in the settings. ")
+                                append(stringResource(R.string.no_default_forwarder_1))
                                 withStyle(style = SpanStyle(color = Color.Red)) {
-                                    append("If you do not set one, this app will not forward any messages!")
+                                    append(stringResource(R.string.no_default_forwarder_2))
                                 }
                             }
                         )
@@ -146,6 +146,11 @@ fun deleteAccount(
                 matrixClient.api.rooms.leaveRoom(RoomId(account.managementRoom))
                 matrixClient.api.rooms.leaveRoom(RoomId(account.messageSpace))
                 matrixClient.logout()
+                Intent(context, CommandService::class.java)
+                    .apply {
+                        action = CommandService.RELOAD
+                        context.startService(this)
+                    }
                 Toast.makeText(context, context.getString(R.string.logout_successful), Toast.LENGTH_SHORT).show()
             }
             context.filesDir.resolve("clients").resolve("${account.userId}.mv.db").delete()

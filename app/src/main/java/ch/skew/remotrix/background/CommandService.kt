@@ -5,6 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.IBinder
 import android.provider.ContactsContract
+import android.telephony.SmsManager
 import androidx.core.app.NotificationCompat
 import ch.skew.remotrix.R
 import ch.skew.remotrix.classes.Account
@@ -29,6 +30,7 @@ import net.folivo.trixnity.client.media.okio.OkioMediaStore
 import net.folivo.trixnity.client.room
 import net.folivo.trixnity.client.room.message.reply
 import net.folivo.trixnity.client.room.message.text
+import net.folivo.trixnity.client.room.message.thread
 import net.folivo.trixnity.client.store.TimelineEvent
 import net.folivo.trixnity.client.store.isEncrypted
 import net.folivo.trixnity.client.store.repository.realm.createRealmRepositoriesModule
@@ -43,9 +45,10 @@ import net.folivo.trixnity.core.model.events.m.room.RoomMessageEventContent
 import net.folivo.trixnity.core.model.events.m.space.ChildEventContent
 import net.folivo.trixnity.core.model.events.m.space.ParentEventContent
 import okio.Path.Companion.toPath
+import kotlin.time.Duration.Companion.seconds
 
 class CommandService: Service() {
-    private val scope = CoroutineScope(Dispatchers.IO)
+    private var scope = CoroutineScope(Dispatchers.IO)
     // Null indicates that service has not been set up yet
     private var clients: MutableMap<Int, Pair<MatrixClient, Account>>? = null
     private lateinit var settings: RemotrixSettings
@@ -59,6 +62,11 @@ class CommandService: Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when(intent?.action) {
+            RELOAD -> {
+                CoroutineScope(Dispatchers.IO).launch {
+                    reload()
+                }
+            }
             START_ALL -> {
                 CoroutineScope(Dispatchers.IO).launch {
                     startAll()
@@ -92,6 +100,17 @@ class CommandService: Service() {
             STOP_ALL -> stopAll()
         }
         return super.onStartCommand(intent, flags, startId)
+    }
+
+    private suspend fun reload() {
+        clients?.forEach { c ->
+            c.value.first.stopSync()
+        }
+        clients = null
+        scope.cancel()
+        delay(10000)
+        scope = CoroutineScope(Dispatchers.IO)
+        load()
     }
 
     private suspend fun sendTestMsg(id: Int, to: RoomId, payload: String, log: Boolean) {
@@ -136,7 +155,7 @@ class CommandService: Service() {
 
     private suspend fun sendMsg(msg: SMSMsg, log: Boolean) {
         if(clients === null) {
-            startAll()
+            load()
         }
         val currentLog = if (log) db.logDao.writeAhead(2, msg.payload) else -1
         // Default account is loaded up from the settings.
@@ -285,12 +304,11 @@ class CommandService: Service() {
         } else roomId = RoomId(sendTo)
         // If this was null, it means that this entry was not present in the database. It is entered here.
         if (sendTo === null) {
+            client.room.sendMessage(roomId) {
+                text(getString(R.string.startup_1).format(client.userId.full, client.deviceId, msg.sender))
+            }
             db.roomIdDao.insert(RoomIdData(msg.sender, sendAs, roomId.full))
             client.api.rooms.inviteUser(roomId, UserId(managerId))
-        }
-        client.room.sendMessage(roomId) {
-            text(getString(R.string.startup_1).format(client.userId.full, client.deviceId))
-            text(getString(R.string.startup_2).format(msg.sender))
         }
         val tid = client.room.sendMessage(roomId) {
             text(msg.payload)
@@ -324,7 +342,18 @@ class CommandService: Service() {
     }
 
     private suspend fun startAll() {
-        if(this.clients !== null) return
+        if (clients !== null) {
+            if (this.settings.getDebugAlivePing.first()){
+                clients?.forEach {
+                    it.value.first.room.sendMessage(RoomId(it.value.second.managementRoom)) {
+                        text(getString(R.string.service_check_ok))
+                    }
+                }
+            }
+        }
+        else load()
+    }
+    private suspend fun load() {
         clients = mutableMapOf()
         val accounts = Account.from(db.accountDao.getAllAccounts().first())
         for(a in accounts){
@@ -340,29 +369,38 @@ class CommandService: Service() {
                 scope = scope
             ).getOrNull()
             if (client !== null) {
+                client.startSync()
                 clients?.put(a.id, Pair(client, a))
             }
         }
+
         CoroutineScope(Dispatchers.IO).launch {
             clients?.forEach {
                 val client = it.value.first
-                client.startSync()
+                while(!client.initialSyncDone.first()) delay(1000)
                 if (settings.getEnableOnBootMessage.first()){
                     client.room.sendMessage(RoomId(it.value.second.managementRoom)) {
                         text(getString(R.string.ready_to_accept_commands).format(client.userId.full))
                     }
                 }
-                client.room.getTimelineEventsFromNowOn().collect { ev ->
+                client.room.getTimelineEventsFromNowOn(decryptionTimeout = 10.seconds).collect { ev ->
                     if(ev.event.sender.full == client.userId.full) return@collect
                     val content = ev.content?.getOrNull()
-                    if (content is RoomMessageEventContent.TextMessageEventContent && ev.isEncrypted) {
+                    if(content === null) {
+                        client.room.sendMessage(RoomId(it.value.second.managementRoom)) {
+                            text(getString(R.string.failed_to_decrypt))
+                        }
+                        reload()
+                    } else if (content is RoomMessageEventContent.TextMessageEventContent && ev.isEncrypted) {
+                        client.api.rooms.setReadMarkers(ev.roomId, read = ev.eventId)
                         val reply = handleMessage(it.value, content.body, ev)
                         if(reply === null) return@collect
+
                         client.room.sendMessage(ev.roomId) {
                             when(reply) {
-                                is CommandAction.Reaction -> {
-                                    text(reply.reaction)
-                                    // TODO: Use reaction to let user know message has been sent successfully
+                                is CommandAction.Thread -> {
+                                    text(reply.msg)
+                                    thread(ev)
                                 }
                                 is CommandAction.Reply -> {
                                     text(reply.msg)
@@ -389,7 +427,10 @@ class CommandService: Service() {
         if(body.startsWith("!")){
             val args = body.split(' ')
             if(args[0] == "!say") {
-                return null//CommandAction.Reaction("✅")
+                if(event.roomId.full == account.second.managementRoom) return CommandAction.Reply(getString(R.string.error_sending_in_management_room))
+                if(args.size == 1) return CommandAction.Reply(getString(R.string.error_reply_not_specified))
+                val res = this.sendSMS(account.second.id, event.roomId, args.drop(1).joinToString(" "))
+                return CommandAction.Reply(if (res) getString(R.string.message_sent_successfully) else getString(R.string.error_message_sending_failed))
             } else if(args[0] == "!close") {
                 if (event.roomId.full == account.second.managementRoom)
                     return CommandAction.Reply(getString(R.string.cannot_delete_management_room))
@@ -413,9 +454,31 @@ class CommandService: Service() {
                 )
             } else if(args[0] == "!ping") return CommandAction.Reply(getString(R.string.pong))
             else if (args[0] == "!help") return CommandAction.Reply(getString(R.string.command_help_output))
+            else if (args[0] == "!reload") {
+                if (clients !== null) reload()
+            }
             else return CommandAction.Reply(getString(R.string.unknown_command))
         }
-        return null//CommandAction.Reaction("✅")
+        if(event.roomId.full != account.second.managementRoom) {
+            return CommandAction.Thread(
+                if (this.sendSMS(account.second.id, event.roomId, body))
+                    getString(R.string.message_sent_successfully)
+                else getString(R.string.error_message_sending_failed)
+            )
+        }
+        return null
+    }
+
+    private suspend fun sendSMS(sender: Int, roomId: RoomId, payload: String): Boolean {
+        val to = this.db.roomIdDao.getPhoneNumber(roomId.full, sender)
+        if(to === null) {
+            //TODO
+            return false
+        } else {
+            val sms = applicationContext.getSystemService(SmsManager::class.java)
+            sms.sendTextMessage(to, null, payload, null, null)
+            return true
+        }
     }
 
     override fun onDestroy() {
@@ -432,6 +495,7 @@ class CommandService: Service() {
         const val STOP_ALL = "STOP_ALL"
         const val SEND_MSG = "SEND_MSG"
         const val SEND_TEST_MSG = "SEND_TEST_MSG"
+        const val RELOAD = "RELOAD"
 
         const val FORWARDER_ID = "FORWARDER_ID"
         const val ROOM_ID = "ROOM_ID"

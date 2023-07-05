@@ -18,6 +18,11 @@ class RemotrixSettings(
         val defaultForwarder = stringPreferencesKey("defaultForwarder")
         val logging = stringPreferencesKey("logging")
         val enableOnBootMessage = stringPreferencesKey("enableOnBootMessage")
+        val debugAlivePing = stringPreferencesKey("debugAlivePing")
+    }
+
+    val getDebugAlivePing: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[debugAlivePing] == "1"
     }
 
     val getManagerId: Flow<String> = context.dataStore.data.map { preferences ->
@@ -78,6 +83,12 @@ class RemotrixSettings(
     suspend fun saveEnableOnBootMessage(set: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[enableOnBootMessage] = if (set) "1" else "0"
+        }
+    }
+
+    suspend fun saveDebugAlivePing(set: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[debugAlivePing] = if (set) "1" else "0"
         }
     }
 }

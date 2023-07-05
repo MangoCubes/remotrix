@@ -1,10 +1,18 @@
 package ch.skew.remotrix.setup
 
 import android.Manifest
+import android.annotation.SuppressLint
+import android.content.Context.POWER_SERVICE
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
+import android.os.Build
+import android.os.PowerManager
+import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -27,11 +35,16 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.core.content.ContextCompat.startActivity
 
 enum class CurrentlyGranting {
-    SMS,
-    CONTACT
+    SMS_READ,
+    SMS_SEND,
+    CONTACT,
+    NOTIFICATION
 }
+@SuppressLint("BatteryLife")
+@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 @Preview
@@ -46,44 +59,95 @@ fun AskPermissions(
         }
     ) { padding ->
         val context = LocalContext.current
-        val smsGranted = ContextCompat.checkSelfPermission(context, Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED
-        val allowNext = remember { mutableStateOf(smsGranted) }
-        val smsAlreadyGranted = remember { mutableStateOf(smsGranted) }
-        val contactAlreadyGranted = remember { mutableStateOf(ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED) }
+        val smsReadGranted = ContextCompat.checkSelfPermission(context, Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED
+        val packageName = context.packageName
+        val pm = context.getSystemService(POWER_SERVICE) as PowerManager
+        val batteryGranted = pm.isIgnoringBatteryOptimizations(packageName)
+        val smsSendGranted = ContextCompat.checkSelfPermission(context, Manifest.permission.SEND_SMS) == PackageManager.PERMISSION_GRANTED
+        val notificationGranted = ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+        val contactGranted = ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED
+        val smsReadAlreadyGranted = remember { mutableStateOf(smsReadGranted) }
+        val smsSendAlreadyGranted = remember { mutableStateOf(smsSendGranted) }
+        val notificationAlreadyGranted = remember { mutableStateOf(notificationGranted) }
+        val contactAlreadyGranted = remember { mutableStateOf(contactGranted) }
         val currentlyGranting = remember { mutableStateOf<CurrentlyGranting?>(null) }
         val launcher = rememberLauncherForActivityResult(
             ActivityResultContracts.RequestPermission()
         ) { isGranted ->
             if (isGranted) {
-                if(currentlyGranting.value === CurrentlyGranting.CONTACT) {
-                    contactAlreadyGranted.value = true
-                    Toast.makeText(
-                        context,
-                        "Contact permission granted.",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                } else if(currentlyGranting.value === CurrentlyGranting.SMS) {
-                    allowNext.value = true
-                    smsAlreadyGranted.value = true
-                    Toast.makeText(
-                        context,
-                        "SMS permission granted.",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                when (currentlyGranting.value) {
+                    CurrentlyGranting.SMS_READ -> {
+                        smsReadAlreadyGranted.value = true
+                        Toast.makeText(
+                            context,
+                            "SMS reading permission granted.",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+
+                    CurrentlyGranting.SMS_SEND -> {
+                        smsSendAlreadyGranted.value = true
+                        Toast.makeText(
+                            context,
+                            "SMS sending permission granted.",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+
+                    CurrentlyGranting.CONTACT -> {
+                        contactAlreadyGranted.value = true
+                        Toast.makeText(
+                            context,
+                            "Contact permission granted.",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+
+                    CurrentlyGranting.NOTIFICATION -> {
+                        notificationAlreadyGranted.value = true
+                        Toast.makeText(
+                            context,
+                            "Notification permission granted.",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                    null -> {}
+
                 }
             } else {
-                if(currentlyGranting.value === CurrentlyGranting.CONTACT) {
-                    Toast.makeText(
-                        context,
-                        "Contact permission denied.",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                } else if(currentlyGranting.value === CurrentlyGranting.SMS) {
-                    Toast.makeText(
-                        context,
-                        "SMS permission denied.",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                when (currentlyGranting.value) {
+                    CurrentlyGranting.SMS_READ -> {
+                        Toast.makeText(
+                            context,
+                            "SMS reading permission denied.",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+
+                    CurrentlyGranting.SMS_SEND -> {
+                        Toast.makeText(
+                            context,
+                            "SMS sending permission denied.",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+
+                    CurrentlyGranting.CONTACT -> {
+                        Toast.makeText(
+                            context,
+                            "Contact permission denied.",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+
+                    CurrentlyGranting.NOTIFICATION -> {
+                        Toast.makeText(
+                            context,
+                            "Notification permission denied.",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                    null -> {}
                 }
             }
         }
@@ -103,10 +167,19 @@ fun AskPermissions(
                                 append("SMS access")
                             }
 
+                            append(" for both sending and receiving. This is obviously needed because this app is supposed to forward incoming SMS via Matrix and send back using SMS.")
+                        }
+                    )
+                    Text(
+                        buildAnnotatedString {
+                            append("This app also needs to ")
+                            withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
+                                append("bypass battery optimisation")
+                            }
                             append(".")
                         }
                     )
-                    Text("This is obviously needed because this app is supposed to forward incoming SMS via Matrix.")
+                    Text("App needs to listen to messages sent into Matrix chatroom to act upon them.")
                 }
             )
             Button(
@@ -114,17 +187,60 @@ fun AskPermissions(
                     .fillMaxWidth()
                     .padding(horizontal = 10.dp),
                 onClick = {
-                    currentlyGranting.value = CurrentlyGranting.SMS
+                    currentlyGranting.value = CurrentlyGranting.SMS_READ
                     launcher.launch(Manifest.permission.RECEIVE_SMS)
                 },
-                enabled = !smsAlreadyGranted.value
+                enabled = !smsReadAlreadyGranted.value
             ) {
-                Text("Grant SMS access")
+                Text("Grant SMS read permission")
+            }
+            Button(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 10.dp),
+                onClick = {
+                    currentlyGranting.value = CurrentlyGranting.SMS_SEND
+                    launcher.launch(Manifest.permission.SEND_SMS)
+                },
+                enabled = !smsSendAlreadyGranted.value
+            ) {
+                Text("Grant SMS sending permission")
+            }
+            Button(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 10.dp),
+                onClick = {
+                    val intent = Intent()
+                    intent.action = Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
+                    intent.data = Uri.parse("package:$packageName")
+                    startActivity(context, intent, null)
+                },
+                enabled = !batteryGranted
+            ) {
+                Text("Bypass battery optimisation")
             }
             ListItem(
                 headlineText = { Text("Optional Permissions") },
                 supportingText = {
-                    Text("This app does not need contact access, but it is recommended. If granted, this app will read your contact to get the name of the sender, and it will be used for room names instead. You may skip this, but this will make all room names to show up as phone numbers only.")
+                    Text(
+                        buildAnnotatedString {
+                            append("This app does not need ")
+                            withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
+                                append("contact access")
+                            }
+                            append(", but it is recommended. If granted, this app will read your contact to get the name of the sender, and it will be used for room names instead. You may skip this, but this will make all room names to show up as phone numbers only.")
+                        }
+                    )
+                    Text(
+                        buildAnnotatedString {
+                            append("This app also uses ")
+                            withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
+                                append("notification")
+                            }
+                            append(" not to alert you of some event, but to let you know that the core service is running.")
+                        }
+                    )
                 }
             )
             Button(
@@ -143,8 +259,20 @@ fun AskPermissions(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 10.dp),
+                onClick = {
+                    currentlyGranting.value = CurrentlyGranting.NOTIFICATION
+                    launcher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                },
+                enabled = !notificationAlreadyGranted.value
+            ) {
+                Text("Grant notification")
+            }
+            Button(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 10.dp),
                 onClick = nextPage,
-                enabled = allowNext.value
+                enabled = smsReadAlreadyGranted.value && smsSendAlreadyGranted.value
             ) {
                 Text("Done")
             }
