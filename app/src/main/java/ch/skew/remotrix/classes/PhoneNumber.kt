@@ -2,7 +2,7 @@ package ch.skew.remotrix.classes
 
 class InvalidPhoneNumber: Throwable()
 
-class PhoneNumber(private val number: String) {
+class PhoneNumber(val number: String) {
 
     override fun hashCode(): Int {
         return javaClass.hashCode()
@@ -12,6 +12,10 @@ class PhoneNumber(private val number: String) {
         if (this === other) return true
         if (other !is PhoneNumber) return false
         return other.number == this.number
+    }
+
+    override fun toString(): String {
+        return this.number
     }
 
     companion object {

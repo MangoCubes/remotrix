@@ -10,6 +10,7 @@ import androidx.core.app.NotificationCompat
 import ch.skew.remotrix.R
 import ch.skew.remotrix.classes.Account
 import ch.skew.remotrix.classes.CommandAction
+import ch.skew.remotrix.classes.PhoneNumber
 import ch.skew.remotrix.classes.RoomCreationError
 import ch.skew.remotrix.classes.SMSMsg
 import ch.skew.remotrix.data.RemotrixDB
@@ -154,19 +155,18 @@ class CommandService: Service() {
         )
     }
 
-    private suspend fun createRoom(client: MatrixClient, account: Account, sender: String): Result<RoomId> {
+    private suspend fun createRoom(client: MatrixClient, account: Account, sender: PhoneNumber): Result<RoomId> {
         // The "via" part of m.space.child/parent event.
         var picUri: Uri? = null
         val via = setOf(client.userId.domain)
-        var roomName = sender
-        val senderNumber = sender.filter { it.isDigit() }
+        var roomName = sender.number
         val contacts = applicationContext.contentResolver.query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, null, null, null, null)
         if (contacts !== null) {
             while (contacts.moveToNext()){
                 val numberIndex = contacts.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER)
                 if (numberIndex < 0) continue
                 val current = contacts.getString(numberIndex).filter { it.isDigit() }
-                if(current == senderNumber) {
+                if(current == sender.number) {
                     val nameIndex = contacts.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME)
                     val pictureIndex = contacts.getColumnIndex(ContactsContract.CommonDataKinds.Phone.PHOTO_URI)
                     if(pictureIndex >= 0) {
@@ -293,20 +293,24 @@ class CommandService: Service() {
         val managerId = settings.getManagerId.first()
         // If an appropriate room does not exist for a given forwarder-SMS sender is not found, a new room is created.
         val roomId = if (sendTo === null) {
-            this.createRoom(client, pair.second, msg.sender).fold(
-                {
-                    it
-                },
-                {
-                    if (currentLog != -1L) db.logDao.setFailure(
-                        currentLog,
-                        if (it is RoomCreationError) it.error else MsgStatus.CANNOT_CREATE_ROOM,
-                        null,
-                        null
-                    )
-                    return
-                }
-            )
+            val number = PhoneNumber.from(msg.sender).getOrElse {
+                if (currentLog != -1L) db.logDao.setFailure(
+                    currentLog,
+                    if (it is RoomCreationError) it.error else MsgStatus.CANNOT_CREATE_ROOM,
+                    null,
+                    null
+                )
+                return
+            }
+            this.createRoom(client, pair.second, number).getOrElse {
+                if (currentLog != -1L) db.logDao.setFailure(
+                    currentLog,
+                    if (it is RoomCreationError) it.error else MsgStatus.CANNOT_CREATE_ROOM,
+                    null,
+                    null
+                )
+                return
+            }
         } else RoomId(sendTo)
         // If this was null, it means that this entry was not present in the database. It is entered here.
         if (sendTo === null) {
@@ -464,9 +468,11 @@ class CommandService: Service() {
                 if (clients !== null) reload()
             } else if(args[0] == "!new") {
                 if(args.size == 1) return CommandAction.Reply(getString(R.string.error_sms_receiver_not_specified))
-                //TODO: Sanitise input so that only numbers are accepted
+                val number = PhoneNumber.from(args[1]).getOrElse {
+                    return CommandAction.Reply(getString(R.string.error_invalid_phone_number))
+                }
                 //TODO: Fix duplicate room
-                this.createRoom(client, account.second, args[1]).fold(
+                this.createRoom(client, account.second, number).fold(
                     {
                         val managerId = settings.getManagerId.first()
                         client.room.sendMessage(it) {
