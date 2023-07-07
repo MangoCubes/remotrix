@@ -245,7 +245,6 @@ class CommandService: Service() {
         ).getOrElse {
             return Result.failure(RoomCreationError(it, MsgStatus.CANNOT_CREATE_ROOM))
         }
-        delay(10000)
         // This state ensures that the parent room recognises the child room as its child.
         client.api.rooms.sendStateEvent(
             RoomId(account.messageSpace),
@@ -483,18 +482,17 @@ class CommandService: Service() {
                     client.api.rooms.inviteUser(RoomId(it), event.event.sender)
                     return CommandAction.Reply(getString(R.string.room_already_exists))
                 }
-                this.createRoom(client, account.second, number).fold(
-                    {
-                        client.room.sendMessage(it) {
-                            text(getString(R.string.startup_1).format(client.userId.full, client.deviceId, args[1]))
-                        }
-                        db.roomIdDao.insert(RoomIdData(args[1], account.second.id, it.full))
-                        client.api.rooms.inviteUser(it, event.event.sender)
-                    },
-                    {
-                        return CommandAction.Reply(getString(R.string.error_cannot_create_messaging_room))
+                val roomId = this.createRoom(client, account.second, number).getOrNull()
+                return if (roomId !== null) {
+                    client.api.rooms.inviteUser(roomId, event.event.sender)
+                    client.room.sendMessage(roomId) {
+                        text(getString(R.string.startup_1).format(client.userId.full, client.deviceId, args[1]))
                     }
-                )
+                    db.roomIdDao.insert(RoomIdData(args[1], account.second.id, roomId.full))
+                    CommandAction.Reply(getString(R.string.room_created))
+                } else {
+                    CommandAction.Reply(getString(R.string.error_cannot_create_messaging_room))
+                }
 
             } else return CommandAction.Reply(getString(R.string.unknown_command))
         } else if(event.roomId.full != account.second.managementRoom) {
