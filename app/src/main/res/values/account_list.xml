@@ -3,4 +3,6 @@
     <string name="cannot_logout_data_not_found">Cannot locate account data. Account will be removed from device only.</string>
     <string name="logout_successful">Logout successful.</string>
     <string name="cannot_logout_no_account">Cannot logout. Account will be removed from device only.</string>
+    <string name="invitation_sent">Invitation has been sent to manager account.</string>
+    <string name="reinvite_manager">Re-invite manager</string>
 </resources>

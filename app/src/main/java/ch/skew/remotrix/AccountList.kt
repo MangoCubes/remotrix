@@ -195,6 +195,13 @@ fun SessionItem(
                     }
                 )
                 DropdownMenuItem(
+                    text = { Text(stringResource(R.string.reinvite_manager)) },
+                    onClick = {
+                        open.value = false
+                        sendInvitation(context, account)
+                    }
+                )
+                DropdownMenuItem(
                     text = { Text(stringResource(R.string.delete)) },
                     onClick = {
                         open.value = false
@@ -218,4 +225,14 @@ fun sendTestMessage(context: Context, account: Account){
             context.startService(this)
         }
     Toast.makeText(context, context.getString(R.string.test_msg_sent).format(current), Toast.LENGTH_LONG).show()
+}
+
+fun sendInvitation(context: Context, account: Account) {
+    Intent(context, CommandService::class.java)
+        .putExtra(CommandService.ACCOUNT_ID, account.id)
+        .apply {
+            action = CommandService.INVITE
+            context.startService(this)
+        }
+    Toast.makeText(context, context.getString(R.string.invitation_sent), Toast.LENGTH_LONG).show()
 }
