@@ -52,4 +52,5 @@
     <string name="debug_menu_desc">For more verbose output for debugging</string>
     <string name="no_default_forwarder_1">"You have not set any default forwarder or rules in the settings. "</string>
     <string name="no_default_forwarder_2">If you do not set one, this app will not forward any messages!</string>
+    <string name="room_created">Room has been created.</string>
 </resources>

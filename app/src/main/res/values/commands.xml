@@ -14,4 +14,8 @@
     <string name="error_message_sending_failed">Error: Message sending failed! Please enable and check log.</string>
     <string name="message_sent_successfully">Message sent successfully.</string>
     <string name="error_sending_in_management_room">Error: You cannot send messages in management room.</string>
+    <string name="error_sms_receiver_not_specified">Error: SMS receiver has not been specified.</string>
+    <string name="error_cannot_create_messaging_room">Error: Messaging room cannot be created!</string>
+    <string name="error_invalid_phone_number">Error: Invalid phone number.</string>
+    <string name="room_already_exists">Room for that phone number already exists; Inviting you there now.</string>
 </resources>
