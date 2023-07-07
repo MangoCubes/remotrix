@@ -36,6 +36,7 @@ import net.folivo.trixnity.client.room.message.thread
 import net.folivo.trixnity.client.store.TimelineEvent
 import net.folivo.trixnity.client.store.isEncrypted
 import net.folivo.trixnity.client.store.repository.realm.createRealmRepositoriesModule
+import net.folivo.trixnity.clientserverapi.client.SyncState
 import net.folivo.trixnity.clientserverapi.model.media.Media
 import net.folivo.trixnity.core.model.RoomId
 import net.folivo.trixnity.core.model.UserId
@@ -107,6 +108,7 @@ class CommandService: Service() {
     private suspend fun reload() {
         clients?.forEach { c ->
             c.value.first.stopSync()
+            while (c.value.first.syncState.first() !== SyncState.STOPPED) delay(1000)
         }
         clients = null
         scope.cancel()
