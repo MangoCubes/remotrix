@@ -245,6 +245,7 @@ class CommandService: Service() {
         ).getOrElse {
             return Result.failure(RoomCreationError(it, MsgStatus.CANNOT_CREATE_ROOM))
         }
+        delay(10000)
         // This state ensures that the parent room recognises the child room as its child.
         client.api.rooms.sendStateEvent(
             RoomId(account.messageSpace),
@@ -380,15 +381,18 @@ class CommandService: Service() {
             ).getOrNull()
             if (client !== null) {
                 client.startSync()
-                client.room.getOutbox().first().forEach {
-                    if(it.sentAt === null)
-                        client.room.retrySendMessage(it.transactionId)
+                val rooms = client.api.rooms.getJoinedRooms().getOrNull()
+                if (rooms === null) client.room.getOutbox().first().forEach { client.room.abortSendMessage(it.transactionId) }
+                else client.room.getOutbox().first().forEach {
+                    if(rooms.contains(it.roomId)) client.room.retrySendMessage(it.transactionId)
+                    else client.room.abortSendMessage(it.transactionId)
                 }
                 clients?.put(a.id, Pair(client, a))
             }
         }
 
         CoroutineScope(Dispatchers.IO).launch {
+
             clients?.forEach {
                 val client = it.value.first
                 while(!client.initialSyncDone.first()) delay(1000)
@@ -493,8 +497,7 @@ class CommandService: Service() {
                 )
 
             } else return CommandAction.Reply(getString(R.string.unknown_command))
-        }
-        if(event.roomId.full != account.second.managementRoom) {
+        } else if(event.roomId.full != account.second.managementRoom) {
             return CommandAction.Thread(
                 if (this.sendSMS(account.second.id, event.roomId, body))
                     getString(R.string.message_sent_successfully)
