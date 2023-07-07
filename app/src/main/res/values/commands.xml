@@ -7,7 +7,7 @@
     <string name="error_cannot_kick_user">Error: Cannot kick user %s.</string>
     <string name="ready_to_accept_commands">%s is ready to accept commands. (You can disable this message in the settings)</string>
     <string name="startup_1">This room has been created by %s on device %s. Any non-command messages sent into this room will be sent to %s.</string>
-    <string name="command_help_output">These are the currently available commands:\n    !close: Close a room in a messaging space. Useful if you received an OTP SMS.\n    !ping: Check if your phone service is running.\n    !reload: Reloads Matrix clients on your phone.\n    !say &lt;Reply&gt;: Sends a message as a reply in a SMS room. By default, you can exclude this to send SMS back.</string>
+    <string name="command_help_output">These are the currently available commands:\n    !close: Close a room in a messaging space. Useful if you received an OTP SMS.\n    !ping: Check if your phone service is running.\n    !reload: Reloads Matrix clients on your phone.\n    !say &lt;Reply&gt;: Sends a message as a reply in a SMS room. By default, you can exclude this to send SMS back.\n    !new &lt;Phone number&gt;: Create a new chatroom on Matrix that sends messages to the given phone number. You will be invited into that room.</string>
     <string name="failed_to_decrypt">Client failed to decrypt message. Client will reload; please try again.</string>
     <string name="service_check_ok">Service check has been executed and is running well.</string>
     <string name="error_reply_not_specified">Error: Reply message has not been specified.</string>
