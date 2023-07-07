@@ -65,6 +65,13 @@ class CommandService: Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when(intent?.action) {
+            INVITE -> {
+                CoroutineScope(Dispatchers.IO).launch {
+                    val id = intent.getIntExtra(ACCOUNT_ID, -1)
+                    if(id == -1) return@launch
+                    else inviteManager(id)
+                }
+            }
             RELOAD -> {
                 CoroutineScope(Dispatchers.IO).launch {
                     reload()
@@ -103,6 +110,16 @@ class CommandService: Service() {
             STOP_ALL -> stopAll()
         }
         return super.onStartCommand(intent, flags, startId)
+    }
+
+    private suspend fun inviteManager(id: Int) {
+        if(clients === null) {
+            startAll()
+        }
+        val client = clients?.get(id)
+        val managerId = settings.getManagerId.first()
+        if (client === null || managerId == "") return
+        client.first.api.rooms.inviteUser(RoomId(client.second.managementRoom), UserId(managerId))
     }
 
     private suspend fun reload() {
@@ -534,10 +551,12 @@ class CommandService: Service() {
         const val SEND_MSG = "SEND_MSG"
         const val SEND_TEST_MSG = "SEND_TEST_MSG"
         const val RELOAD = "RELOAD"
+        const val INVITE = "INVITE"
 
         const val FORWARDER_ID = "FORWARDER_ID"
         const val ROOM_ID = "ROOM_ID"
         const val SENDER = "SENDER"
         const val PAYLOAD = "PAYLOAD"
+        const val ACCOUNT_ID = "ACCOUNT_ID"
     }
 }
