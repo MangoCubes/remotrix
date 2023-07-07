@@ -380,6 +380,10 @@ class CommandService: Service() {
             ).getOrNull()
             if (client !== null) {
                 client.startSync()
+                client.room.getOutbox().first().forEach {
+                    if(it.sentAt === null)
+                        client.room.retrySendMessage(it.transactionId)
+                }
                 clients?.put(a.id, Pair(client, a))
             }
         }
@@ -471,15 +475,17 @@ class CommandService: Service() {
                 val number = PhoneNumber.from(args[1]).getOrElse {
                     return CommandAction.Reply(getString(R.string.error_invalid_phone_number))
                 }
-                //TODO: Fix duplicate room
+                db.roomIdDao.getDestRoom(number.number, account.second.id)?.let {
+                    client.api.rooms.inviteUser(RoomId(it), event.event.sender)
+                    return CommandAction.Reply(getString(R.string.room_already_exists))
+                }
                 this.createRoom(client, account.second, number).fold(
                     {
-                        val managerId = settings.getManagerId.first()
                         client.room.sendMessage(it) {
                             text(getString(R.string.startup_1).format(client.userId.full, client.deviceId, args[1]))
                         }
                         db.roomIdDao.insert(RoomIdData(args[1], account.second.id, it.full))
-                        client.api.rooms.inviteUser(it, UserId(managerId))
+                        client.api.rooms.inviteUser(it, event.event.sender)
                     },
                     {
                         return CommandAction.Reply(getString(R.string.error_cannot_create_messaging_room))
