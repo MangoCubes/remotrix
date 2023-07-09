@@ -69,9 +69,15 @@ fun AccountList(
     val askDel = remember{ mutableStateOf<Account?>(null) }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
-    DelAccountDialog(close = { askDel.value = null }, confirm = {
-        deleteAccount(context, scope, askDel.value) { askDel.value = null }
-    }, accountId = askDel.value?.userId)
+    DelAccountDialog(
+        close = { askDel.value = null },
+        confirm = {
+            deleteAccount(context, scope, askDel.value) {
+                askDel.value = null
+            }
+        },
+        accountId = askDel.value?.userId
+    )
     Scaffold(
         topBar = {
             TopAppBar(
