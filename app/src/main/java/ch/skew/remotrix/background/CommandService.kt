@@ -42,11 +42,13 @@ import net.folivo.trixnity.core.model.RoomId
 import net.folivo.trixnity.core.model.UserId
 import net.folivo.trixnity.core.model.events.Event
 import net.folivo.trixnity.core.model.events.m.room.AvatarEventContent
+import net.folivo.trixnity.core.model.events.m.room.EncryptionEventContent
 import net.folivo.trixnity.core.model.events.m.room.HistoryVisibilityEventContent
 import net.folivo.trixnity.core.model.events.m.room.JoinRulesEventContent
 import net.folivo.trixnity.core.model.events.m.room.RoomMessageEventContent
 import net.folivo.trixnity.core.model.events.m.space.ChildEventContent
 import net.folivo.trixnity.core.model.events.m.space.ParentEventContent
+import net.folivo.trixnity.core.model.keys.EncryptionAlgorithm
 import okio.Path.Companion.toPath
 import kotlin.time.Duration.Companion.seconds
 
@@ -174,7 +176,7 @@ class CommandService: Service() {
         )
     }
 
-    private suspend fun createRoom(client: MatrixClient, account: Account, sender: PhoneNumber): Result<RoomId> {
+    private suspend fun createRoom(client: MatrixClient, account: Account, sender: PhoneNumber, encrypted: Boolean = true): Result<RoomId> {
         // The "via" part of m.space.child/parent event.
         var picUri: Uri? = null
         val via = setOf(client.userId.domain)
@@ -224,6 +226,18 @@ class CommandService: Service() {
                 stateKey = ""
             )
         )
+
+        if(encrypted) {
+            initialStates.add(
+                Event.InitialStateEvent(
+                    content = EncryptionEventContent(
+                        algorithm = EncryptionAlgorithm.Megolm
+                    ),
+                    stateKey = ""
+                )
+            )
+        }
+
         if(picUri !== null){
             val stream = applicationContext.contentResolver.openInputStream(picUri)
             if(stream !== null){
@@ -427,8 +441,14 @@ class CommandService: Service() {
                             text(getString(R.string.failed_to_decrypt))
                         }
                         reload()
-                    } else if (content is RoomMessageEventContent.TextMessageEventContent && ev.isEncrypted) {
+                    } else if (content is RoomMessageEventContent.TextMessageEventContent) {
                         client.api.rooms.setReadMarkers(ev.roomId, read = ev.eventId)
+                        if(!ev.isEncrypted) {
+                            client.room.sendMessage(ev.roomId) {
+                                text(getString(R.string.error_encryption_not_enabled))
+                            }
+                            return@collect
+                        }
                         val reply = handleMessage(it.value, content.body, ev)
                         if(reply === null) return@collect
 
