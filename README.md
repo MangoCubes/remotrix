@@ -14,7 +14,7 @@ Space feature is a fairly recent Matrix feature that allows you to create a spec
  - [x] SMS forwarding rooms grouped up using Space feature
  - [x] Maintenance room, for when you want to update your settings without getting to your phone, or need to test things out real quick
  - [ ] Multiple senders (or none, in case you want to filter out spams), chosen based on the SMS sender and content regex
- - [ ] Send messages back
+ - [x] Send messages back
 
 ## Screenshot
 Main screen
