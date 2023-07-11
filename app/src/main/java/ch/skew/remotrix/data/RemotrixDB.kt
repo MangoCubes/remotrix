@@ -50,7 +50,7 @@ abstract class RemotrixDB: RoomDatabase(){
         private val migration1To2 = Migration(1, 2) {
             it.execSQL(
                 "CREATE TABLE IF NOT EXISTS logs_temp (" +
-                        "id INTEGER PRIMARY KEY AUTOINCREMENT," +
+                        "id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT," +
                         "timestamp TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP," +
                         "status TEXT NOT NULL," +
                         "error_msg TEXT," +
