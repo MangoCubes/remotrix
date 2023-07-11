@@ -2,6 +2,7 @@ package ch.skew.remotrix.data.logDB
 
 import androidx.room.Dao
 import androidx.room.Query
+import ch.skew.remotrix.classes.MsgStatus
 import kotlinx.coroutines.flow.Flow
 
 @Dao

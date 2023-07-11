@@ -10,12 +10,12 @@ import androidx.core.app.NotificationCompat
 import ch.skew.remotrix.R
 import ch.skew.remotrix.classes.Account
 import ch.skew.remotrix.classes.CommandAction
+import ch.skew.remotrix.classes.MsgStatus
 import ch.skew.remotrix.classes.PhoneNumber
 import ch.skew.remotrix.classes.RoomCreationError
 import ch.skew.remotrix.classes.SMSMsg
 import ch.skew.remotrix.data.RemotrixDB
 import ch.skew.remotrix.data.RemotrixSettings
-import ch.skew.remotrix.data.logDB.MsgStatus
 import ch.skew.remotrix.data.roomIdDB.RoomIdData
 import io.ktor.http.ContentType
 import io.ktor.utils.io.ByteReadChannel

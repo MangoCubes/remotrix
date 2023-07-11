@@ -26,8 +26,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import ch.skew.remotrix.classes.Account
+import ch.skew.remotrix.classes.MsgStatus
 import ch.skew.remotrix.data.logDB.LogData
-import ch.skew.remotrix.data.logDB.MsgStatus
 
 @Preview
 @Composable
