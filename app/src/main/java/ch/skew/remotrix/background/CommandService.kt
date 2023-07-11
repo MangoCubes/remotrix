@@ -11,6 +11,7 @@ import ch.skew.remotrix.R
 import ch.skew.remotrix.classes.Account
 import ch.skew.remotrix.classes.CommandAction
 import ch.skew.remotrix.classes.MsgStatus
+import ch.skew.remotrix.classes.MsgType
 import ch.skew.remotrix.classes.PhoneNumber
 import ch.skew.remotrix.classes.RoomCreationError
 import ch.skew.remotrix.classes.SMSMsg
@@ -141,7 +142,7 @@ class CommandService: Service() {
             startAll()
         }
         val client = clients?.get(id)?.first
-        val currentLog = if (log) db.logDao.writeAhead(1, payload) else -1
+        val currentLog = if (log) db.logDao.writeAhead(MsgType.TestMessage, payload) else -1
         if(client === null) {
             if (currentLog != -1L) db.logDao.setFailure(
                 currentLog,
@@ -295,7 +296,7 @@ class CommandService: Service() {
         if(clients === null) {
             load()
         }
-        val currentLog = if (log) db.logDao.writeAhead(2, msg.payload) else -1
+        val currentLog = if (log) db.logDao.writeAhead(MsgType.SMSForwarding, msg.payload) else -1
         // Default account is loaded up from the settings.
         val defaultAccount = settings.getDefaultForwarder.first()
         // Forwarder rules are loaded here, and are immediately put through getSenderId to determine the forwarder

@@ -27,12 +27,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import ch.skew.remotrix.classes.Account
 import ch.skew.remotrix.classes.MsgStatus
+import ch.skew.remotrix.classes.MsgType
 import ch.skew.remotrix.data.logDB.LogData
 
 @Preview
 @Composable
 fun LogsPreview(){
-    Logs(listOf(), listOf(LogData(1, "9:41", MsgStatus.MESSAGE_SENT, null, 1, 1, "hello world"), LogData(2, "9:42", MsgStatus.CANNOT_CREATE_CHILD_ROOM, "asdf", 2, 1, "hello world")), true)
+    Logs(listOf(), listOf(LogData(1, "9:41", MsgStatus.MESSAGE_SENT, null, MsgType.TestMessage, 1, "hello world"), LogData(2, "9:42", MsgStatus.CANNOT_CREATE_CHILD_ROOM, "asdf", MsgType.SMSForwarding, 1, "hello world")), true)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
