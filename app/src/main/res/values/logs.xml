@@ -24,4 +24,6 @@
     <string name="message_sent_as">Message Sent As</string>
     <string name="unknown_sender">Unknown (likely removed from this app)</string>
     <string name="message_content">Message Content</string>
+    <string name="unknown_forwarder">(Forwarder: Unknown (ID: %s))</string>
+    <string name="forwarder">(Forwarder: %s)</string>
 </resources>

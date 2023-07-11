@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import ch.skew.remotrix.classes.Account
 import ch.skew.remotrix.classes.MsgStatus
 import ch.skew.remotrix.classes.MsgType
+import ch.skew.remotrix.components.LogViewerDialog
 import ch.skew.remotrix.data.logDB.LogData
 
 @Preview
@@ -44,6 +45,7 @@ fun Logs(
     isEnabled: Boolean,
     goBack: () -> Unit = {}
 ){
+    val detailedLog = remember{ mutableStateOf<Pair<LogData, Account?>?>(null) }
     val hideSuccesses = remember { mutableStateOf(false) }
     Scaffold(
         topBar = {
@@ -84,25 +86,19 @@ fun Logs(
                         log.status === MsgStatus.MESSAGE_SENT || log.status === MsgStatus.MESSAGE_DROPPED
                     if (!(success && hideSuccesses.value)) {
                         val msg = MsgStatus.translateStatus(log.status)
-                        val forwarderInfo = if (log.forwarderId === null) ""
-                        else {
-                            val accountUsed = accounts.find { it.id == log.forwarderId }
-                            if (accountUsed === null) "(Forwarder: Unknown (ID: %s))".format(
-                                log.forwarderId
-                            )
-                            else "(Forwarder: %s)".format(accountUsed.userId)
-                        }
                         Text(
                             "[${
                                 if (success) stringResource(R.string.success)
                                 else stringResource(R.string.failure)
                             }] " + log.timestamp + ": " + stringResource(
                                     id = msg
-                                ) + " " + forwarderInfo
+                                ),
+                            modifier = Modifier.clickable { detailedLog.value = Pair(log, accounts.find { it.id == log.forwarderId }) }
                         )
                     }
                 }
             }
+            LogViewerDialog(data = detailedLog.value) { detailedLog.value = null }
         }
     }
 }

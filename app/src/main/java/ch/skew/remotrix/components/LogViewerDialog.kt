@@ -10,39 +10,20 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import ch.skew.remotrix.R
 import ch.skew.remotrix.classes.Account
 import ch.skew.remotrix.classes.MsgStatus
 import ch.skew.remotrix.classes.MsgType
 import ch.skew.remotrix.data.logDB.LogData
 
-@Preview
-@Composable
-fun LogViewerDialogPreview(){
-    LogViewerDialog(
-        log = LogData(
-            id = 3,
-            timestamp = "11223344",
-            status = MsgStatus.CANNOT_CREATE_ROOM,
-            errorMsg = null,
-            msgType = MsgType.TestMessage,
-            payload = "Test message",
-            forwarderId = 2
-        ),
-        close = {},
-        account = null
-    )
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LogViewerDialog(
-    log: LogData?,
-    close: () -> Unit,
-    account: Account?
+    data: Pair<LogData, Account?>?,
+    close: () -> Unit
 ) {
-    if (log !== null) {
+    if (data !== null) {
+        val log = data.first
         AlertDialog(
             onDismissRequest = close,
             confirmButton = {},
@@ -86,8 +67,8 @@ fun LogViewerDialog(
                         headlineText = { Text(stringResource(R.string.message_sent_as)) },
                         supportingText = {
                             Text(
-                                if(account === null) stringResource(R.string.unknown_sender)
-                                else account.userId
+                                if(data.second === null) stringResource(R.string.unknown_sender)
+                                else data.second!!.fullName()
                             )
                         }
                     )
