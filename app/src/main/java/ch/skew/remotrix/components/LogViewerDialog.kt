@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import ch.skew.remotrix.R
+import ch.skew.remotrix.classes.Account
 import ch.skew.remotrix.classes.MsgStatus
 import ch.skew.remotrix.classes.MsgType
 import ch.skew.remotrix.data.logDB.LogData
@@ -29,7 +30,8 @@ fun LogViewerDialogPreview(){
             payload = "Test message",
             forwarderId = 2
         ),
-        close = {}
+        close = {},
+        account = null
     )
 }
 
@@ -37,7 +39,8 @@ fun LogViewerDialogPreview(){
 @Composable
 fun LogViewerDialog(
     log: LogData?,
-    close: () -> Unit
+    close: () -> Unit,
+    account: Account?
 ) {
     if (log !== null) {
         AlertDialog(
@@ -51,7 +54,7 @@ fun LogViewerDialog(
                 }
             },
             title = {
-                Text("View Log Entry (ID: %s)".format(log.id))
+                Text(stringResource(R.string.log_viewer_title).format(log.id))
             },
             text = {
                 Column(
@@ -59,16 +62,38 @@ fun LogViewerDialog(
                         .fillMaxWidth()
                 ) {
                     ListItem(
-                        headlineText = { Text("Current Status") },
+                        headlineText = { Text(stringResource(R.string.message_status)) },
                         supportingText = { Text(stringResource(id = MsgStatus.translateStatus(log.status))) }
                     )
                     ListItem(
-                        headlineText = { Text("Sent At") },
+                        headlineText = { Text(stringResource(R.string.sent_at)) },
                         supportingText = { Text(log.timestamp) },
                     )
                     if (log.errorMsg !== null) ListItem(
-                        headlineText = { Text("Error Message") },
+                        headlineText = { Text(stringResource(R.string.error_message)) },
                         supportingText = { Text(log.errorMsg) },
+                    )
+                    ListItem(
+                        headlineText = { Text(stringResource(R.string.message_type)) },
+                        supportingText = { Text(
+                            when(log.msgType) {
+                                MsgType.TestMessage -> stringResource(R.string.test_message)
+                                MsgType.SMSForwarding -> stringResource(R.string.sms_message)
+                            }
+                        ) }
+                    )
+                    ListItem(
+                        headlineText = { Text(stringResource(R.string.message_sent_as)) },
+                        supportingText = {
+                            Text(
+                                if(account === null) stringResource(R.string.unknown_sender)
+                                else account.userId
+                            )
+                        }
+                    )
+                    ListItem(
+                        headlineText = { Text(stringResource(R.string.message_content)) },
+                        supportingText = { Text(log.payload) }
                     )
                 }
             }
