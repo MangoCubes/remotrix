@@ -82,16 +82,7 @@ fun Logs(
                     val success =
                         log.status === MsgStatus.MESSAGE_SENT || log.status === MsgStatus.MESSAGE_DROPPED
                     if (!(success && hideSuccesses.value)) {
-                        val msg = when(log.status){
-                            MsgStatus.MESSAGE_SENDING_FAILED -> stringResource(R.string.message_sending_failed)
-                            MsgStatus.MESSAGE_SENT -> stringResource(R.string.message_sent)
-                            MsgStatus.MESSAGE_DROPPED -> stringResource(R.string.message_dropped)
-                            MsgStatus.NO_SUITABLE_FORWARDER -> stringResource(R.string.no_suitable_forwarder)
-                            MsgStatus.CANNOT_LOAD_MATRIX_CLIENT -> stringResource(R.string.cannot_load_matrix_client)
-                            MsgStatus.CANNOT_CREATE_ROOM -> stringResource(R.string.cannot_create_room)
-                            MsgStatus.CANNOT_CREATE_CHILD_ROOM -> stringResource(R.string.cannot_create_child_room)
-                            MsgStatus.MESSAGE_MAX_ATTEMPTS_REACHED -> stringResource(R.string.message_max_attempts_reached)
-                        }
+                        val msg = MsgStatus.translateStatus(log.status)
                         val forwarderInfo = if (log.forwarderId === null) ""
                         else {
                             val accountUsed = accounts.find { it.id == log.forwarderId }
@@ -100,7 +91,14 @@ fun Logs(
                             )
                             else "(Forwarder: %s)".format(accountUsed.userId)
                         }
-                        Text("[${if (success) stringResource(R.string.success) else stringResource(R.string.failure)}] " + log.timestamp + ": " + msg + " " + forwarderInfo)
+                        Text(
+                            "[${
+                                if (success) stringResource(R.string.success)
+                                else stringResource(R.string.failure)
+                            }] " + log.timestamp + ": " + stringResource(
+                                    id = msg
+                                ) + " " + forwarderInfo
+                        )
                     }
                 }
             }
