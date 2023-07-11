@@ -14,9 +14,9 @@ import ch.skew.remotrix.classes.MsgStatus
 import ch.skew.remotrix.classes.MsgType
 import ch.skew.remotrix.classes.PhoneNumber
 import ch.skew.remotrix.classes.RoomCreationError
-import ch.skew.remotrix.classes.SMSMsg
 import ch.skew.remotrix.data.RemotrixDB
 import ch.skew.remotrix.data.RemotrixSettings
+import ch.skew.remotrix.data.forwardRuleDB.ForwardRule
 import ch.skew.remotrix.data.roomIdDB.RoomIdData
 import io.ktor.http.ContentType
 import io.ktor.utils.io.ByteReadChannel
@@ -93,7 +93,7 @@ class CommandService: Service() {
                 } else {
                     CoroutineScope(Dispatchers.IO).launch {
                         val log = settings.getLogging.first()
-                        sendMsg(SMSMsg(sender, payload), log)
+                        sendMsg(sender, payload, log)
                     }
                 }
             }
@@ -292,15 +292,28 @@ class CommandService: Service() {
         return Result.success(roomId)
     }
 
-    private suspend fun sendMsg(msg: SMSMsg, log: Boolean) {
+    private fun getSenderId(sender: String, payload: String, rules: List<ForwardRule>): Int?{
+        fun matchRegex(pattern: String, from: String, matchEntire: Boolean = false): Boolean{
+            if(pattern === "") return true
+            val regex = Regex(pattern)
+            return ((!matchEntire && regex.matches(from))
+                    || (matchEntire && regex.matchEntire(from) !== null))
+        }
+        for(rule in rules){
+            if(matchRegex(rule.senderRegex, sender) && matchRegex(rule.bodyRegex, payload)) return rule.forwarderId
+        }
+        return null
+    }
+
+    private suspend fun sendMsg(sender: String, payload: String, log: Boolean) {
         if(clients === null) {
             load()
         }
-        val currentLog = if (log) db.logDao.writeAhead(MsgType.SMSForwarding, msg.payload) else -1
+        val currentLog = if (log) db.logDao.writeAhead(MsgType.SMSForwarding, payload) else -1
         // Default account is loaded up from the settings.
         val defaultAccount = settings.getDefaultForwarder.first()
         // Forwarder rules are loaded here, and are immediately put through getSenderId to determine the forwarder
-        val match = msg.getSenderId(db.forwardRuleDao.getAll())
+        val match = this.getSenderId(sender, payload, db.forwardRuleDao.getAll())
         // Account ID of -1 is set to none.
         if(defaultAccount == -1 && match === null) {
             if(currentLog != -1L) db.logDao.setSuccess(
@@ -323,11 +336,11 @@ class CommandService: Service() {
             return
         }
         val client = pair.first
-        val sendTo = db.roomIdDao.getDestRoom(msg.sender, sendAs)
+        val sendTo = db.roomIdDao.getDestRoom(sender, sendAs)
         val managerId = settings.getManagerId.first()
         // If an appropriate room does not exist for a given forwarder-SMS sender is not found, a new room is created.
         val roomId = if (sendTo === null) {
-            val number = PhoneNumber.from(msg.sender).getOrElse {
+            val number = PhoneNumber.from(sender).getOrElse {
                 if (currentLog != -1L) db.logDao.setFailure(
                     currentLog,
                     if (it is RoomCreationError) it.error else MsgStatus.CANNOT_CREATE_ROOM,
@@ -349,13 +362,13 @@ class CommandService: Service() {
         // If this was null, it means that this entry was not present in the database. It is entered here.
         if (sendTo === null) {
             client.room.sendMessage(roomId) {
-                text(getString(R.string.startup_1).format(client.userId.full, client.deviceId, msg.sender))
+                text(getString(R.string.startup_1).format(client.userId.full, client.deviceId, sender))
             }
-            db.roomIdDao.insert(RoomIdData(msg.sender, sendAs, roomId.full))
+            db.roomIdDao.insert(RoomIdData(sender, sendAs, roomId.full))
             client.api.rooms.inviteUser(roomId, UserId(managerId))
         }
         val tid = client.room.sendMessage(roomId) {
-            text(msg.payload)
+            text(payload)
         }
         do {
             delay(5000)
