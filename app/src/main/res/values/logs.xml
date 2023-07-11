@@ -14,4 +14,16 @@
     <string name="cannot_create_room">Message not sent because room for that sender could not be created.</string>
     <string name="cannot_create_child_room">Message not sent because Matrix client cannot create child room.</string>
     <string name="message_max_attempts_reached">Maximum message sending attempts reached; Message has been dropped.</string>
+    <string name="log_viewer_title">View Log Entry (ID: %s)</string>
+    <string name="message_status">Message Status</string>
+    <string name="sent_at">Sent At</string>
+    <string name="error_message">Error Message</string>
+    <string name="message_type">Message Type</string>
+    <string name="test_message">Test message</string>
+    <string name="sms_message">SMS message</string>
+    <string name="message_sent_as">Message Sent As</string>
+    <string name="unknown_sender">Unknown (likely removed from this app)</string>
+    <string name="message_content">Message Content</string>
+    <string name="unknown_forwarder">(Forwarder: Unknown (ID: %s))</string>
+    <string name="forwarder">(Forwarder: %s)</string>
 </resources>

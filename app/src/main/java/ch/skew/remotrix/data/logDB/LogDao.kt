@@ -2,13 +2,15 @@ package ch.skew.remotrix.data.logDB
 
 import androidx.room.Dao
 import androidx.room.Query
+import ch.skew.remotrix.classes.MsgStatus
+import ch.skew.remotrix.classes.MsgType
 import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface LogDao{
 
     @Query("INSERT INTO logs (status, msg_type, payload) VALUES (:defStatus, :msgType, :payload)")
-    suspend fun writeAhead(msgType: Int, payload: String, defStatus: MsgStatus = MsgStatus.MESSAGE_SENDING_FAILED): Long
+    suspend fun writeAhead(msgType: MsgType, payload: String, defStatus: MsgStatus = MsgStatus.MESSAGE_SENDING_FAILED): Long
 
     @Query("UPDATE logs SET status = :status, error_msg = :errorMsg, forwarder_id = :forwarderId WHERE id = :id")
     suspend fun setFailure(id: Long, status: MsgStatus, errorMsg: String?, forwarderId: Int?)

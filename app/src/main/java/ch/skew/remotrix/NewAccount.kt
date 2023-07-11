@@ -45,9 +45,11 @@ import net.folivo.trixnity.core.model.RoomId
 import net.folivo.trixnity.core.model.UserId
 import net.folivo.trixnity.core.model.events.Event
 import net.folivo.trixnity.core.model.events.m.room.CreateEventContent
+import net.folivo.trixnity.core.model.events.m.room.EncryptionEventContent
 import net.folivo.trixnity.core.model.events.m.room.HistoryVisibilityEventContent
 import net.folivo.trixnity.core.model.events.m.space.ChildEventContent
 import net.folivo.trixnity.core.model.events.m.space.ParentEventContent
+import net.folivo.trixnity.core.model.keys.EncryptionAlgorithm
 import okio.Path.Companion.toPath
 
 enum class VerificationStep {
@@ -342,6 +344,12 @@ fun onLoginClick(
         val initState = mutableListOf<Event.InitialStateEvent<*>>(
             Event.InitialStateEvent(
                 content = HistoryVisibilityEventContent(HistoryVisibilityEventContent.HistoryVisibility.SHARED),
+                stateKey = ""
+            ),
+            Event.InitialStateEvent(
+                content = EncryptionEventContent(
+                    algorithm = EncryptionAlgorithm.Megolm
+                ),
                 stateKey = ""
             )
         )

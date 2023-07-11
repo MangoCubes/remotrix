@@ -26,13 +26,15 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import ch.skew.remotrix.classes.Account
+import ch.skew.remotrix.classes.MsgStatus
+import ch.skew.remotrix.classes.MsgType
+import ch.skew.remotrix.components.LogViewerDialog
 import ch.skew.remotrix.data.logDB.LogData
-import ch.skew.remotrix.data.logDB.MsgStatus
 
 @Preview
 @Composable
 fun LogsPreview(){
-    Logs(listOf(), listOf(LogData(1, "9:41", MsgStatus.MESSAGE_SENT, null, 1, 1, "hello world"), LogData(2, "9:42", MsgStatus.CANNOT_CREATE_CHILD_ROOM, "asdf", 2, 1, "hello world")), true)
+    Logs(listOf(), listOf(LogData(1, "9:41", MsgStatus.MESSAGE_SENT, null, MsgType.TestMessage, 1, "hello world"), LogData(2, "9:42", MsgStatus.CANNOT_CREATE_CHILD_ROOM, "asdf", MsgType.SMSForwarding, 1, "hello world")), true)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -43,6 +45,7 @@ fun Logs(
     isEnabled: Boolean,
     goBack: () -> Unit = {}
 ){
+    val detailedLog = remember{ mutableStateOf<Pair<LogData, Account?>?>(null) }
     val hideSuccesses = remember { mutableStateOf(false) }
     Scaffold(
         topBar = {
@@ -82,28 +85,20 @@ fun Logs(
                     val success =
                         log.status === MsgStatus.MESSAGE_SENT || log.status === MsgStatus.MESSAGE_DROPPED
                     if (!(success && hideSuccesses.value)) {
-                        val msg = when(log.status){
-                            MsgStatus.MESSAGE_SENDING_FAILED -> stringResource(R.string.message_sending_failed)
-                            MsgStatus.MESSAGE_SENT -> stringResource(R.string.message_sent)
-                            MsgStatus.MESSAGE_DROPPED -> stringResource(R.string.message_dropped)
-                            MsgStatus.NO_SUITABLE_FORWARDER -> stringResource(R.string.no_suitable_forwarder)
-                            MsgStatus.CANNOT_LOAD_MATRIX_CLIENT -> stringResource(R.string.cannot_load_matrix_client)
-                            MsgStatus.CANNOT_CREATE_ROOM -> stringResource(R.string.cannot_create_room)
-                            MsgStatus.CANNOT_CREATE_CHILD_ROOM -> stringResource(R.string.cannot_create_child_room)
-                            MsgStatus.MESSAGE_MAX_ATTEMPTS_REACHED -> stringResource(R.string.message_max_attempts_reached)
-                        }
-                        val forwarderInfo = if (log.forwarderId === null) ""
-                        else {
-                            val accountUsed = accounts.find { it.id == log.forwarderId }
-                            if (accountUsed === null) "(Forwarder: Unknown (ID: %s))".format(
-                                log.forwarderId
-                            )
-                            else "(Forwarder: %s)".format(accountUsed.userId)
-                        }
-                        Text("[${if (success) stringResource(R.string.success) else stringResource(R.string.failure)}] " + log.timestamp + ": " + msg + " " + forwarderInfo)
+                        val msg = MsgStatus.translateStatus(log.status)
+                        Text(
+                            "[${
+                                if (success) stringResource(R.string.success)
+                                else stringResource(R.string.failure)
+                            }] " + log.timestamp + ": " + stringResource(
+                                    id = msg
+                                ),
+                            modifier = Modifier.clickable { detailedLog.value = Pair(log, accounts.find { it.id == log.forwarderId }) }
+                        )
                     }
                 }
             }
+            LogViewerDialog(data = detailedLog.value) { detailedLog.value = null }
         }
     }
 }
