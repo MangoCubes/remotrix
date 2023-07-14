@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.DeleteForever
@@ -43,6 +44,7 @@ fun Settings(
     defaultForwarder: Int = -1,
     logging: Boolean = true,
     enableOnBootMessage: Boolean = true,
+    acceptCommandsFromAll: Boolean = true,
     goBack: () -> Unit = {},
     debugMenu: () -> Unit = {}
 ) {
@@ -91,6 +93,25 @@ fun Settings(
                 },
                 trailingContent = {
                     Switch(checked = enableOnBootMessage, onCheckedChange = null)
+                }
+            )
+            ListHeader(stringResource(R.string.commands))
+            ListItem(
+                headlineText = { Text(stringResource(R.string.allow_anyone_to_use_commands)) },
+                supportingText = { Text(stringResource(R.string.allow_anyone_to_use_commands_desc)) },
+                leadingContent = {
+                    Icon(
+                        Icons.Filled.AdminPanelSettings,
+                        contentDescription = stringResource(R.string.allow_anyone_to_use_commands)
+                    )
+                },
+                modifier = Modifier.clickable {
+                    scope.launch {
+                        settings.saveAcceptCommandsFromAll(!acceptCommandsFromAll)
+                    }
+                },
+                trailingContent = {
+                    Switch(checked = acceptCommandsFromAll, onCheckedChange = null)
                 }
             )
             ListHeader(stringResource(R.string.logging))

@@ -16,4 +16,7 @@
     <string name="debug">Debug</string>
     <string name="accounts">Accounts</string>
     <string name="logging">Logging</string>
+    <string name="commands">Commands</string>
+    <string name="allow_anyone_to_use_commands">Allow Anyone To Use Commands</string>
+    <string name="allow_anyone_to_use_commands_desc">If this option is enabled, anyone inside the management/messaging room can use commands. Otherwise, only the manager can use commands.</string>
 </resources>

@@ -19,6 +19,7 @@ class RemotrixSettings(
         val logging = stringPreferencesKey("logging")
         val enableOnBootMessage = stringPreferencesKey("enableOnBootMessage")
         val debugAlivePing = stringPreferencesKey("debugAlivePing")
+        val acceptCommandsFromAll = stringPreferencesKey("acceptCommandsFromAll")
     }
 
     val getDebugAlivePing: Flow<Boolean> = context.dataStore.data.map { preferences ->
@@ -47,6 +48,10 @@ class RemotrixSettings(
 
     val getEnableOnBootMessage: Flow<Boolean> = context.dataStore.data.map { preferences ->
         preferences[enableOnBootMessage] === null || preferences[enableOnBootMessage] != "0"
+    }
+
+    val getAcceptCommandsFromAll: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[acceptCommandsFromAll] == "1"
     }
 
     suspend fun saveManagerId(name: String) {
@@ -89,6 +94,12 @@ class RemotrixSettings(
     suspend fun saveDebugAlivePing(set: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[debugAlivePing] = if (set) "1" else "0"
+        }
+    }
+
+    suspend fun saveAcceptCommandsFromAll(set: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[acceptCommandsFromAll] = if (set) "1" else "0"
         }
     }
 }

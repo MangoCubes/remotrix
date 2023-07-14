@@ -14,7 +14,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.AdminPanelSettings
+import androidx.compose.material.icons.filled.ManageAccounts
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -131,6 +131,7 @@ fun RemotrixApp(
     val enableOnBootMessage = settings.getEnableOnBootMessage.collectAsState(initial = null)
     val logging = settings.getLogging.collectAsState(initial = null)
     val debugAlivePing = settings.getDebugAlivePing.collectAsState(initial = null)
+    val acceptCommandsFromAll = settings.getAcceptCommandsFromAll.collectAsState(initial = null)
     val navController = rememberNavController()
     RemotrixTheme {
         if (openedBefore.value !== null) NavHost(
@@ -183,6 +184,7 @@ fun RemotrixApp(
                         defaultForwarder.value ?: -1,
                         logging.value ?: false,
                         enableOnBootMessage.value ?: true,
+                        acceptCommandsFromAll.value ?: false,
                         { navController.popBackStack() },
                         { navController.navigate(SettingsDest.Debug.route) }
                     )
@@ -227,7 +229,7 @@ fun HomeScreen(
                 supportingText = { Text(stringResource(R.string.set_manager_account_desc)) },
                 leadingContent = {
                     Icon(
-                        Icons.Filled.AdminPanelSettings,
+                        Icons.Filled.ManageAccounts,
                         contentDescription = stringResource(R.string.manage_accounts),
                     )
                 },
