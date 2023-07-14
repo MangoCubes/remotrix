@@ -1,5 +1,6 @@
 package ch.skew.remotrix.settings
 
+import android.content.Intent
 import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -29,6 +30,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import ch.skew.remotrix.R
+import ch.skew.remotrix.background.CommandService
 import ch.skew.remotrix.classes.Account
 import ch.skew.remotrix.components.ListHeader
 import ch.skew.remotrix.components.SelectAccountDialog
@@ -108,6 +110,11 @@ fun Settings(
                 modifier = Modifier.clickable {
                     scope.launch {
                         settings.saveAcceptCommandsFromAll(!acceptCommandsFromAll)
+                        Intent(context, CommandService::class.java)
+                            .apply {
+                                action = CommandService.RELOAD
+                                context.startService(this)
+                            }
                     }
                 },
                 trailingContent = {

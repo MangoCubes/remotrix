@@ -1,5 +1,6 @@
 package ch.skew.remotrix.setup
 
+import android.content.Intent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,6 +20,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import ch.skew.remotrix.background.CommandService
 import ch.skew.remotrix.data.RemotrixSettings
 import kotlinx.coroutines.launch
 
@@ -34,8 +36,9 @@ fun AdditionalInfo(
             })
         }
     ) { padding ->
-        val settings = RemotrixSettings(LocalContext.current)
         val scope = rememberCoroutineScope()
+        val context = LocalContext.current
+        val settings = RemotrixSettings(context)
         Column(
             modifier = Modifier
                 .padding(padding)
@@ -66,7 +69,14 @@ fun AdditionalInfo(
                     .fillMaxWidth()
                     .padding(horizontal = 10.dp),
                 onClick = {
-                    scope.launch { settings.saveOpenedBefore() }
+                    scope.launch {
+                        settings.saveOpenedBefore()
+                        Intent(context, CommandService::class.java)
+                            .apply {
+                                action = CommandService.RELOAD
+                                context.startService(this)
+                            }
+                    }
                     nextPage()
                 }
             ) {

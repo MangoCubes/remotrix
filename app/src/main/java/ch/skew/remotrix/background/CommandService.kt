@@ -136,16 +136,19 @@ class CommandService: Service() {
     }
 
     private suspend fun reload() {
-        clients.forEach { c ->
-            c.value.first.stopSync()
-            while (c.value.first.syncState.first() !== SyncState.STOPPED) delay(1000)
+        if(currentStatus === CurrentStatus.NotStarted) load()
+        else if (currentStatus === CurrentStatus.Running) {
+            clients.forEach { c ->
+                c.value.first.stopSync()
+                while (c.value.first.syncState.first() !== SyncState.STOPPED) delay(1000)
+            }
+            scope.cancel()
+            currentStatus = CurrentStatus.ShuttingDown
+            delay(10000)
+            currentStatus = CurrentStatus.NotStarted
+            scope = CoroutineScope(Dispatchers.IO)
+            load()
         }
-        scope.cancel()
-        currentStatus = CurrentStatus.ShuttingDown
-        delay(10000)
-        currentStatus = CurrentStatus.NotStarted
-        scope = CoroutineScope(Dispatchers.IO)
-        load()
     }
 
     private suspend fun sendTestMsg(id: Int, to: RoomId, payload: String, log: Boolean) {
@@ -545,7 +548,7 @@ class CommandService: Service() {
             } else if(args[0] == "!ping") return CommandAction.Reply(getString(R.string.pong))
             else if (args[0] == "!help") return CommandAction.Reply(getString(R.string.command_help_output))
             else if (args[0] == "!reload") {
-                if (currentStatus == CurrentStatus.Running) reload()
+                reload()
             } else if(args[0] == "!new") {
                 if(args.size == 1) return CommandAction.Reply(getString(R.string.error_sms_receiver_not_specified))
                 val number = PhoneNumber.from(args[1]).getOrElse {
