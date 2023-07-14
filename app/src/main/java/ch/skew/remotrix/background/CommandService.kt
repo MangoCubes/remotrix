@@ -67,6 +67,8 @@ class CommandService: Service() {
     private lateinit var settings: RemotrixSettings
     private lateinit var db: RemotrixDB
     private var currentStatus = CurrentStatus.NotStarted
+    private var acceptCommandsFromAll = false
+    private var managerId = ""
 
     override fun onCreate() {
         super.onCreate()
@@ -473,6 +475,12 @@ class CommandService: Service() {
                             }
                             return@collect
                         }
+                        if(managerId != ev.event.sender.full && !acceptCommandsFromAll){
+                            client.room.sendMessage(ev.roomId) {
+                                text(getString(R.string.error_not_allowed))
+                            }
+                            return@collect
+                        }
                         val reply = handleMessage(it.value, content.body, ev)
                         if(reply === null) return@collect
 
@@ -492,6 +500,8 @@ class CommandService: Service() {
                 }
             }
         }
+        managerId = this.settings.getManagerId.first()
+        acceptCommandsFromAll = this.settings.getAcceptCommandsFromAll.first()
         if(clients.isNotEmpty()){
             currentStatus = CurrentStatus.Running
             val notification = NotificationCompat.Builder(this, "command_listener")
@@ -501,7 +511,6 @@ class CommandService: Service() {
                 .setOngoing(true)
             startForeground(1, notification.build())
         }
-
     }
 
     private suspend fun handleMessage(account: Pair<MatrixClient, Account>, body: String, event: TimelineEvent): CommandAction? {

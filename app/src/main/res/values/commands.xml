@@ -19,4 +19,5 @@
     <string name="error_invalid_phone_number">Error: Invalid phone number.</string>
     <string name="room_already_exists">Room for that phone number already exists; Inviting you there now.</string>
     <string name="error_encryption_not_enabled">Error: This chatroom does not have encryption enabled.</string>
+    <string name="error_not_allowed">Error: You are not allowed to use commands.</string>
 </resources>
