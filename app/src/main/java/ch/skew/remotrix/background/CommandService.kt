@@ -1,6 +1,8 @@
 package ch.skew.remotrix.background
 
+import android.app.NotificationManager
 import android.app.Service
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.IBinder
@@ -69,11 +71,16 @@ class CommandService: Service() {
     private var currentStatus = CurrentStatus.NotStarted
     private var acceptCommandsFromAll = false
     private var managerId = ""
+    private lateinit var notification: NotificationCompat.Builder
 
     override fun onCreate() {
         super.onCreate()
         this.settings = RemotrixSettings(applicationContext)
         this.db = RemotrixDB.getInstance(applicationContext)
+        this.notification = NotificationCompat.Builder(this, "command_listener")
+            .setContentTitle(getString(R.string.remotrix_service))
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setOngoing(true)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -143,8 +150,10 @@ class CommandService: Service() {
                 while (c.value.first.syncState.first() !== SyncState.STOPPED) delay(1000)
             }
             scope.cancel()
+            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.notify(1, this.notification.setContentText("Shutting down...").build())
             currentStatus = CurrentStatus.ShuttingDown
-            delay(10000)
+            delay(5000)
             currentStatus = CurrentStatus.NotStarted
             scope = CoroutineScope(Dispatchers.IO)
             load()
@@ -427,6 +436,9 @@ class CommandService: Service() {
     private suspend fun load() {
         clients.clear()
         currentStatus = CurrentStatus.Loading
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        this.notification.setContentText("Loading, please wait...")
+        notificationManager.notify(1, this.notification.build())
         val accounts = Account.from(db.accountDao.getAllAccounts().first())
         for(a in accounts){
             val clientDir = applicationContext.filesDir.resolve("clients/${a.id}")
@@ -507,12 +519,11 @@ class CommandService: Service() {
         acceptCommandsFromAll = this.settings.getAcceptCommandsFromAll.first()
         if(clients.isNotEmpty()){
             currentStatus = CurrentStatus.Running
-            val notification = NotificationCompat.Builder(this, "command_listener")
-                .setContentTitle(getString(R.string.remotrix_service))
-                .setContentText(getString(R.string.remotrix_service_desc).format(clients.size))
-                .setSmallIcon(R.drawable.ic_launcher_foreground)
-                .setOngoing(true)
+            this.notification.setContentText(getString(R.string.remotrix_service_desc).format(clients.size))
             startForeground(1, notification.build())
+        } else {
+            this.scope.cancel()
+            currentStatus = CurrentStatus.NotStarted
         }
     }
 
