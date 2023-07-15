@@ -38,11 +38,13 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.ContextCompat.startActivity
 
 enum class CurrentlyGranting {
-    SMS_READ,
-    SMS_SEND,
-    CONTACT,
-    NOTIFICATION
+    Notification,
+    ReceiveSMS,
+    SendSMS,
+    Battery,
+    Contacts
 }
+
 @SuppressLint("BatteryLife")
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @OptIn(ExperimentalMaterial3Api::class)
@@ -59,96 +61,68 @@ fun AskPermissions(
         }
     ) { padding ->
         val context = LocalContext.current
-        val smsReadGranted = ContextCompat.checkSelfPermission(context, Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED
         val packageName = context.packageName
         val pm = context.getSystemService(POWER_SERVICE) as PowerManager
-        val batteryGranted = pm.isIgnoringBatteryOptimizations(packageName)
-        val smsSendGranted = ContextCompat.checkSelfPermission(context, Manifest.permission.SEND_SMS) == PackageManager.PERMISSION_GRANTED
-        val notificationGranted = ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
-        val contactGranted = ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED
-        val smsReadAlreadyGranted = remember { mutableStateOf(smsReadGranted) }
-        val smsSendAlreadyGranted = remember { mutableStateOf(smsSendGranted) }
-        val notificationAlreadyGranted = remember { mutableStateOf(notificationGranted) }
-        val contactAlreadyGranted = remember { mutableStateOf(contactGranted) }
         val currentlyGranting = remember { mutableStateOf<CurrentlyGranting?>(null) }
+        val notificationGranted = remember {
+            mutableStateOf(
+                ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) == PackageManager.PERMISSION_GRANTED
+            )
+        }
+        val smsSendingGranted = remember {
+            mutableStateOf(
+                ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.SEND_SMS
+                ) == PackageManager.PERMISSION_GRANTED
+            )
+        }
+        val smsReceivingGranted = remember {
+            mutableStateOf(
+                ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.RECEIVE_MMS
+                ) == PackageManager.PERMISSION_GRANTED
+            )
+        }
+        val contactsGranted = remember {
+            mutableStateOf(
+                ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.READ_CONTACTS
+                ) == PackageManager.PERMISSION_GRANTED
+            )
+        }
+        val batteryGranted = remember {
+            mutableStateOf(pm.isIgnoringBatteryOptimizations(packageName))
+        }
         val launcher = rememberLauncherForActivityResult(
             ActivityResultContracts.RequestPermission()
         ) { isGranted ->
+            println(isGranted)
             if (isGranted) {
-                when (currentlyGranting.value) {
-                    CurrentlyGranting.SMS_READ -> {
-                        smsReadAlreadyGranted.value = true
-                        Toast.makeText(
-                            context,
-                            "SMS reading permission granted.",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-
-                    CurrentlyGranting.SMS_SEND -> {
-                        smsSendAlreadyGranted.value = true
-                        Toast.makeText(
-                            context,
-                            "SMS sending permission granted.",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-
-                    CurrentlyGranting.CONTACT -> {
-                        contactAlreadyGranted.value = true
-                        Toast.makeText(
-                            context,
-                            "Contact permission granted.",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-
-                    CurrentlyGranting.NOTIFICATION -> {
-                        notificationAlreadyGranted.value = true
-                        Toast.makeText(
-                            context,
-                            "Notification permission granted.",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
+                when(currentlyGranting.value) {
+                    CurrentlyGranting.Contacts -> contactsGranted.value = true
+                    CurrentlyGranting.Notification -> notificationGranted.value = true
+                    CurrentlyGranting.ReceiveSMS -> smsReceivingGranted.value = true
+                    CurrentlyGranting.SendSMS -> smsSendingGranted.value = true
+                    CurrentlyGranting.Battery -> batteryGranted.value = true
                     null -> {}
-
                 }
+                Toast.makeText(
+                    context,
+                    "Permission granted.",
+                    Toast.LENGTH_SHORT
+                ).show()
             } else {
-                when (currentlyGranting.value) {
-                    CurrentlyGranting.SMS_READ -> {
-                        Toast.makeText(
-                            context,
-                            "SMS reading permission denied.",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-
-                    CurrentlyGranting.SMS_SEND -> {
-                        Toast.makeText(
-                            context,
-                            "SMS sending permission denied.",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-
-                    CurrentlyGranting.CONTACT -> {
-                        Toast.makeText(
-                            context,
-                            "Contact permission denied.",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-
-                    CurrentlyGranting.NOTIFICATION -> {
-                        Toast.makeText(
-                            context,
-                            "Notification permission denied.",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-                    null -> {}
-                }
+                Toast.makeText(
+                    context,
+                    "Permission denied.",
+                    Toast.LENGTH_SHORT
+                ).show()
             }
         }
         Column(
@@ -162,119 +136,85 @@ fun AskPermissions(
                 supportingText = {
                     Text(
                         buildAnnotatedString {
-                            append("This app requires ")
+                            append("These permissions are ")
                             withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                                append("SMS access")
+                                append("required")
                             }
-
-                            append(" for both sending and receiving. This is obviously needed because this app is supposed to forward incoming SMS via Matrix and send back using SMS.")
+                            append(", meaning the app will not be able to perform its function without them.")
                         }
                     )
-                    Text(
-                        buildAnnotatedString {
-                            append("This app also needs to ")
-                            withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                                append("bypass battery optimisation")
-                            }
-                            append(".")
-                        }
-                    )
-                    Text("App needs to listen to messages sent into Matrix chatroom to act upon them.")
                 }
             )
-            Button(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 10.dp),
+            PermissionItem(
+                name = "Notification",
+                granted = notificationGranted.value,
                 onClick = {
-                    currentlyGranting.value = CurrentlyGranting.SMS_READ
+                    currentlyGranting.value = CurrentlyGranting.Notification
+                    launcher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                },
+                onInfoClick = {}
+            )
+            PermissionItem(
+                name = "Receive SMS",
+                granted = smsReceivingGranted.value,
+                onClick = {
+                    currentlyGranting.value = CurrentlyGranting.ReceiveSMS
                     launcher.launch(Manifest.permission.RECEIVE_SMS)
                 },
-                enabled = !smsReadAlreadyGranted.value
-            ) {
-                Text("Grant SMS read permission")
-            }
-            Button(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 10.dp),
+                onInfoClick = {}
+            )
+            PermissionItem(
+                name = "Send SMS",
+                granted = smsSendingGranted.value,
                 onClick = {
-                    currentlyGranting.value = CurrentlyGranting.SMS_SEND
+                    currentlyGranting.value = CurrentlyGranting.SendSMS
                     launcher.launch(Manifest.permission.SEND_SMS)
                 },
-                enabled = !smsSendAlreadyGranted.value
-            ) {
-                Text("Grant SMS sending permission")
-            }
-            Button(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 10.dp),
+                onInfoClick = {}
+            )
+            PermissionItem(
+                name = "Bypass battery optimisation",
+                granted = batteryGranted.value,
                 onClick = {
                     val intent = Intent()
                     intent.action = Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
                     intent.data = Uri.parse("package:$packageName")
                     startActivity(context, intent, null)
+                    batteryGranted.value = true
                 },
-                enabled = !batteryGranted
-            ) {
-                Text("Bypass battery optimisation")
-            }
+                onInfoClick = {}
+            )
             ListItem(
                 headlineText = { Text("Optional Permissions") },
                 supportingText = {
                     Text(
                         buildAnnotatedString {
-                            append("This app does not need ")
+                            append("These permissions are ")
                             withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                                append("contact access")
+                                append("not required")
                             }
-                            append(", but it is recommended. If granted, this app will read your contact to get the name of the sender, and it will be used for room names instead. You may skip this, but this will make all room names to show up as phone numbers only.")
-                        }
-                    )
-                    Text(
-                        buildAnnotatedString {
-                            append("This app also uses ")
-                            withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                                append("notification")
-                            }
-                            append(" not to alert you of some event, but to let you know that the core service is running.")
+                            append(", and this app can function without them.")
                         }
                     )
                 }
+            )
+            PermissionItem(
+                name = "Read contacts",
+                granted = contactsGranted.value,
+                onClick = {
+                    currentlyGranting.value = CurrentlyGranting.Contacts
+                    launcher.launch(Manifest.permission.READ_CONTACTS)
+                },
+                onInfoClick = {}
             )
             Button(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 10.dp),
-                onClick = {
-                    currentlyGranting.value = CurrentlyGranting.CONTACT
-                    launcher.launch(Manifest.permission.READ_CONTACTS)
-                },
-                enabled = !contactAlreadyGranted.value
-            ) {
-                Text("Grant contact access")
-            }
-            Button(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 10.dp),
-                onClick = {
-                    currentlyGranting.value = CurrentlyGranting.NOTIFICATION
-                    launcher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                },
-                enabled = !notificationAlreadyGranted.value
-            ) {
-                Text("Grant notification")
-            }
-            Button(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 10.dp),
                 onClick = nextPage,
-                enabled = smsReadAlreadyGranted.value && smsSendAlreadyGranted.value
+                enabled = smsSendingGranted.value && smsReceivingGranted.value && notificationGranted.value && batteryGranted.value
             ) {
-                Text("Done")
+                Text("Next")
             }
         }
     }
