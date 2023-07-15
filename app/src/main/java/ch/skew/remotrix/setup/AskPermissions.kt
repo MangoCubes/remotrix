@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ListItem
@@ -101,6 +102,8 @@ fun AskPermissions(
         val batteryGranted = remember {
             mutableStateOf(pm.isIgnoringBatteryOptimizations(packageName))
         }
+        val dialogMsg = remember { mutableStateOf("") }
+        val showDialog = remember { mutableStateOf(false) }
         val launcher = rememberLauncherForActivityResult(
             ActivityResultContracts.RequestPermission()
         ) { isGranted ->
@@ -156,7 +159,10 @@ fun AskPermissions(
                     currentlyGranting.value = CurrentlyGranting.Notification
                     launcher.launch(Manifest.permission.POST_NOTIFICATIONS)
                 },
-                onInfoClick = {}
+                onInfoClick = {
+                    dialogMsg.value = "Notification is used for showing you the current status of the critical background service."
+                    showDialog.value = true
+                }
             )
             PermissionItem(
                 name = "Receive SMS",
@@ -165,7 +171,10 @@ fun AskPermissions(
                     currentlyGranting.value = CurrentlyGranting.ReceiveSMS
                     launcher.launch(Manifest.permission.RECEIVE_SMS)
                 },
-                onInfoClick = {}
+                onInfoClick = {
+                    dialogMsg.value = "App needs to be able to receive SMS to forward them over Matrix."
+                    showDialog.value = true
+                }
             )
             PermissionItem(
                 name = "Send SMS",
@@ -174,7 +183,10 @@ fun AskPermissions(
                     currentlyGranting.value = CurrentlyGranting.SendSMS
                     launcher.launch(Manifest.permission.SEND_SMS)
                 },
-                onInfoClick = {}
+                onInfoClick = {
+                    dialogMsg.value = "App needs to be able to send SMS to forward messages from Matrix over SMS."
+                    showDialog.value = true
+                }
             )
             PermissionItem(
                 name = "Bypass battery optimisation",
@@ -186,7 +198,10 @@ fun AskPermissions(
                     startActivity(context, intent, null)
                     batteryGranted.value = true
                 },
-                onInfoClick = {}
+                onInfoClick = {
+                    dialogMsg.value = "Service needs to be kept running so that bridging feature doesn't get deactivated randomly."
+                    showDialog.value = true
+                }
             )
             ListItem(
                 headlineText = { Text("Optional Permissions") },
@@ -209,8 +224,25 @@ fun AskPermissions(
                     currentlyGranting.value = CurrentlyGranting.Contacts
                     launcher.launch(Manifest.permission.READ_CONTACTS)
                 },
-                onInfoClick = {}
+                onInfoClick = {
+                    dialogMsg.value = "Contact information is used for new messaging room names. App still works without this permission, but the room name will always be phone number, even if you have them saved in your contacts list."
+                    showDialog.value = true
+                }
             )
+            if(showDialog.value) {
+                AlertDialog(
+                    onDismissRequest = { showDialog.value = false },
+                    title = {
+                        Text("Permission Description")
+                    },
+                    text = { Text(dialogMsg.value) },
+                    confirmButton = {
+                        Button({ showDialog.value = false }){
+                            Text("Close")
+                        }
+                    }
+                )
+            }
             Button(
                 modifier = Modifier
                     .fillMaxWidth()
