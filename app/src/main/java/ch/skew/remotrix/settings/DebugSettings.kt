@@ -3,6 +3,8 @@ package ch.skew.remotrix.settings
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Schedule
@@ -46,7 +48,12 @@ fun DebugSettings(
         },
 
         ) { padding ->
-        Column(modifier = Modifier.padding(padding)) {
+        val scroll = rememberScrollState()
+        Column(
+            modifier = Modifier
+                .padding(padding)
+                .verticalScroll(scroll)
+        ) {
             ListItem(
                 headlineText = { Text(stringResource(R.string.receive_message_on_service_check)) },
                 supportingText = { Text(stringResource(R.string.receive_message_on_service_check_desc)) },

@@ -12,6 +12,8 @@ import androidx.annotation.RequiresApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.AdminPanelSettings
@@ -220,7 +222,12 @@ fun HomeScreen(
             })
         }
     ) { padding ->
-        Column(modifier = Modifier.padding(padding)) {
+        val scroll = rememberScrollState()
+        Column(
+            modifier = Modifier
+                .padding(padding)
+                .verticalScroll(scroll)
+        ) {
             ListHeader(stringResource(R.string.setup))
             ListItem(
                 headlineText = { Text(stringResource(R.string.set_manager_account)) },
