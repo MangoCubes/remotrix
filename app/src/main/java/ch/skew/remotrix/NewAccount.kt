@@ -200,6 +200,7 @@ fun NewAccount(
                         {
                             errorMsg.value = it
                             enabled.value = true
+                            step.value = VerificationStep.STANDBY
                         },
                         onClickGoBack,
                         { step.value = it }
@@ -209,13 +210,14 @@ fun NewAccount(
             )
             if (errorMsg.value.isNotEmpty()) Text(errorMsg.value)
             Column {
-                if(step.value === VerificationStep.STARTED)Text(stringResource(R.string.logging_in))
-                if(step.value === VerificationStep.JOINING_MESSAGING_SPACE)Text(stringResource(R.string.joining_the_messaging_space))
-                if(step.value === VerificationStep.VERIFYING_PERMISSIONS)Text(stringResource(R.string.checking_if_this_account_have_correct_permissions))
-                if(step.value === VerificationStep.CREATING_MANAGEMENT_ROOM)Text(stringResource(R.string.creating_management_room))
-                if(step.value === VerificationStep.APPENDING_ROOM_AS_CHILD)Text(stringResource(R.string.appending_management_room_as_child_room))
-                if(step.value === VerificationStep.INVITING_MANAGER)Text(stringResource(R.string.inviting_manager_account))
-                if(step.value === VerificationStep.CREATING_MESSAGING_SPACE)Text(stringResource(R.string.creating_messaging_space))
+                if(step.value === VerificationStep.STARTED) Text(stringResource(R.string.logging_in))
+                if(step.value === VerificationStep.JOINING_MESSAGING_SPACE) Text(stringResource(R.string.joining_the_messaging_space))
+                if(step.value === VerificationStep.VERIFYING_PERMISSIONS) Text(stringResource(R.string.checking_if_this_account_have_correct_permissions))
+                if(step.value === VerificationStep.CREATING_MANAGEMENT_ROOM) Text(stringResource(R.string.creating_management_room))
+                if(step.value === VerificationStep.APPENDING_ROOM_AS_CHILD) Text(stringResource(R.string.appending_management_room_as_child_room))
+                if(step.value === VerificationStep.INVITING_MANAGER) Text(stringResource(R.string.inviting_manager_account))
+                if(step.value === VerificationStep.CREATING_MESSAGING_SPACE) Text(stringResource(R.string.creating_messaging_space))
+                if(step.value === VerificationStep.STANDBY) Text("")
             }
         }
     }

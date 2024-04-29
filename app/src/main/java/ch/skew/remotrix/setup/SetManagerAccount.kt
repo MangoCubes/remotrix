@@ -124,7 +124,7 @@ fun SetManagerAccount(
 
 @Suppress("RegExpRedundantEscape")
 fun confirm(userId: String, context: Context, scope: CoroutineScope, settings: RemotrixSettings, done: () -> Unit){
-    val idPattern = Regex("@[A-z0-9]+:[A-z0-9\\.]+")
+    val idPattern = Regex("@.+:[A-z0-9\\.-]+")
     if(idPattern.matchEntire(userId) === null){
         Toast.makeText(context, "The ID you have entered is invalid.", Toast.LENGTH_SHORT).show()
         return
