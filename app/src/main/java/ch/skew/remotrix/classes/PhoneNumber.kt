@@ -20,9 +20,9 @@ class PhoneNumber(val number: String) {
 
     companion object {
         fun from(number: String): Result<PhoneNumber>{
-            val filtered = number.filter { it.isDigit() }
-            return if(filtered.isEmpty()) Result.failure(InvalidPhoneNumber())
-            else Result.success(PhoneNumber(filtered))
+//            val filtered = number.filter { it.isDigit() }
+//            return if(filtered.isEmpty()) Result.failure(InvalidPhoneNumber())
+            return Result.success(PhoneNumber(number))
         }
     }
 }
