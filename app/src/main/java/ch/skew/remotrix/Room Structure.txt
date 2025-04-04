@@ -1,0 +1,26 @@
+ROOM STRUCTURE
+ - Spaces/rooms used by this app:
+   Management Space
+   ↳ Management room
+   Account space
+   ↳ Message room
+ - Management space
+   - This space is where management room for a given account is created.
+   - User should create this themselves.
+   - This is not mandatory; If not set, management rooms will be created between manager and bot account regardless, just not under a specific space.
+ - Management room
+   - This room is where bot accounts send error messages, and debugging messages if enabled.
+   - Additionally, some controlling may be enabled via this channel.
+   - This channel is intentionally separated from account space in case someone wishes to reveal others what messages they are receiving, but do not wish to give them some control over the bot forwarding SMS messages.
+ - Account space
+   - This space is where message rooms are created.
+   - User should create this themselves.
+   - It is recommended that this space is created for every account registered in this app.
+ - Message room
+   - A room is created if a room for a given sender does not exist for a given sending account.
+   - Example
+     - Two accounts "@user1:example.com" and "@user2:example.com" are registered in this app.
+     - Both are configured to forward messages if any arrives on this phone.
+     - Neither have encountered sender "Jacob" before.
+     - Once they receive a message from "Jacob", each account will create a new room dedicated for conversation between you and "Jacob".
+     - As a result, there will be room "Jacob" in "@user1:example.com"'s Account space and "@user2:example.com"'s Account space, totalling 2 new rooms.

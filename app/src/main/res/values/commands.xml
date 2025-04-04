@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="unknown_command">Unknown command. Enter !help for more details.</string>
+    <string name="pong">Pong!</string>
+    <string name="kick_error">Error: Cannot get all users to kick.</string>
+    <string name="cannot_delete_management_room">You cannot delete management rooms. You can delete this by removing this account from Remotrix app.</string>
+    <string name="error_cannot_kick_user">Error: Cannot kick user %s.</string>
+    <string name="ready_to_accept_commands">%s is ready to accept commands. (You can disable this message in the settings)</string>
+    <string name="startup_1">This room has been created by %s on device %s. Any non-command messages sent into this room will be sent to %s.</string>
+    <string name="command_help_output">These are the currently available commands:\n    !close: Close a room in a messaging space. Useful if you received an OTP SMS.\n    !ping: Check if your phone service is running.\n    !reload: Reloads Matrix clients on your phone.\n    !say &amp;lt;Reply&amp;gt;: Sends a message as a reply in a SMS room. By default, you can exclude this to send SMS back.\n    !new &amp;lt;Phone number&amp;gt;: Create a new chatroom on Matrix that sends messages to the given phone number. You will be invited into that room.</string>
+    <string name="failed_to_decrypt">Client failed to decrypt message. Client will reload; please try again.</string>
+    <string name="service_check_ok">Service check has been executed and is running well.</string>
+    <string name="error_reply_not_specified">Error: Reply message has not been specified.</string>
+    <string name="error_message_sending_failed">Error: Message sending failed! Please enable and check log.</string>
+    <string name="message_sent_successfully">Message sent successfully.</string>
+    <string name="error_sending_in_management_room">Error: You cannot send messages in management room.</string>
+    <string name="error_sms_receiver_not_specified">Error: SMS receiver has not been specified.</string>
+    <string name="error_cannot_create_messaging_room">Error: Messaging room cannot be created!</string>
+    <string name="error_invalid_phone_number">Error: Invalid phone number.</string>
+    <string name="room_already_exists">Room for that phone number already exists; Inviting you there now.</string>
+    <string name="error_encryption_not_enabled">Error: This chatroom does not have encryption enabled.</string>
+</resources>

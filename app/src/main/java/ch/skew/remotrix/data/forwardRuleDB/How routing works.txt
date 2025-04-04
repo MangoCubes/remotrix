@@ -1,0 +1,22 @@
+Accounts will be held in "accounts" database.
+
+When a message arrives from SMS to Matrix, the following info are available to this app, and are used in choosing the destination space/room and Matrix sender.
+ - Content (Matches regex)
+ - Sender name (Matches regex)
+Instead of implementing additional conditions, there will be regex helpers.
+
+RoomID contains the following:
+ - SMS sender phone number
+ - Room ID
+ - Account ID
+This is automatically generated for every unique pair of Account ID and SMS phone number.
+
+SendAction has been greatly simplified. SendAction contains the following:
+ - SMS sender regex
+ - SMS body regex
+ - Priority
+ - Account ID (may be null)
+ - ID
+If SMS sender and body regex matches, the account associated with the account ID will be used to send the message via Matrix.
+Room to send this message is determined by roomId table.
+If Account ID is null, message is not forwarded.
