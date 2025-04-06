@@ -334,9 +334,10 @@ fun onLoginClick(
                 return@launch
             }
 
-            client.api.room.sendStateEvent(
-                testRoom, ChildEventContent(), testRoom.full
-            )
+            // Set the test room as the child room
+//            client.api.room.sendStateEvent(
+//                testRoom, ChildEventContent(), testRoom.full
+//            )
             client.api.room.leaveRoom(testRoom)
         }
         update(VerificationStep.CREATING_MANAGEMENT_ROOM)

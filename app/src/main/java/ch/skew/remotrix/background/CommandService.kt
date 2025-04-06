@@ -2,10 +2,13 @@ package ch.skew.remotrix.background
 
 import android.app.Service
 import android.content.Intent
+import android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_REMOTE_MESSAGING
 import android.net.Uri
+import android.os.Build
 import android.os.IBinder
 import android.provider.ContactsContract
 import android.telephony.SmsManager
+import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import ch.skew.remotrix.R
 import ch.skew.remotrix.classes.Account
@@ -43,7 +46,6 @@ import net.folivo.trixnity.clientserverapi.client.SyncState
 import net.folivo.trixnity.clientserverapi.model.media.Media
 import net.folivo.trixnity.core.model.RoomId
 import net.folivo.trixnity.core.model.UserId
-import net.folivo.trixnity.core.model.events.Event
 import net.folivo.trixnity.core.model.events.m.room.AvatarEventContent
 import net.folivo.trixnity.core.model.events.m.room.EncryptionEventContent
 import net.folivo.trixnity.core.model.events.m.room.HistoryVisibilityEventContent
@@ -168,21 +170,21 @@ class CommandService: Service() {
         val tid = client.room.sendMessage(to) {
             text(payload)
         }
-        do {
-            delay(5000)
-            val outbox = client.room.getOutbox().first()
-            val message = outbox.find { it.transactionId === tid }
-            if(message === null) break
-            else if(message.reachedMaxRetryCount) {
-                client.room.abortSendMessage(tid)
-                if (currentLog != -1L) db.logDao.setFailure(
-                    currentLog,
-                    MsgStatus.MESSAGE_MAX_ATTEMPTS_REACHED,
-                    null,
-                    id
-                )
-            }
-        } while (true)
+//        do {
+//            delay(5000)
+//            val outbox = client.room.getOutbox().first()
+//            val message = outbox.find { it.transactionId === tid }
+//            if(message === null) break
+//            else if(message.reachedMaxRetryCount) {
+//                client.room.abortSendMessage(tid)
+//                if (currentLog != -1L) db.logDao.setFailure(
+//                    currentLog,
+//                    MsgStatus.MESSAGE_MAX_ATTEMPTS_REACHED,
+//                    null,
+//                    id
+//                )
+//            }
+//        } while (true)
         if (currentLog != -1L) db.logDao.setSuccess(
             currentLog,
             MsgStatus.MESSAGE_SENT,
@@ -262,7 +264,6 @@ class CommandService: Service() {
                     Media(
                         ByteReadChannel(stream.readBytes()),
                         contentLength = length.toLong(),
-                        filename = roomName,
                         contentType = ContentType("image", "jpeg"),
                         contentDisposition = TODO()
                     )
@@ -381,24 +382,24 @@ class CommandService: Service() {
             db.roomIdDao.insert(RoomIdData(sender, sendAs, roomId.full))
             client.api.room.inviteUser(roomId, UserId(managerId))
         }
-        val tid = client.room.sendMessage(roomId) {
+        client.room.sendMessage(roomId) {
             text(payload)
         }
-        do {
-            delay(5000)
-            val outbox = client.room.getOutbox().first()
-            val message = outbox.find { it.transactionId === tid }
-            if (message === null) break
-            else if(message.reachedMaxRetryCount) {
-                client.room.abortSendMessage(tid)
-                if (currentLog != -1L) db.logDao.setFailure(
-                    currentLog,
-                    MsgStatus.MESSAGE_MAX_ATTEMPTS_REACHED,
-                    null,
-                    sendAs
-                )
-            }
-        } while (true)
+//        do {
+//            delay(5000)
+//            val outbox = client.room.getOutbox().first()
+//            val message = outbox.find { it.first()?.transactionId === tid }
+//            if (message === null) break
+//            else if(message.reachedMaxRetryCount) {
+//                client.room.abortSendMessage(tid)
+//                if (currentLog != -1L) db.logDao.setFailure(
+//                    currentLog,
+//                    MsgStatus.MESSAGE_MAX_ATTEMPTS_REACHED,
+//                    null,
+//                    sendAs
+//                )
+//            }
+//        } while (true)
         if(currentLog != -1L) db.logDao.setSuccess(
             currentLog,
             MsgStatus.MESSAGE_SENT,
@@ -424,6 +425,7 @@ class CommandService: Service() {
         }
         else if(currentStatus == CurrentStatus.NotStarted) load()
     }
+    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     private suspend fun load() {
         clients.clear()
         currentStatus = CurrentStatus.Loading
@@ -440,12 +442,12 @@ class CommandService: Service() {
             ).getOrNull()
             if (client !== null) {
                 client.startSync()
-                val rooms = client.api.room.getJoinedRooms().getOrNull()
-                if (rooms === null) client.room.getOutbox().first().forEach { client.room.abortSendMessage(it.transactionId) }
-                else client.room.getOutbox().first().forEach {
-                    if(rooms.contains(it.roomId)) client.room.retrySendMessage(it.transactionId)
-                    else client.room.abortSendMessage(it.transactionId)
-                }
+//                val rooms = client.api.room.getJoinedRooms().getOrNull()
+//                if (rooms === null) client.room.getOutbox().first().forEach { client.room.abortSendMessage(it.transactionId) }
+//                else client.room.getOutbox().first().forEach {
+//                    if(rooms.contains(it.roomId)) client.room.retrySendMessage(it.transactionId)
+//                    else client.room.abortSendMessage(it.transactionId)
+//                }
                 clients[a.id] = Pair(client, a)
             }
         }
@@ -468,7 +470,7 @@ class CommandService: Service() {
                             text(getString(R.string.failed_to_decrypt))
                         }
                         reload()
-                    } else if (content is RoomMessageEventContent.TextMessageEventContent) {
+                    } else if (content is RoomMessageEventContent.TextBased) {
                         client.api.room.setReadMarkers(ev.roomId, read = ev.eventId)
                         if(!ev.isEncrypted) {
                             client.room.sendMessage(ev.roomId) {
@@ -502,7 +504,7 @@ class CommandService: Service() {
                 .setContentText(getString(R.string.remotrix_service_desc).format(clients.size))
                 .setSmallIcon(R.drawable.ic_launcher_foreground)
                 .setOngoing(true)
-            startForeground(1, notification.build())
+            startForeground(1, notification.build(), FOREGROUND_SERVICE_TYPE_REMOTE_MESSAGING)
         }
 
     }

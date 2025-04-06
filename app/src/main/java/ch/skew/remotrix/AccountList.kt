@@ -9,9 +9,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -84,7 +84,7 @@ fun AccountList(
                 { Text(stringResource(R.string.account_list)) },
                 navigationIcon = {
                     IconButton(onClickGoBack) {
-                        Icon(Icons.Filled.ArrowBack, stringResource(R.string.go_back))
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.go_back))
                     }
                 },
                 actions = {

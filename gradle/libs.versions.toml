@@ -14,12 +14,13 @@ navigationCompose = "2.8.9"
 # Realm not available, so I can't use the latest one yet
 # https://mvnrepository.com/artifact/net.folivo/trixnity-client-repository-realm
 trixnity = "4.11.2"
-ktor = "2.3.0"
+ktor = "3.1.2"
 workRuntimeKtx = "2.10.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastorePreferences" }
+androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
 androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
