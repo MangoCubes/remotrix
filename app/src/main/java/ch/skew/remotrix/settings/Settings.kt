@@ -7,9 +7,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Announcement
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.BugReport
+import androidx.compose.material.icons.filled.ChatBubble
 import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.Start
 import androidx.compose.material.icons.filled.Storage
@@ -33,9 +35,17 @@ import ch.skew.remotrix.R
 import ch.skew.remotrix.classes.Account
 import ch.skew.remotrix.components.ListHeader
 import ch.skew.remotrix.components.SelectAccountDialog
+import ch.skew.remotrix.components.SelectOnSendActionDialog
 import ch.skew.remotrix.data.RemotrixDB
 import ch.skew.remotrix.data.RemotrixSettings
 import kotlinx.coroutines.launch
+
+enum class CurrentDialog {
+    None,
+    SelectAccount,
+    OnSendSuccess,
+    OnSendFailure
+}
 
 @Preview
 @OptIn(ExperimentalMaterial3Api::class)
@@ -46,9 +56,11 @@ fun Settings(
     logging: Boolean = true,
     enableOnBootMessage: Boolean = true,
     goBack: () -> Unit = {},
-    debugMenu: () -> Unit = {}
+    debugMenu: () -> Unit = {},
+    onSendSuccess: RemotrixSettings.OnSend = RemotrixSettings.OnSend.None,
+    onSendFailure: RemotrixSettings.OnSend = RemotrixSettings.OnSend.None,
 ) {
-    val open = remember { mutableStateOf(false) }
+    val open = remember { mutableStateOf(CurrentDialog.None) }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val settings = RemotrixSettings(context)
@@ -63,7 +75,7 @@ fun Settings(
             })
         },
 
-    ) { padding ->
+        ) { padding ->
         val scroll = rememberScrollState()
         Column(
             modifier = Modifier
@@ -80,7 +92,7 @@ fun Settings(
                         contentDescription = stringResource(R.string.choose_default_account)
                     )
                 },
-                modifier = Modifier.clickable { open.value = true }
+                modifier = Modifier.clickable { open.value = CurrentDialog.SelectAccount }
             )
             ListItem(
                 headlineContent = { Text(stringResource(R.string.enable_service_ready_message)) },
@@ -99,6 +111,36 @@ fun Settings(
                 trailingContent = {
                     Switch(checked = enableOnBootMessage, onCheckedChange = null)
                 }
+            )
+            ListHeader(stringResource(R.string.behaviour))
+            ListItem(
+                headlineContent = { Text("Successful Message Transmission") },
+                supportingContent = {
+                    Text("Determine what happens if the SMS is sent successfully.")
+                    Text("Commands are not affected by this.")
+                                    },
+
+                leadingContent = {
+                    Icon(
+                        Icons.Filled.ChatBubble,
+                        contentDescription = "Successful Message Transmission"
+                    )
+                },
+                modifier = Modifier.clickable { open.value = CurrentDialog.OnSendSuccess }
+            )
+            ListItem(
+                headlineContent = { Text("Unsuccessful Message Transmission") },
+                supportingContent = {
+                    Text("Determine what happens if sending SMS fails")
+                    Text("Commands are not affected by this.")
+                                    },
+                leadingContent = {
+                    Icon(
+                        Icons.AutoMirrored.Filled.Announcement,
+                        contentDescription = "Unsuccessful Message Transmission"
+                    )
+                },
+                modifier = Modifier.clickable { open.value = CurrentDialog.OnSendFailure }
             )
             ListHeader(stringResource(R.string.logging))
             ListItem(
@@ -149,16 +191,36 @@ fun Settings(
     }
     SelectAccountDialog(
         accounts = accounts,
-        close = { open.value = false },
+        close = { open.value = CurrentDialog.None },
         confirm = {
             scope.launch {
                 settings.saveDefaultForwarder(it)
             }
-            open.value = false
+            open.value = CurrentDialog.None
         },
         title = stringResource(R.string.choose_default_account),
         noneChosenDesc = stringResource(R.string.none_option),
-        show = open.value,
+        show = open.value == CurrentDialog.SelectAccount,
         defaultSelected = if(defaultForwarder == -1) null else defaultForwarder
+    )
+    SelectOnSendActionDialog(
+        close = { open.value = CurrentDialog.None },
+        confirm = {
+            scope.launch {
+                if (open.value == CurrentDialog.OnSendSuccess) {
+                    settings.saveOnSendSuccess(it)
+                } else if(open.value == CurrentDialog.OnSendFailure) {
+                    settings.saveOnSendFailure(it)
+                }
+            }
+            open.value = CurrentDialog.None
+        },
+        title = TODO(),
+        show = open.value == CurrentDialog.SelectAccount || open.value == CurrentDialog.OnSendFailure,
+        defaultSelected = if (open.value == CurrentDialog.OnSendSuccess) {
+            onSendSuccess
+        } else {
+            onSendFailure
+        }
     )
 }

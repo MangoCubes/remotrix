@@ -131,6 +131,8 @@ fun RemotrixApp(
     val enableOnBootMessage = settings.getEnableOnBootMessage.collectAsState(initial = null)
     val logging = settings.getLogging.collectAsState(initial = null)
     val debugAlivePing = settings.getDebugAlivePing.collectAsState(initial = null)
+    val onSendSuccess = settings.getOnSendSuccess.collectAsState(initial = null)
+    val onSendFailure = settings.getOnSendFailure.collectAsState(initial = null)
     val navController = rememberNavController()
     RemotrixTheme {
         if (openedBefore.value !== null) NavHost(
@@ -184,7 +186,9 @@ fun RemotrixApp(
                         logging.value ?: false,
                         enableOnBootMessage.value ?: true,
                         { navController.popBackStack() },
-                        { navController.navigate(SettingsDest.Debug.route) }
+                        { navController.navigate(SettingsDest.Debug.route)},
+                        onSendSuccess.value ?: RemotrixSettings.OnSend.React,
+                        onSendFailure.value ?: RemotrixSettings.OnSend.React,
                     )
                 }
                 composable(route = SettingsDest.Debug.route) {

@@ -57,6 +57,7 @@ import net.folivo.trixnity.core.model.keys.EncryptionAlgorithm
 import okio.Path.Companion.toPath
 import kotlin.time.Duration.Companion.seconds
 import androidx.core.net.toUri
+import net.folivo.trixnity.client.room.message.react
 import net.folivo.trixnity.core.model.events.InitialStateEvent
 
 enum class CurrentStatus {
@@ -491,6 +492,13 @@ class CommandService: Service() {
                                     text(reply.msg)
                                     reply(ev)
                                 }
+                                is CommandAction.React -> {
+                                    react(ev.eventId, reply.reaction)
+                                }
+
+                                is CommandAction.None -> {
+                                    // Do nothing
+                                }
                             }
                         }
                     }
@@ -565,11 +573,24 @@ class CommandService: Service() {
 
             } else return CommandAction.Reply(getString(R.string.unknown_command))
         } else if(event.roomId.full != account.second.managementRoom) {
-            return CommandAction.Thread(
-                if (this.sendSMS(account.second.id, event.roomId, body))
-                    getString(R.string.message_sent_successfully)
-                else getString(R.string.error_message_sending_failed)
-            )
+            val res = this.sendSMS(account.second.id, event.roomId, body);
+            if(res) {
+                val action = this.settings.getOnSendFailure.first();
+                return when (action) {
+                    RemotrixSettings.OnSend.Reply -> CommandAction.Reply(getString(R.string.message_sent_successfully))
+                    RemotrixSettings.OnSend.Thread -> CommandAction.Thread(getString(R.string.message_sent_successfully))
+                    RemotrixSettings.OnSend.React -> CommandAction.React("✅")
+                    else -> null
+                }
+            } else {
+                val action = this.settings.getOnSendFailure.first();
+                return when (action) {
+                    RemotrixSettings.OnSend.Reply -> CommandAction.Reply(getString(R.string.error_message_sending_failed))
+                    RemotrixSettings.OnSend.Thread -> CommandAction.Thread(getString(R.string.error_message_sending_failed))
+                    RemotrixSettings.OnSend.React -> CommandAction.React("❌")
+                    else -> null
+                }
+            }
         }
         return null
     }

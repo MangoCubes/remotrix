@@ -54,4 +54,5 @@
     <string name="no_default_forwarder_2">If you do not set one, this app will not forward any messages!</string>
     <string name="room_created">Room has been created.</string>
     <string name="close">Close</string>
+    <string name="behaviour">Behaviour</string>
 </resources>
