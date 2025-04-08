@@ -57,14 +57,27 @@ import net.folivo.trixnity.core.model.keys.EncryptionAlgorithm
 import okio.Path.Companion.toPath
 import kotlin.time.Duration.Companion.seconds
 import androidx.core.net.toUri
+import kotlinx.coroutines.sync.Mutex
 import net.folivo.trixnity.client.room.message.react
 import net.folivo.trixnity.core.model.events.InitialStateEvent
 
-enum class CurrentStatus {
+enum class StatusType {
     NotStarted,
     ShuttingDown,
     Loading,
     Running
+}
+
+class CurrentStatus(
+    private var status: StatusType = StatusType.NotStarted,
+    private val lock: Mutex = Mutex()
+) {
+    fun get() = status
+    suspend fun set(newStatus: StatusType) {
+        lock.lock()
+        status = newStatus
+        lock.unlock()
+    }
 }
 
 class CommandService: Service() {
@@ -73,7 +86,7 @@ class CommandService: Service() {
     private val clients: MutableMap<Int, Pair<MatrixClient, Account>> = mutableMapOf()
     private lateinit var settings: RemotrixSettings
     private lateinit var db: RemotrixDB
-    private var currentStatus = CurrentStatus.NotStarted
+    private var currentStatus = CurrentStatus()
 
     override fun onCreate() {
         super.onCreate()
@@ -104,6 +117,8 @@ class CommandService: Service() {
                 val sender = intent.getStringExtra(SENDER)
                 val payload = intent.getStringExtra(PAYLOAD)
                 if (sender === null || payload === null) {
+                    // Should not happen since sender is decided by the room ID
+                    // Payload should be there too
                     // TODO
                 } else {
                     CoroutineScope(Dispatchers.IO).launch {
@@ -131,7 +146,7 @@ class CommandService: Service() {
     }
 
     private suspend fun inviteManager(id: Int) {
-        if(currentStatus != CurrentStatus.Running) {
+        if(currentStatus.get() != StatusType.Running) {
             startAll()
         }
         val client = clients[id]
@@ -146,15 +161,15 @@ class CommandService: Service() {
             while (c.value.first.syncState.first() !== SyncState.STOPPED) delay(1000)
         }
         scope.cancel()
-        currentStatus = CurrentStatus.ShuttingDown
-        delay(10000)
-        currentStatus = CurrentStatus.NotStarted
+        currentStatus.set(StatusType.ShuttingDown)
+        delay(1000)
+        currentStatus.set(StatusType.NotStarted)
         scope = CoroutineScope(Dispatchers.IO)
         load()
     }
 
     private suspend fun sendTestMsg(id: Int, to: RoomId, payload: String, log: Boolean) {
-        if(currentStatus != CurrentStatus.Running) {
+        if(currentStatus.get() != StatusType.Running) {
             startAll()
         }
         val client = clients[id]?.first
@@ -322,7 +337,7 @@ class CommandService: Service() {
     }
 
     private suspend fun sendMsg(sender: String, payload: String, log: Boolean) {
-        if(currentStatus != CurrentStatus.Running) {
+        if(currentStatus.get() != StatusType.Running) {
             load()
         }
         val currentLog = if (log) db.logDao.writeAhead(MsgType.SMSForwarding, payload) else -1
@@ -415,7 +430,7 @@ class CommandService: Service() {
     }
 
     private suspend fun startAll() {
-        if (currentStatus == CurrentStatus.Running) {
+        if (currentStatus.get() == StatusType.Running) {
             if (this.settings.getDebugAlivePing.first()){
                 clients.forEach {
                     it.value.first.room.sendMessage(RoomId(it.value.second.managementRoom)) {
@@ -424,12 +439,12 @@ class CommandService: Service() {
                 }
             }
         }
-        else if(currentStatus == CurrentStatus.NotStarted) load()
+        else if(currentStatus.get() == StatusType.NotStarted) load()
     }
     @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     private suspend fun load() {
         clients.clear()
-        currentStatus = CurrentStatus.Loading
+        currentStatus.set(StatusType.Loading)
         val accounts = Account.from(db.accountDao.getAllAccounts().first())
         for(a in accounts){
             val clientDir = applicationContext.filesDir.resolve("clients/${a.id}")
@@ -506,7 +521,7 @@ class CommandService: Service() {
             }
         }
         if(clients.isNotEmpty()){
-            currentStatus = CurrentStatus.Running
+            currentStatus.set(StatusType.Running)
             val notification = NotificationCompat.Builder(this, "command_listener")
                 .setContentTitle(getString(R.string.remotrix_service))
                 .setContentText(getString(R.string.remotrix_service_desc).format(clients.size))
@@ -549,7 +564,7 @@ class CommandService: Service() {
             } else if(args[0] == "!ping") return CommandAction.Reply(getString(R.string.pong))
             else if (args[0] == "!help") return CommandAction.Reply(getString(R.string.command_help_output))
             else if (args[0] == "!reload") {
-                if (currentStatus == CurrentStatus.Running) reload()
+                if (currentStatus.get() == StatusType.Running) reload()
             } else if(args[0] == "!new") {
                 if(args.size == 1) return CommandAction.Reply(getString(R.string.error_sms_receiver_not_specified))
                 val number = PhoneNumber.from(args[1]).getOrElse {
