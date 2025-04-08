@@ -573,9 +573,9 @@ class CommandService: Service() {
 
             } else return CommandAction.Reply(getString(R.string.unknown_command))
         } else if(event.roomId.full != account.second.managementRoom) {
-            val res = this.sendSMS(account.second.id, event.roomId, body);
+            val res = this.sendSMS(account.second.id, event.roomId, body)
             if(res) {
-                val action = this.settings.getOnSendFailure.first();
+                val action = this.settings.getOnSendSuccess.first()
                 return when (action) {
                     RemotrixSettings.OnSend.Reply -> CommandAction.Reply(getString(R.string.message_sent_successfully))
                     RemotrixSettings.OnSend.Thread -> CommandAction.Thread(getString(R.string.message_sent_successfully))
@@ -583,7 +583,7 @@ class CommandService: Service() {
                     else -> null
                 }
             } else {
-                val action = this.settings.getOnSendFailure.first();
+                val action = this.settings.getOnSendFailure.first()
                 return when (action) {
                     RemotrixSettings.OnSend.Reply -> CommandAction.Reply(getString(R.string.error_message_sending_failed))
                     RemotrixSettings.OnSend.Thread -> CommandAction.Thread(getString(R.string.error_message_sending_failed))

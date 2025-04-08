@@ -8,8 +8,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Announcement
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.ChatBubble
 import androidx.compose.material.icons.filled.DeleteForever
@@ -70,7 +70,7 @@ fun Settings(
                 Text(stringResource(R.string.settings))
             }, navigationIcon = {
                 IconButton(goBack) {
-                    Icon(Icons.Filled.ArrowBack, stringResource(R.string.go_back))
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.go_back))
                 }
             })
         },
@@ -118,7 +118,7 @@ fun Settings(
                 supportingContent = {
                     Text("Determine what happens if the SMS is sent successfully.")
                     Text("Commands are not affected by this.")
-                                    },
+                },
 
                 leadingContent = {
                     Icon(
@@ -131,9 +131,9 @@ fun Settings(
             ListItem(
                 headlineContent = { Text("Unsuccessful Message Transmission") },
                 supportingContent = {
-                    Text("Determine what happens if sending SMS fails")
+                    Text("Determine what happens if sending SMS fails.")
                     Text("Commands are not affected by this.")
-                                    },
+                },
                 leadingContent = {
                     Icon(
                         Icons.AutoMirrored.Filled.Announcement,
@@ -171,7 +171,11 @@ fun Settings(
                     )
                 },
                 modifier = Modifier.clickable {
-                    Toast.makeText(context, context.getString(R.string.log_deleted), Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        context,
+                        context.getString(R.string.log_deleted),
+                        Toast.LENGTH_SHORT
+                    ).show()
                     scope.launch { RemotrixDB.getInstance(context).logDao.deleteAll() }
                 }
             )
@@ -201,22 +205,24 @@ fun Settings(
         title = stringResource(R.string.choose_default_account),
         noneChosenDesc = stringResource(R.string.none_option),
         show = open.value == CurrentDialog.SelectAccount,
-        defaultSelected = if(defaultForwarder == -1) null else defaultForwarder
+        defaultSelected = if (defaultForwarder == -1) null else defaultForwarder
     )
     SelectOnSendActionDialog(
         close = { open.value = CurrentDialog.None },
         confirm = {
-            scope.launch {
-                if (open.value == CurrentDialog.OnSendSuccess) {
+            if (open.value == CurrentDialog.OnSendSuccess) {
+                scope.launch {
                     settings.saveOnSendSuccess(it)
-                } else if(open.value == CurrentDialog.OnSendFailure) {
+                }
+            } else if (open.value == CurrentDialog.OnSendFailure) {
+                scope.launch {
                     settings.saveOnSendFailure(it)
                 }
             }
             open.value = CurrentDialog.None
         },
-        title = TODO(),
-        show = open.value == CurrentDialog.SelectAccount || open.value == CurrentDialog.OnSendFailure,
+        title = if (open.value == CurrentDialog.OnSendSuccess) "Select action on success" else "Select action on failure",
+        show = open.value == CurrentDialog.OnSendSuccess || open.value == CurrentDialog.OnSendFailure,
         defaultSelected = if (open.value == CurrentDialog.OnSendSuccess) {
             onSendSuccess
         } else {

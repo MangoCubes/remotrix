@@ -86,7 +86,6 @@ class RemotrixSettings(
     suspend fun saveOnSendSuccess(set: OnSend) {
         context.dataStore.edit { preferences ->
             preferences[onSendSuccess] = onSendToString(set)
-
         }
     }
 

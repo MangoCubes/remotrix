@@ -25,8 +25,7 @@ fun SelectOnSendActionDialog(
         AlertDialog(
             onDismissRequest = close,
             confirmButton = {
-                Button({ confirm(chosen.value) },
-                ) {
+                Button({ confirm(chosen.value) }) {
                     Text(stringResource(R.string.choose))
                 }
             },
