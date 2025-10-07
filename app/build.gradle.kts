@@ -7,12 +7,12 @@ plugins {
 
 android {
     namespace = "ch.skew.remotrix"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "ch.skew.remotrix"
         minSdk = 24
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0"
 
@@ -51,7 +51,7 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.material.icons.extended)
-    implementation(libs.trixnity.client.repository.realm)
+    implementation(libs.trixnity.client.repository.room)
     implementation(libs.trixnity.client.media.okio)
     implementation(libs.trixnity.client)
     implementation(libs.ktor.client.core)

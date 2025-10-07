@@ -13,3 +13,5 @@
 .externalNativeBuild
 .cxx
 local.properties
+/avd.log
+/avderr.log

@@ -1,21 +1,22 @@
 [versions]
-agp = "8.9.1"
-datastorePreferences = "1.1.4"
-room = "2.6.1"
-kotlin = "2.0.21"
-coreKtx = "1.15.0"
+agp = "8.13.0"
+datastorePreferences = "1.1.7"
+room = "2.8.1"
+kotlin = "2.2.20"
+kotlinKsp = "2.2.20-2.0.4"
+coreKtx = "1.17.0"
 junit = "4.13.2"
-junitVersion = "1.2.1"
-espressoCore = "3.6.1"
-lifecycleRuntimeKtx = "2.8.7"
-activityCompose = "1.10.1"
-composeBom = "2025.03.01"
-navigationCompose = "2.8.9"
+junitVersion = "1.3.0"
+espressoCore = "3.7.0"
+lifecycleRuntimeKtx = "2.9.4"
+activityCompose = "1.11.0"
+composeBom = "2025.09.01"
+navigationCompose = "2.9.5"
 # Realm not available, so I can't use the latest one yet
 # https://mvnrepository.com/artifact/net.folivo/trixnity-client-repository-realm
-trixnity = "4.11.2"
-ktor = "3.1.2"
-workRuntimeKtx = "2.10.0"
+trixnity = "4.22.4"
+ktor = "3.3.0"
+workRuntimeKtx = "2.10.5"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -40,7 +41,7 @@ androidx-navigation-compose = { group = "androidx.navigation", name = "navigatio
 androidx-work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "workRuntimeKtx" }
 ktor-client-core = { group = "io.ktor", name = "ktor-client-core", version.ref = "ktor" }
 ktor-client-okhttp = { group = "io.ktor", name = "ktor-client-okhttp", version.ref = "ktor" }
-trixnity-client-repository-realm = { group = "net.folivo", name = "trixnity-client-repository-realm", version.ref = "trixnity" }
+trixnity-client-repository-room = { group = "net.folivo", name = "trixnity-client-repository-room", version.ref = "trixnity" }
 trixnity-client-media-okio = { group = "net.folivo", name = "trixnity-client-media-okio", version.ref = "trixnity" }
 trixnity-client = { group = "net.folivo", name = "trixnity-client", version.ref = "trixnity" }
 
@@ -48,4 +49,3 @@ trixnity-client = { group = "net.folivo", name = "trixnity-client", version.ref 
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
-
