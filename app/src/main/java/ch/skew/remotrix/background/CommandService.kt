@@ -617,8 +617,27 @@ class CommandService: Service() {
             //TODO
             return false
         } else {
+            // TODO: Temporary workaround for MMS-sized message
+            var msgSize = 160
+            for (char in payload) {
+                if (char.code > 127) {
+                    msgSize = 70
+                }
+            }
+
+            val segments = mutableListOf<String>()
+
+            var startIndex = 0
+            while (startIndex < payload.length) {
+                val endIndex = minOf(startIndex + msgSize, payload.length)
+                segments.add(payload.substring(startIndex, endIndex))
+                startIndex = endIndex
+            }
+
             val sms = applicationContext.getSystemService(SmsManager::class.java)
-            sms.sendTextMessage(to, null, payload, null, null)
+            segments.forEach { segment ->
+                sms.sendTextMessage(to, null, segment, null, null)
+            }
             return true
         }
     }
