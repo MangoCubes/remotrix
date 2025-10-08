@@ -35,6 +35,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.room.Room.databaseBuilder
 import ch.skew.remotrix.background.CommandService
 import ch.skew.remotrix.classes.Account
 import ch.skew.remotrix.components.DelAccountDialog
@@ -44,8 +45,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import net.folivo.trixnity.client.MatrixClient
 import net.folivo.trixnity.client.fromStore
-import net.folivo.trixnity.client.media.okio.OkioMediaStore
-import net.folivo.trixnity.client.store.repository.realm.createRealmRepositoriesModule
+import net.folivo.trixnity.client.media.okio.createOkioMediaStoreModule
+import net.folivo.trixnity.client.store.repository.room.TrixnityRoomDatabase
+import net.folivo.trixnity.client.store.repository.room.createRoomRepositoriesModule
 import net.folivo.trixnity.core.model.RoomId
 import okio.Path.Companion.toPath
 import java.text.SimpleDateFormat
@@ -136,14 +138,16 @@ fun deleteAccount(
     if (account === null) return
     scope.launch {
         try {
-            val clientDir = context.filesDir.resolve("clients/${account.id}")
-            val repo = createRealmRepositoriesModule {
-                this.directory(clientDir.toString())
-            }
-            val mediaStore = OkioMediaStore(context.filesDir.resolve("clients/media").absolutePath.toPath())
+            val repo = createRoomRepositoriesModule(databaseBuilder(
+                context,
+                klass = TrixnityRoomDatabase::class.java,
+                name = "ClientData"
+            ))
+            val mediaStore = createOkioMediaStoreModule(context.filesDir.resolve("clients/media").absolutePath.toPath())
+
             val matrixClient = MatrixClient.fromStore(
                 repositoriesModule = repo,
-                mediaStore = mediaStore,
+                mediaStoreModule = mediaStore,
             ).getOrThrow()
             if(matrixClient === null) {
                 Toast.makeText(context, context.getString(R.string.cannot_logout_no_account), Toast.LENGTH_LONG).show()

@@ -4,12 +4,12 @@ import android.app.Service
 import android.content.Intent
 import android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_REMOTE_MESSAGING
 import android.net.Uri
-import android.os.Build
 import android.os.IBinder
 import android.provider.ContactsContract
 import android.telephony.SmsManager
-import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
+import androidx.core.net.toUri
+import androidx.room.Room.databaseBuilder
 import ch.skew.remotrix.R
 import ch.skew.remotrix.classes.Account
 import ch.skew.remotrix.classes.CommandAction
@@ -29,23 +29,27 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.withContext
 import net.folivo.trixnity.client.MatrixClient
 import net.folivo.trixnity.client.fromStore
-import net.folivo.trixnity.client.media.okio.OkioMediaStore
+import net.folivo.trixnity.client.media.okio.createOkioMediaStoreModule
 import net.folivo.trixnity.client.room
+import net.folivo.trixnity.client.room.message.react
 import net.folivo.trixnity.client.room.message.reply
 import net.folivo.trixnity.client.room.message.text
 import net.folivo.trixnity.client.room.message.thread
 import net.folivo.trixnity.client.store.TimelineEvent
 import net.folivo.trixnity.client.store.eventId
 import net.folivo.trixnity.client.store.isEncrypted
-import net.folivo.trixnity.client.store.repository.realm.createRealmRepositoriesModule
+import net.folivo.trixnity.client.store.repository.room.TrixnityRoomDatabase
+import net.folivo.trixnity.client.store.repository.room.createRoomRepositoriesModule
 import net.folivo.trixnity.client.store.roomId
 import net.folivo.trixnity.clientserverapi.client.SyncState
 import net.folivo.trixnity.clientserverapi.model.media.Media
 import net.folivo.trixnity.core.model.RoomId
 import net.folivo.trixnity.core.model.UserId
+import net.folivo.trixnity.core.model.events.InitialStateEvent
 import net.folivo.trixnity.core.model.events.m.room.AvatarEventContent
 import net.folivo.trixnity.core.model.events.m.room.EncryptionEventContent
 import net.folivo.trixnity.core.model.events.m.room.HistoryVisibilityEventContent
@@ -56,10 +60,6 @@ import net.folivo.trixnity.core.model.events.m.space.ParentEventContent
 import net.folivo.trixnity.core.model.keys.EncryptionAlgorithm
 import okio.Path.Companion.toPath
 import kotlin.time.Duration.Companion.seconds
-import androidx.core.net.toUri
-import kotlinx.coroutines.sync.Mutex
-import net.folivo.trixnity.client.room.message.react
-import net.folivo.trixnity.core.model.events.InitialStateEvent
 
 enum class StatusType {
     NotStarted,
@@ -441,20 +441,21 @@ class CommandService: Service() {
         }
         else if(currentStatus.get() == StatusType.NotStarted) load()
     }
-    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     private suspend fun load() {
         clients.clear()
         currentStatus.set(StatusType.Loading)
         val accounts = Account.from(db.accountDao.getAllAccounts().first())
         for(a in accounts){
-            val clientDir = applicationContext.filesDir.resolve("clients/${a.id}")
-            val repo = createRealmRepositoriesModule {
-                this.directory(clientDir.toString())
-            }
-            val media = OkioMediaStore(applicationContext.filesDir.resolve("clients/media").absolutePath.toPath())
+            val repo = createRoomRepositoriesModule(databaseBuilder(
+                applicationContext,
+                klass = TrixnityRoomDatabase::class.java,
+                name = "ClientData"
+            ))
+            val mediaStore = createOkioMediaStoreModule(applicationContext.filesDir.resolve("clients/media").absolutePath.toPath())
+
             val client = MatrixClient.fromStore(
                 repositoriesModule = repo,
-                mediaStore = media,
+                mediaStoreModule = mediaStore,
             ).getOrNull()
             if (client !== null) {
                 client.startSync()

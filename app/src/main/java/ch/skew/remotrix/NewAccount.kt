@@ -10,7 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -29,6 +29,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.room.Room.databaseBuilder
 import ch.skew.remotrix.background.CommandService
 import ch.skew.remotrix.components.LabelledRadioButton
 import ch.skew.remotrix.components.PasswordField
@@ -38,14 +39,14 @@ import io.ktor.http.Url
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import net.folivo.trixnity.client.MatrixClient
-import net.folivo.trixnity.client.login
-import net.folivo.trixnity.client.media.okio.OkioMediaStore
-import net.folivo.trixnity.client.store.repository.realm.createRealmRepositoriesModule
+import net.folivo.trixnity.client.loginWithPassword
+import net.folivo.trixnity.client.media.okio.createOkioMediaStoreModule
+import net.folivo.trixnity.client.store.repository.room.TrixnityRoomDatabase
+import net.folivo.trixnity.client.store.repository.room.createRoomRepositoriesModule
 import net.folivo.trixnity.clientserverapi.model.authentication.IdentifierType
 import net.folivo.trixnity.clientserverapi.model.rooms.DirectoryVisibility
 import net.folivo.trixnity.core.model.RoomId
 import net.folivo.trixnity.core.model.UserId
-import net.folivo.trixnity.core.model.events.Event
 import net.folivo.trixnity.core.model.events.InitialStateEvent
 import net.folivo.trixnity.core.model.events.m.room.CreateEventContent
 import net.folivo.trixnity.core.model.events.m.room.EncryptionEventContent
@@ -116,7 +117,7 @@ fun NewAccount(
                 { Text(stringResource(R.string.new_account)) },
                 navigationIcon = {
                     IconButton(onClickGoBack) {
-                        Icon(Icons.Filled.ArrowBack, stringResource(R.string.go_back))
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.go_back))
                     }
                 }
             )
@@ -247,15 +248,18 @@ fun onLoginClick(
         val id = accountDao.insert(localPart, baseUrl)
         val clientDir = context.filesDir.resolve("clients/${id}")
         clientDir.mkdirs()
-        val repo = createRealmRepositoriesModule {
-            this.directory(clientDir.toString())
-        }
-        val client = MatrixClient.login(
+        val repo = createRoomRepositoriesModule(databaseBuilder(
+            context,
+            klass = TrixnityRoomDatabase::class.java,
+            name = "ClientData"
+        ))
+        val mediaStore = createOkioMediaStoreModule(context.filesDir.resolve("clients/media").absolutePath.toPath())
+        val client = MatrixClient.loginWithPassword(
             baseUrl = Url(baseUrl),
             identifier = IdentifierType.User(username),
             password = password,
             repositoriesModule = repo,
-            mediaStore = OkioMediaStore(context.filesDir.resolve("clients/media").absolutePath.toPath()),
+            mediaStoreModule = mediaStore
         ).getOrElse {
             clientDir.deleteRecursively()
             abort(it.message ?: context.getString(R.string.generic_error))
@@ -271,7 +275,6 @@ fun onLoginClick(
                 name = context.getString(R.string.sms_forwarder),
                 creationContent = CreateEventContent(
                     type = CreateEventContent.RoomType.Space,
-                    creator = client.userId
                 ),
                 initialState = listOf(
                     InitialStateEvent(
