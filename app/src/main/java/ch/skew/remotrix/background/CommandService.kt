@@ -619,9 +619,16 @@ class CommandService: Service() {
         } else {
             // TODO: Temporary workaround for MMS-sized message
             var msgSize = 160
+            // Determines how many characters from end are searched for space at which the split
+            // will occur. If the message does not contain a space character in the last 30
+            // characters (or 15 characters if it contains unicode), the program will split
+            // mid-word.
+            var maxScanForSpace = 30
             for (char in payload) {
                 if (char.code > 127) {
                     msgSize = 70
+                    maxScanForSpace = 15
+                    break
                 }
             }
 
@@ -629,9 +636,26 @@ class CommandService: Service() {
 
             var startIndex = 0
             while (startIndex < payload.length) {
-                val endIndex = minOf(startIndex + msgSize, payload.length)
-                segments.add(payload.substring(startIndex, endIndex))
-                startIndex = endIndex
+                val maxIdx = startIndex + msgSize
+                if (maxIdx < payload.length) {
+                    // End of message has not been reached
+                    var smartSplitUsed = false
+                    var endIndex = maxIdx
+                    for (i in (maxIdx - 1) downTo (maxIdx - maxScanForSpace + 1)) {
+                        if(payload[i] == ' ') {
+                            endIndex = i
+                            smartSplitUsed = true
+                            break
+                        }
+                    }
+                    segments.add(payload.substring(startIndex, endIndex))
+                    // If smart split is used, we can skip the space
+                    startIndex = if (smartSplitUsed) endIndex + 1 else endIndex
+                } else {
+                    // End of message has been reached or is currently beyond that
+                    segments.add(payload.substring(startIndex, payload.length))
+                    break
+                }
             }
 
             val sms = applicationContext.getSystemService(SmsManager::class.java)

@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface LogDao{
 
+    /// Write a log entry into the database
     @Query("INSERT INTO logs (status, msg_type, payload) VALUES (:defStatus, :msgType, :payload)")
     suspend fun writeAhead(msgType: MsgType, payload: String, defStatus: MsgStatus = MsgStatus.MESSAGE_SENDING_FAILED): Long
 
