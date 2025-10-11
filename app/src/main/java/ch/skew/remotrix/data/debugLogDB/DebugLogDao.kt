@@ -13,9 +13,9 @@ interface DebugLogDao{
     @Query("INSERT INTO debug_log (error_msg, payload) VALUES (:errorMsg, :payload)")
     suspend fun addLog(errorMsg: String, payload: String? = null): Long
 
-    @Query("SELECT * FROM logs ORDER BY timestamp DESC")
+    @Query("SELECT * FROM debug_log ORDER BY timestamp DESC")
     fun getLogs(): Flow<List<DebugLogData>>
 
-    @Query("DELETE FROM logs")
+    @Query("DELETE FROM debug_log")
     suspend fun deleteAll()
 }

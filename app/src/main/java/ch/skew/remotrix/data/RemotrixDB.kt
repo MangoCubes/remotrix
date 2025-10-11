@@ -10,6 +10,7 @@ import androidx.room.migration.Migration
 import ch.skew.remotrix.data.accountDB.AccountDao
 import ch.skew.remotrix.data.accountDB.AccountData
 import ch.skew.remotrix.data.debugLogDB.DebugLogDao
+import ch.skew.remotrix.data.debugLogDB.DebugLogData
 import ch.skew.remotrix.data.forwardRuleDB.ForwardRule
 import ch.skew.remotrix.data.forwardRuleDB.ForwardRuleDao
 import ch.skew.remotrix.data.logDB.LogDao
@@ -22,9 +23,10 @@ import ch.skew.remotrix.data.roomIdDB.RoomIdData
         AccountData::class,
         ForwardRule::class,
         RoomIdData::class,
-        LogData::class
+        LogData::class,
+        DebugLogData::class
     ],
-    version = 2
+    version = 3
 )
 
 abstract class RemotrixDB: RoomDatabase(){
@@ -47,8 +49,19 @@ abstract class RemotrixDB: RoomDatabase(){
         private fun buildDatabase(context: Context) =
             Room.databaseBuilder(context, RemotrixDB::class.java, "accounts.db")
                 .addMigrations(migration1To2)
+                .addMigrations(migration2To3)
                 .build()
 
+        private val migration2To3 = Migration(2, 3) {
+            it.execSQL(
+                "CREATE TABLE IF NOT EXISTS debug_log (" +
+                        "id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT," +
+                        "timestamp TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP," +
+                        "error_msg TEXT NOT NULL," +
+                        "payload TEXT" +
+                        ");"
+            )
+        }
         private val migration1To2 = Migration(1, 2) {
             it.execSQL(
                 "CREATE TABLE IF NOT EXISTS logs_temp (" +
