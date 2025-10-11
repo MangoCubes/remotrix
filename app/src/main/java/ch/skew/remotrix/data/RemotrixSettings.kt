@@ -45,6 +45,7 @@ class RemotrixSettings(
         val debugAlivePing = stringPreferencesKey("debugAlivePing")
         val onSendSuccess = stringPreferencesKey("onSendSuccess")
         val onSendFailure = stringPreferencesKey("onSendFailure")
+        val onErrorDebugLog = stringPreferencesKey("onSendFailure")
     }
 
     val getDebugAlivePing: Flow<Boolean> = context.dataStore.data.map { preferences ->
@@ -81,6 +82,10 @@ class RemotrixSettings(
 
     val getEnableOnBootMessage: Flow<Boolean> = context.dataStore.data.map { preferences ->
         preferences[enableOnBootMessage] === null || preferences[enableOnBootMessage] != "0"
+    }
+
+    val getOnErrorDebugLog: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[onErrorDebugLog] == "1"
     }
 
     suspend fun saveOnSendSuccess(set: OnSend) {
@@ -135,6 +140,12 @@ class RemotrixSettings(
     suspend fun saveDebugAlivePing(set: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[debugAlivePing] = if (set) "1" else "0"
+        }
+    }
+
+    suspend fun saveOnErrorDebugLog(set: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[onErrorDebugLog] = if(set) "1" else "0"
         }
     }
 }

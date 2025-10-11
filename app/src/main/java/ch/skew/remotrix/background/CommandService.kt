@@ -7,6 +7,7 @@ import android.net.Uri
 import android.os.IBinder
 import android.provider.ContactsContract
 import android.telephony.SmsManager
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.net.toUri
 import androidx.room.Room.databaseBuilder
@@ -23,6 +24,7 @@ import ch.skew.remotrix.data.forwardRuleDB.ForwardRule
 import ch.skew.remotrix.data.roomIdDB.RoomIdData
 import io.ktor.http.ContentType
 import io.ktor.utils.io.ByteReadChannel
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
@@ -59,6 +61,7 @@ import net.folivo.trixnity.core.model.events.m.space.ChildEventContent
 import net.folivo.trixnity.core.model.events.m.space.ParentEventContent
 import net.folivo.trixnity.core.model.keys.EncryptionAlgorithm
 import okio.Path.Companion.toPath
+import kotlin.coroutines.CoroutineContext
 import kotlin.time.Duration.Companion.seconds
 
 enum class StatusType {
@@ -94,22 +97,33 @@ class CommandService: Service() {
         this.db = RemotrixDB.getInstance(applicationContext)
     }
 
+    /// Service receives an action, and runs one of the actions below
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        val exceptionHandler: CoroutineContext = CoroutineExceptionHandler { context, error ->
+            val ignoreError = CoroutineExceptionHandler { context, error ->
+                // Failed to log error, print it out instead
+                Log.e("Ignored Error", error.message ?: "")
+            }
+            CoroutineScope(Dispatchers.IO).launch(ignoreError) {
+                val storeLog = settings.getOnErrorDebugLog.first()
+                if (storeLog) db.debugLogDao.addLog(error.message ?: "<No error message generated>")
+            }
+        }
         when(intent?.action) {
             INVITE -> {
-                CoroutineScope(Dispatchers.IO).launch {
+                CoroutineScope(Dispatchers.IO).launch(exceptionHandler) {
                     val id = intent.getIntExtra(ACCOUNT_ID, -1)
                     if(id == -1) return@launch
                     else inviteManager(id)
                 }
             }
             RELOAD -> {
-                CoroutineScope(Dispatchers.IO).launch {
+                CoroutineScope(Dispatchers.IO).launch(exceptionHandler) {
                     reload()
                 }
             }
             START_ALL -> {
-                CoroutineScope(Dispatchers.IO).launch {
+                CoroutineScope(Dispatchers.IO).launch(exceptionHandler) {
                     startAll()
                 }
             }
@@ -121,7 +135,7 @@ class CommandService: Service() {
                     // Payload should be there too
                     // TODO
                 } else {
-                    CoroutineScope(Dispatchers.IO).launch {
+                    CoroutineScope(Dispatchers.IO).launch(exceptionHandler) {
                         val log = settings.getLogging.first()
                         sendMsg(sender, payload, log)
                     }
@@ -134,7 +148,7 @@ class CommandService: Service() {
                 if (id == -1 || to === null || payload === null) {
                     // TODO
                 } else {
-                    CoroutineScope(Dispatchers.IO).launch {
+                    CoroutineScope(Dispatchers.IO).launch(exceptionHandler) {
                         val log = settings.getLogging.first()
                         sendTestMsg(id, RoomId(to), payload, log)
                     }
@@ -155,6 +169,10 @@ class CommandService: Service() {
         client.first.api.room.inviteUser(RoomId(client.second.managementRoom), UserId(managerId))
     }
 
+    /**
+     Reloads the client by restarting the MatrixClient
+     The status is set to `ShuttingDown`, and then takes 1 second break, and calls `load()`
+     **/
     private suspend fun reload() {
         clients.forEach { c ->
             c.value.first.stopSync()
@@ -401,21 +419,7 @@ class CommandService: Service() {
         client.room.sendMessage(roomId) {
             text(payload)
         }
-//        do {
-//            delay(5000)
-//            val outbox = client.room.getOutbox().first()
-//            val message = outbox.find { it.first()?.transactionId === tid }
-//            if (message === null) break
-//            else if(message.reachedMaxRetryCount) {
-//                client.room.abortSendMessage(tid)
-//                if (currentLog != -1L) db.logDao.setFailure(
-//                    currentLog,
-//                    MsgStatus.MESSAGE_MAX_ATTEMPTS_REACHED,
-//                    null,
-//                    sendAs
-//                )
-//            }
-//        } while (true)
+        // Message is sent successfully, mark the pre-recorded message as successfully sent
         if(currentLog != -1L) db.logDao.setSuccess(
             currentLog,
             MsgStatus.MESSAGE_SENT,
@@ -469,8 +473,19 @@ class CommandService: Service() {
             }
         }
 
+        val exceptionHandler: CoroutineContext = CoroutineExceptionHandler { context, error ->
+            val ignoreError = CoroutineExceptionHandler { context, error ->
+                // Failed to log error, print it out instead
+                Log.e("Ignored Error", error.message ?: "")
+            }
+            CoroutineScope(Dispatchers.IO).launch(ignoreError) {
+                val storeLog = settings.getOnErrorDebugLog.first()
+                if (storeLog) db.debugLogDao.addLog(error.message ?: "<No error message generated>")
+            }
+        }
 
-        CoroutineScope(Dispatchers.IO).launch {
+        // Start up client
+        CoroutineScope(Dispatchers.IO).launch(exceptionHandler) {
             clients.forEach {
                 val client = it.value.first
                 while(!client.initialSyncDone.first()) delay(1000)

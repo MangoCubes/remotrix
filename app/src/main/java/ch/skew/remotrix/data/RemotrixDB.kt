@@ -9,6 +9,7 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import ch.skew.remotrix.data.accountDB.AccountDao
 import ch.skew.remotrix.data.accountDB.AccountData
+import ch.skew.remotrix.data.debugLogDB.DebugLogDao
 import ch.skew.remotrix.data.forwardRuleDB.ForwardRule
 import ch.skew.remotrix.data.forwardRuleDB.ForwardRuleDao
 import ch.skew.remotrix.data.logDB.LogDao
@@ -31,6 +32,7 @@ abstract class RemotrixDB: RoomDatabase(){
     abstract val forwardRuleDao: ForwardRuleDao
     abstract val roomIdDao: RoomIdDao
     abstract val logDao: LogDao
+    abstract val debugLogDao: DebugLogDao
     companion object {
 
         @Volatile
